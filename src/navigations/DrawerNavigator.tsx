@@ -1,32 +1,32 @@
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import MainTabs from './MainTabs';
 import Profile from '../screens/HomeScreens/Profile';
+import CustomDrawer from '../components/CustomDrawer';
 
 const Drawer = createDrawerNavigator();
 
 export default function DrawerNavigator() {
   return (
-    <Drawer.Navigator
-      screenOptions={{
-        headerShown: false,
-        drawerType: 'slide',
-        drawerStyle: {
-          width: 280,
-        },
-      }}
-    >
-      {/* Bottom Tabs inside Drawer */}
-      <Drawer.Screen
-        name="MainTabs"
-        component={MainTabs}
-        options={{ title: 'Home' }}
-      />
-
-      {/* Extra drawer-only screen */}
-      <Drawer.Screen
-        name="Profile"
-        component={Profile}
-      />
-    </Drawer.Navigator>
+<Drawer.Navigator
+  drawerContent={(props) => <CustomDrawer {...props} />}
+  screenOptions={{
+    headerShown: false,
+    drawerType: 'slide',
+    drawerStyle: {
+      width: 280,
+      backgroundColor: 'transparent',
+    },
+  }}
+>
+  <Drawer.Screen
+    name="MainTabs"
+    component={MainTabs}
+    options={{ title: 'Home' }}
+  />
+  <Drawer.Screen
+    name="Profile"
+    component={Profile}
+  />
+</Drawer.Navigator>
   );
 }
