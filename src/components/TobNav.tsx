@@ -7,6 +7,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { DrawerActions } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import StoreIcon from '../icons/StoreIcon';
 import LearningIcon from '../icons/LearningIcon';
@@ -16,6 +17,7 @@ import WalletIcon from '../icons/WalletIcon';
 import ChannelIcon from '../icons/ChannelIcon';
 import MessageIcon from '../icons/MessageIcon';
 import CommunityIcon from '../icons/CommunityIcon';
+import logo from '../assets/logo.png';
 
 type TopNavProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -44,7 +46,7 @@ const TopNav = ({ navigation }: TopNavProps) => {
             activeOpacity={0.7}
           >
             <Image
-              source={{ uri: 'https://i.ibb.co.com/VjWkST4/logo.png' }}
+              source={logo}
               className="w-36 h-11"
               resizeMode="contain"
             />
@@ -105,14 +107,17 @@ const TopNav = ({ navigation }: TopNavProps) => {
         <View className=" border-gray-100 py-2">
           <View className="flex-row items-center justify-around px-1">
             <TouchableOpacity
-              onPress={() => navigation.navigate('PdfBook')}
+              onPress={() => {
+                navigation.getParent()?.dispatch(DrawerActions.openDrawer());
+              }}
               className="items-center"
               activeOpacity={0.7}
             >
-              <View className="items-center justify-center  ">
+              <View className="items-center justify-center">
                 <MenuIcon size={32} color="#4B5563" />
               </View>
             </TouchableOpacity>
+
             <TouchableOpacity
               onPress={() => navigation.navigate('Marketplace')}
               className="items-center"
