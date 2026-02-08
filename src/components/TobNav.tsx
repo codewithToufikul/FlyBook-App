@@ -47,7 +47,7 @@ const TopNav = ({ navigation }: TopNavProps) => {
           >
             <Image
               source={logo}
-              className="w-36 h-11"
+              className="w-40 h-14"
               resizeMode="contain"
             />
           </TouchableOpacity>
@@ -60,7 +60,7 @@ const TopNav = ({ navigation }: TopNavProps) => {
               onPress={() => navigation.navigate('Community')}
               activeOpacity={0.7}
             >
-              <CommunityIcon size={32} color="#4B5563" />
+              <CommunityIcon size={36} color="#4B5563" />
             </TouchableOpacity>
 
             {/* Messages with Badge */}
@@ -134,7 +134,7 @@ const TopNav = ({ navigation }: TopNavProps) => {
               activeOpacity={0.7}
             >
               <View className=" items-center justify-center  ">
-                <LearningIcon size={32} color="#4B5563" />
+                <LearningIcon size={34} color="#4B5563" />
               </View>
             </TouchableOpacity>
 
@@ -144,7 +144,7 @@ const TopNav = ({ navigation }: TopNavProps) => {
               activeOpacity={0.7}
             >
               <View className="items-center justify-center  ">
-                <FileIcon size={32} color="#4B5563" />
+                <FileIcon size={28} color="#4B5563" />
               </View>
             </TouchableOpacity>
 
