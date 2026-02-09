@@ -13,7 +13,7 @@ export default function DrawerNavigator() {
     headerShown: false,
     drawerType: 'slide',
     drawerStyle: {
-      width: 280,
+      width: '80%',
       backgroundColor: 'transparent',
     },
   }}

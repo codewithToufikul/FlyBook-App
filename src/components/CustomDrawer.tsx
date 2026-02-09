@@ -1,75 +1,109 @@
-import React from 'react';
-import { View, Text, Image, Pressable } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Image, Pressable, Alert } from 'react-native';
 import { DrawerContentScrollView } from '@react-navigation/drawer';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
+import { useAuth } from '../hooks/useAuth';
+import { ButtonLoader } from './common';
 import ArrowRightIcon from '../icons/ArrowRightIcon';
-import HomeIcon from '../icons/HomeIcon';
+import HomeThinIcon from '../icons/HomeThinIcon';
+import FriendsIcon from '../icons/FriendsIcon';
+import LibraryIcon from '../icons/LibraryIcon';
+import ChannelThinIcon from '../icons/ChannelThinIcon';
+import MarketThinIcon from '../icons/MarketThinIcon';
+import LearningThinIcon from '../icons/LearningThinIcon';
+import AudioBookIcon from '../icons/AudioBookIcon';
+import WalletShopIcon from '../icons/WalletShopIcon';
+import EJobsIcon from '../icons/EJobsIcon';
+import OrganizationIcon from '../icons/OrganizationIcon';
+import CommunityIcon from '../icons/CommunityIcon';
+import SocialResIcon from '../icons/SocialResIcon';
+import SettingIcon from '../icons/SettingIcon';
+import HelpIcon from '../icons/HelpIcon';
 const MENU_SECTIONS = [
   {
     title: 'Main',
     items: [
-      { label: 'Home', icon: HomeIcon, route: 'MainTabs' },
-    //   { label: 'Friends', icon: fndsIcon, route: 'Friends' },
-    //   { label: 'Library', icon: libraryIcon, route: 'Library' },
-    //   { label: 'Groups', icon: groupIcon, route: 'Groups' },
+      { label: 'Home', icon: HomeThinIcon, route: 'MainTabs' },
+      { label: 'Friends', icon: FriendsIcon, route: 'Friends' },
+      { label: 'Library', icon: LibraryIcon, route: 'Library' },
+      { label: 'Channels', icon: ChannelThinIcon, route: 'Channels' },
     ]
   },
   {
     title: 'Services',
     items: [
-    //   { label: 'Marketplace', icon: marketIcon, route: 'Marketplace' },
-    //   { label: 'E-Learning', icon: elngIcon, route: 'ELearning' },
-    //   { label: 'Live Channel', icon: channelIcon, route: 'LiveChannel' },
-    //   { label: 'Audio Books', icon: audioBookIcon, route: 'AudioBooks' },
+      { label: 'Marketplace', icon: MarketThinIcon, route: 'Marketplace' },
+      { label: 'E-Learning', icon: LearningThinIcon, route: 'ELearning' },
+      { label: 'Audio Books', icon: AudioBookIcon, route: 'AudioBooks' },
+      { label: 'Wallet Shop', icon: WalletShopIcon, route: 'WalletShop' },
+      { label: 'E-Jobs', icon: EJobsIcon, route: 'EJobs' },
     ]
   },
   {
     title: 'Community',
     items: [
-    //   { label: 'Donated Books', icon: donetBookIcon, route: 'DonatedBooks' },
-    //   { label: 'Nearby', icon: nearIcon, route: 'Nearby' },
-    //   { label: 'Breach Alert', icon: breachIcon, route: 'BreachAlert' },
+    {label: 'Communities', icon: CommunityIcon, route: 'Communities' },
+      { label: 'Organizations', icon: OrganizationIcon, route: 'Organizations' },
+      { label: 'Social Response', icon: SocialResIcon, route: 'SocialResponse' },
     ]
   },
   {
     title: 'Support',
     items: [
-    //   { label: 'Settings', icon: settingsIcon, route: 'Settings' },
-    //   { label: 'Help & Support', icon: helpIcon, route: 'Help' },
+      { label: 'Settings', icon: SettingIcon, route: 'Settings' },
+      { label: 'Help & Support', icon: HelpIcon, route: 'Help' },
     ]
   }
 ];
 
-// User data (would come from API in real app)
-const USER_DATA = {
-  name: 'Toufikul Islam',
-  username: '@toufikulislam',
-  avatar: 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png',
-  stats: {
-    books: 24,
-    friends: 156,
-    groups: 12
-  }
-};
-
 export default function CustomDrawer(props: any) {
   const { navigation, state } = props;
   const activeRouteName = state.routeNames[state.index];
+  const { user, logout } = useAuth();
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const handleLogout = () => {
-    // Implement logout logic here
-    console.log('Logout pressed');
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            setLoggingOut(true);
+            try {
+              await logout();
+              // Navigation will automatically happen via RootNavigator
+            } catch (error) {
+              console.error('Logout error:', error);
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+            } finally {
+              setLoggingOut(false);
+            }
+          },
+        },
+      ]
+    );
   };
+
+  // Default avatar if user has none
+  const defaultAvatar = 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png';
 
   return (
     <View className="flex-1 bg-gray-50">
       {/* Premium Header with Gradient Effect */}
-      <View className="bg-white pt-4 pb-6 px-5 rounded-3xl mx-2 mt-20 shadow-xl shadow-gray-400">
+      <View className="bg-white pt-3 pb-4 px-5 rounded-3xl mx-4 mt-20 shadow-lg shadow-gray-200">
         <View className="flex-row items-center gap-4 mt-2">
           {/* Profile Image with Ring */}
           <View className="relative ">
             <Image
-              source={{ uri: USER_DATA.avatar }}
+              source={{ uri: user?.profileImage || defaultAvatar }}
               className="w-16 h-16 rounded-full border-3 border-white/30"
             />
             <View className="absolute bottom-0 right-0 w-5 h-5 bg-green-400 rounded-full border-2 border-white" />
@@ -78,12 +112,19 @@ export default function CustomDrawer(props: any) {
           {/* User Info */}
           <View className="flex-1">
             <Text className="text-black text-lg font-bold leading-tight">
-              {USER_DATA.name}
+              {user?.name || 'User'}
             </Text>
             <Text className="text-slate-500 text-sm mt-0.5">
-              {USER_DATA.username}
+              {user?.email || 'user@flybook.com'}
             </Text>
-            
+            {user?.coins !== undefined && (
+              <View className="flex-row items-center mt-1">
+                <Ionicons name="wallet-outline" size={14} color="#F59E0B" />
+                <Text className="text-amber-500 text-xs font-semibold ml-1">
+                  {user.coins} coins
+                </Text>
+              </View>
+            )}
           </View>
         </View>
       </View>
@@ -129,13 +170,18 @@ export default function CustomDrawer(props: any) {
       <View className="px-5 pb-8 pt-2">
         <Pressable
           onPress={handleLogout}
+          disabled={loggingOut}
           className="bg-white border border-red-200 py-3.5 rounded-xl flex-row items-center justify-center gap-2 shadow-sm shadow-red-100"
           android_ripple={{ color: '#fef2f2' }}
         >
-          {/* <Image source={logoutIcon} className="w-5 h-5 tint-red-500" />
-          <Text className="text-red-500 text-center font-semibold">
-            Logout
-          </Text> */}
+          {loggingOut ? (
+            <ButtonLoader color="#EF4444" size="small" />
+          ) : (
+            <>
+              <Ionicons name="log-out-outline" size={20} color="#EF4444" />
+              <Text className="text-red-500 font-semibold text-base">Logout</Text>
+            </>
+          )}
         </Pressable>
       </View>
     </View>
