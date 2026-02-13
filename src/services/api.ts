@@ -1,4 +1,8 @@
-import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
+import axios, {
+  AxiosInstance,
+  AxiosError,
+  InternalAxiosRequestConfig,
+} from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
@@ -15,15 +19,17 @@ import { Platform } from 'react-native';
 // 2. FOR PRODUCTION:
 // - Use: 'https://fly-book-server-lzu4.onrender.com'
 
+import { API_URL } from '@env';
+
 // Current configuration (change as needed):
 const USE_LOCAL_SERVER = true; // Set to false for production
 
-const PRODUCTION_URL = 'https://fly-book-server-lzu4.onrender.com';
+const PRODUCTION_URL = API_URL;
 
 // For local development - automatically detects platform
 const LOCAL_URL = Platform.select({
-  ios: 'http://localhost:3000',           // iOS Simulator
-  android: 'http://10.0.2.2:3000',        // Android Emulator
+  ios: 'http://localhost:3000', // iOS Simulator
+  android: 'http://10.0.2.2:3000', // Android Emulator
   default: 'http://localhost:3000',
 });
 
@@ -56,27 +62,42 @@ apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
     try {
       const token = await AsyncStorage.getItem(TOKEN_KEY);
-      
+
+      // Debug logging
+      console.log('🔑 Request Interceptor Debug:');
+      console.log('  - URL:', config.url);
+      console.log('  - Token exists:', !!token);
+      console.log(
+        '  - Token preview:',
+        token ? `${token.substring(0, 20)}...` : 'null',
+      );
+
       if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
+        console.log(
+          '  - Authorization header set:',
+          `Bearer ${token.substring(0, 20)}...`,
+        );
+      } else {
+        console.warn('  - ⚠️ No token found or headers unavailable!');
       }
-      
+
       return config;
     } catch (error) {
-      console.error('Error reading token from storage:', error);
+      console.error('❌ Error reading token from storage:', error);
       return config;
     }
   },
   (error: AxiosError) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 /**
  * Response interceptor - Handles errors globally
  */
 apiClient.interceptors.response.use(
-  (response) => {
+  response => {
     // Return successful responses as-is
     return response;
   },
@@ -138,7 +159,7 @@ apiClient.interceptors.response.use(
           data,
         });
     }
-  }
+  },
 );
 
 /**
@@ -242,7 +263,7 @@ export const get = async <T = any>(url: string, config?: any): Promise<T> => {
 export const post = async <T = any>(
   url: string,
   data?: any,
-  config?: any
+  config?: any,
 ): Promise<T> => {
   const response = await apiClient.post<T>(url, data, config);
   return response.data;
@@ -254,7 +275,7 @@ export const post = async <T = any>(
 export const put = async <T = any>(
   url: string,
   data?: any,
-  config?: any
+  config?: any,
 ): Promise<T> => {
   const response = await apiClient.put<T>(url, data, config);
   return response.data;
@@ -266,7 +287,7 @@ export const put = async <T = any>(
 export const patch = async <T = any>(
   url: string,
   data?: any,
-  config?: any
+  config?: any,
 ): Promise<T> => {
   const response = await apiClient.patch<T>(url, data, config);
   return response.data;
@@ -286,7 +307,7 @@ export const del = async <T = any>(url: string, config?: any): Promise<T> => {
 export const uploadFile = async <T = any>(
   url: string,
   formData: FormData,
-  onUploadProgress?: (progressEvent: any) => void
+  onUploadProgress?: (progressEvent: any) => void,
 ): Promise<T> => {
   const response = await apiClient.post<T>(url, formData, {
     headers: {

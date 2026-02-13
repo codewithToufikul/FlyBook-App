@@ -21,34 +21,28 @@ const Step4Phone = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
 
   const handleNext = () => {
-    // Validate phone if provided
-    if (phoneNumber.trim()) {
-      const phoneRegex = /^01\d{9}$/;
-      if (!phoneRegex.test(phoneNumber)) {
-        Alert.alert(
-          'Error',
-          'Invalid phone number! Must be 11 digits and start with 01'
-        );
-        return;
-      }
+    // Phone number is now mandatory
+    if (!phoneNumber.trim()) {
+      Alert.alert('Error', 'Phone number is required');
+      return;
     }
 
-    // Navigate to password step
-    navigation.navigate('Step5Password' as never, {
-      firstName,
-      lastName,
-      email,
-      phone: phoneNumber.trim() || null,
-    } as never);
-  };
+    // Validate Bangladesh phone number format
+    const phoneRegex = /^01\d{9}$/;
+    if (!phoneRegex.test(phoneNumber.trim())) {
+      Alert.alert(
+        'Invalid Phone Number',
+        'Please enter a valid 11-digit phone number starting with 01'
+      );
+      return;
+    }
 
-  const handleSkip = () => {
-    // Skip phone step
+    // Navigate to password step with validated phone number
     navigation.navigate('Step5Password' as never, {
       firstName,
       lastName,
       email,
-      phone: null,
+      phone: phoneNumber.trim(),
     } as never);
   };
 
@@ -73,16 +67,14 @@ const Step4Phone = () => {
             <View style={[styles.progressDot, styles.progressDotActive]} />
             <View style={styles.progressDot} />
           </View>
-          <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
-            <Text style={styles.skipButtonText}>Skip</Text>
-          </TouchableOpacity>
+          <View style={styles.placeholder} />
         </View>
 
         {/* Content */}
         <View style={styles.formContainer}>
           <Text style={styles.title}>Add your phone number</Text>
           <Text style={styles.subtitle}>
-            You can add your phone number for account recovery (Optional)
+            Enter your phone number for account security and recovery (Required)
           </Text>
 
           {/* Phone Input */}
@@ -105,24 +97,25 @@ const Step4Phone = () => {
           </View>
 
           <View style={styles.infoBox}>
-            <Ionicons name="information-circle" size={20} color="#3B82F6" />
+            <Ionicons name="shield-checkmark" size={20} color="#10B981" />
             <Text style={styles.infoText}>
-              Phone number is optional. You can skip this step.
+              Enter a valid 11-digit phone number starting with 01 (e.g., 01712345678)
             </Text>
           </View>
         </View>
 
-        {/* Footer Buttons */}
+        {/* Footer Button */}
         <View style={styles.footer}>
-          {phoneNumber.trim() ? (
-            <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-              <Text style={styles.nextButtonText}>Next</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity style={styles.skipLargeButton} onPress={handleSkip}>
-              <Text style={styles.skipLargeButtonText}>Skip for Now</Text>
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity 
+            style={[
+              styles.nextButton,
+              !phoneNumber.trim() && styles.nextButtonDisabled
+            ]} 
+            onPress={handleNext}
+            disabled={!phoneNumber.trim()}
+          >
+            <Text style={styles.nextButtonText}>Next</Text>
+          </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -166,14 +159,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#3B82F6',
     width: 24,
   },
-  skipButton: {
-    width: 60,
-    alignItems: 'flex-end',
-  },
-  skipButtonText: {
-    color: '#3B82F6',
-    fontSize: 16,
-    fontWeight: '600',
+  placeholder: {
+    width: 40,
   },
   formContainer: {
     flex: 1,
@@ -225,7 +212,7 @@ const styles = StyleSheet.create({
   infoBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#ECFDF5',
     padding: 16,
     borderRadius: 12,
     gap: 12,
@@ -233,7 +220,7 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 14,
-    color: '#1E40AF',
+    color: '#047857',
     lineHeight: 20,
   },
   footer: {
@@ -251,21 +238,12 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
+  nextButtonDisabled: {
+    backgroundColor: '#CBD5E1',
+    shadowOpacity: 0,
+  },
   nextButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  skipLargeButton: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: '#E2E8F0',
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  skipLargeButtonText: {
-    color: '#64748B',
     fontSize: 16,
     fontWeight: '600',
   },

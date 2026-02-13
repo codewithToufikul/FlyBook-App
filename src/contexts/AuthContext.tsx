@@ -1,12 +1,13 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { isAuthenticated, getUser, clearAuth } from '../services/api';
-import { User } from '../services/authServices';
+import { User, getProfile } from '../services/authServices';
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   setUser: (user: User | null) => void;
+  loginUser: (userData: User) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -28,9 +29,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
+      setIsLoading(true);
       const hasToken = await isAuthenticated();
       if (hasToken) {
-        const userData = await getUser();
+        const userData = await getProfile();
         setUser(userData);
         setAuthenticated(true);
       } else {
@@ -39,32 +41,58 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } catch (error) {
       console.error('Auth check failed:', error);
-      setUser(null);
-      setAuthenticated(false);
+      // Try fallback to cached data if API fails
+      const cachedUser = await getUser();
+      if (cachedUser) {
+        setUser(cachedUser);
+        setAuthenticated(true);
+      } else {
+        setUser(null);
+        setAuthenticated(false);
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const refreshUser = async () => {
+  const loginUser = async (userData: User) => {
+    setIsLoading(true);
     try {
-      const userData = await getUser();
       setUser(userData);
       setAuthenticated(true);
+      // Fetch fresh profile data in background to ensure all fields are mapped
+      const freshData = await getProfile();
+      setUser(freshData);
     } catch (error) {
-      console.error('Refresh user failed:', error);
-      setUser(null);
-      setAuthenticated(false);
+      console.error('Initial profile fetch failed, using login data');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const logout = async () => {
+    setIsLoading(true);
     try {
       await clearAuth();
       setUser(null);
       setAuthenticated(false);
     } catch (error) {
       console.error('Logout failed:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const refreshUserData = async () => {
+    try {
+      const hasToken = await isAuthenticated();
+      if (hasToken) {
+        const userData = await getProfile();
+        setUser(userData);
+        setAuthenticated(true);
+      }
+    } catch (error) {
+      console.error('Silent refresh failed:', error);
     }
   };
 
@@ -76,8 +104,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(newUser);
       setAuthenticated(!!newUser);
     },
+    loginUser,
     logout,
-    refreshUser,
+    refreshUser: refreshUserData,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

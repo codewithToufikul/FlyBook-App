@@ -25,7 +25,7 @@ interface LocationType {
 const Step5Password = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { setUser } = useAuth();
+  const { loginUser } = useAuth();
   const { firstName, lastName, email, phone } = route.params as any;
 
   const [password, setPassword] = useState('');
@@ -85,25 +85,24 @@ const Step5Password = () => {
 
     setLoading(true);
     try {
-      const userData = {
+      const { register } = await import('../../../services/authServices');
+
+      const response = await register({
         name: `${firstName} ${lastName}`,
         email: email,
         number: phone || '',
         password: password,
         userLocation: userLocation,
         referrerUsername: '',
-      };
+      });
 
-      const response = await post('/users/register', userData);
+      if (response.success && response.token) {
+        // Log successful registration
+        console.log('✅ Registration successful and user logged in');
 
-      if (response.success) {
-        // Auto login after registration
-        if (response.token) {
-          await saveToken(response.token);
-          if (response.user) {
-            await saveUser(response.user);
-            setUser(response.user);
-          }
+        // Use loginUser from context to ensure immediate state sync
+        if (response.user) {
+          await loginUser(response.user);
         }
 
         Alert.alert(
@@ -253,9 +252,9 @@ const Step5Password = () => {
                 style={[
                   styles.requirementText,
                   password &&
-                    confirmPassword &&
-                    password === confirmPassword &&
-                    styles.requirementTextMet,
+                  confirmPassword &&
+                  password === confirmPassword &&
+                  styles.requirementTextMet,
                 ]}
               >
                 Passwords match
@@ -270,7 +269,7 @@ const Step5Password = () => {
             style={[
               styles.createButton,
               (password.length < 6 || password !== confirmPassword) &&
-                styles.createButtonDisabled,
+              styles.createButtonDisabled,
             ]}
             onPress={handleCreateAccount}
             disabled={

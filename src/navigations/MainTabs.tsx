@@ -3,6 +3,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import TabBarIcon from '../components/TabBarIcon';
 import HomeStack from './stacks/HomeStacks';
 import SearchStack from './stacks/SearchStacks';
+import OpinionStack from './stacks/OpimionStack';
 
 const Tab = createBottomTabNavigator();
 
@@ -40,7 +41,7 @@ export default function MainTabs() {
             <Tab.Screen name="NearBooks" component={HomeStack} />
             <Tab.Screen name="Notifications" component={SearchStack} />
             <Tab.Screen name="Search" component={SearchStack} />
-            <Tab.Screen name="Opinion" component={HomeStack} />
+            <Tab.Screen name="Opinion" component={OpinionStack} />
             <Tab.Screen name="Home" component={HomeStack} />
         </Tab.Navigator>
     );

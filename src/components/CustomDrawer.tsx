@@ -25,16 +25,36 @@ const MENU_SECTIONS = [
     title: 'Main',
     items: [
       { label: 'Home', icon: HomeThinIcon, route: 'MainTabs' },
-      { label: 'Friends', icon: FriendsIcon, route: 'Friends' },
+      {
+        label: 'Friends',
+        icon: FriendsIcon,
+        route: 'MainTabs',
+        params: { screen: 'Home', params: { screen: 'Peoples' } }
+      },
       { label: 'Library', icon: LibraryIcon, route: 'Library' },
-      { label: 'Channels', icon: ChannelThinIcon, route: 'Channels' },
+      {
+        label: 'Channels',
+        icon: ChannelThinIcon,
+        route: 'MainTabs',
+        params: { screen: 'Home', params: { screen: 'Channels' } }
+      },
     ]
   },
   {
     title: 'Services',
     items: [
-      { label: 'Marketplace', icon: MarketThinIcon, route: 'Marketplace' },
-      { label: 'E-Learning', icon: LearningThinIcon, route: 'ELearning' },
+      {
+        label: 'Marketplace',
+        icon: MarketThinIcon,
+        route: 'MainTabs',
+        params: { screen: 'Home', params: { screen: 'Marketplace' } }
+      },
+      {
+        label: 'E-Learning',
+        icon: LearningThinIcon,
+        route: 'MainTabs',
+        params: { screen: 'Home', params: { screen: 'ELearning' } }
+      },
       { label: 'Audio Books', icon: AudioBookIcon, route: 'AudioBooks' },
       { label: 'Wallet Shop', icon: WalletShopIcon, route: 'WalletShop' },
       { label: 'E-Jobs', icon: EJobsIcon, route: 'EJobs' },
@@ -43,7 +63,7 @@ const MENU_SECTIONS = [
   {
     title: 'Community',
     items: [
-    {label: 'Communities', icon: CommunityIcon, route: 'Communities' },
+      { label: 'Communities', icon: CommunityIcon, route: 'Communities' },
       { label: 'Organizations', icon: OrganizationIcon, route: 'Organizations' },
       { label: 'Social Response', icon: SocialResIcon, route: 'SocialResponse' },
     ]
@@ -59,9 +79,23 @@ const MENU_SECTIONS = [
 
 export default function CustomDrawer(props: any) {
   const { navigation, state } = props;
-  const activeRouteName = state.routeNames[state.index];
   const { user, logout } = useAuth();
   const [loggingOut, setLoggingOut] = useState(false);
+
+  // Helper to get the deeply nested active route name
+  const getActiveRouteName = (routeState: any): string => {
+    if (!routeState || !routeState.routes) return '';
+    const route = routeState.routes[routeState.index];
+
+    if (route.state) {
+      // Dive into nested state
+      return getActiveRouteName(route.state);
+    }
+
+    return route.name;
+  };
+
+  const activeRouteName = getActiveRouteName(state);
 
   const handleLogout = () => {
     Alert.alert(
@@ -92,6 +126,14 @@ export default function CustomDrawer(props: any) {
     );
   };
 
+  const handleNavigation = (item: any) => {
+    if (item.params) {
+      navigation.navigate(item.route, item.params);
+    } else {
+      navigation.navigate(item.route);
+    }
+  };
+
   // Default avatar if user has none
   const defaultAvatar = 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png';
 
@@ -108,7 +150,7 @@ export default function CustomDrawer(props: any) {
             />
             <View className="absolute bottom-0 right-0 w-5 h-5 bg-green-400 rounded-full border-2 border-white" />
           </View>
-          
+
           {/* User Info */}
           <View className="flex-1">
             <Text className="text-black text-lg font-bold leading-tight">
@@ -142,19 +184,26 @@ export default function CustomDrawer(props: any) {
             <Text className="text-gray-400 text-xs font-bold uppercase tracking-wider px-5 mb-2">
               {section.title}
             </Text>
-            
+
             {/* Section Items */}
             <View className="bg-white mx-3 rounded-2xl overflow-hidden shadow-sm shadow-gray-200">
-              {section.items.map((item, itemIndex) => (
-                <DrawerItem
-                  key={item.route}
-                  label={item.label}
-                  Icon={item.icon}
-                  active={activeRouteName === item.route}
-                  onPress={() => navigation.navigate(item.route)}
-                  isLast={itemIndex === section.items.length - 1}
-                />
-              ))}
+              {section.items.map((item, itemIndex) => {
+                // Check if this item is active
+                const isActive = item.params
+                  ? activeRouteName === item.params.params.screen
+                  : activeRouteName === item.route;
+
+                return (
+                  <DrawerItem
+                    key={itemIndex}
+                    label={item.label}
+                    Icon={item.icon}
+                    active={isActive}
+                    onPress={() => handleNavigation(item)}
+                    isLast={itemIndex === section.items.length - 1}
+                  />
+                );
+              })}
             </View>
           </View>
         ))}

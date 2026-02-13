@@ -7,15 +7,20 @@ import { NavigationContainer } from '@react-navigation/native';
 import { AuthProvider } from './src/contexts/AuthContext';
 import RootNavigator from './src/navigations/RootNavigator';
 import './global.css';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const queryClient = new QueryClient();
 
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <AuthProvider>
-          <NavigationContainer>
-            <RootNavigator />
-          </NavigationContainer>
+          <QueryClientProvider client={queryClient}>
+            <NavigationContainer>
+              <RootNavigator />
+            </NavigationContainer>
+          </QueryClientProvider>
         </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

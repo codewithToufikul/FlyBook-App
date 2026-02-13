@@ -20,8 +20,8 @@ import { post, saveToken, saveUser } from '../../services/api';
 
 const Login = () => {
   const navigation = useNavigation();
-  const { setUser } = useAuth();
-  
+  const { loginUser } = useAuth();
+
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -41,19 +41,19 @@ const Login = () => {
 
     setLoading(true);
     try {
-      const response = await post('/users/login', {
+      const { login } = await import('../../services/authServices');
+      const response = await login({
         number: phoneNumber,
         password: password,
       });
 
-      if (response.token) {
-        // Save token
-        await saveToken(response.token);
-        
-        // Save user data if available
+      if (response.success && response.token) {
+        // Log successful login
+        console.log('✅ Login successful via authServices');
+
+        // Use loginUser from context to ensure immediate state sync
         if (response.user) {
-          await saveUser(response.user);
-          setUser(response.user);
+          await loginUser(response.user);
         }
 
         Alert.alert('Success', 'Login successful!');

@@ -18,6 +18,7 @@ import ChannelIcon from '../icons/ChannelIcon';
 import MessageIcon from '../icons/MessageIcon';
 import CommunityIcon from '../icons/CommunityIcon';
 import logo from '../assets/logo.png';
+import { useAuth } from '../contexts/AuthContext';
 
 type TopNavProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -25,12 +26,7 @@ type TopNavProps = {
 
 const TopNav = ({ navigation }: TopNavProps) => {
   const [messageCount] = useState(5);
-
-  // User data - API থেকে আসবে
-  const user = {
-    profileImage: 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png',
-    name: 'John Doe'
-  };
+  const { user } = useAuth();
 
 
   return (
@@ -82,7 +78,7 @@ const TopNav = ({ navigation }: TopNavProps) => {
             {/* Profile or Login */}
             {user ? (
               <TouchableOpacity
-                onPress={() => navigation.navigate('MyProfile')}
+                onPress={() => navigation.navigate('Profile')}
                 activeOpacity={0.7}
                 className="w-11 h-11 rounded-full border-2 border-green-200 overflow-hidden"
               >
@@ -139,7 +135,7 @@ const TopNav = ({ navigation }: TopNavProps) => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={() => navigation.navigate('PdfBook')}
+              onPress={() => navigation.navigate('PdfStack')}
               className="items-center"
               activeOpacity={0.7}
             >
