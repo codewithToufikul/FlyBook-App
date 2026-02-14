@@ -55,16 +55,36 @@ const MENU_SECTIONS = [
         route: 'MainTabs',
         params: { screen: 'Home', params: { screen: 'ELearning' } }
       },
-      { label: 'Audio Books', icon: AudioBookIcon, route: 'AudioBooks' },
+      {
+        label: 'Audio Books',
+        icon: AudioBookIcon,
+        route: 'MainTabs',
+        params: { screen: 'Home', params: { screen: 'AudioBooks' } }
+      },
       { label: 'Wallet Shop', icon: WalletShopIcon, route: 'WalletShop' },
-      { label: 'E-Jobs', icon: EJobsIcon, route: 'EJobs' },
+      {
+        label: 'E-Jobs',
+        icon: EJobsIcon,
+        route: 'MainTabs',
+        params: { screen: 'Home', params: { screen: 'EJobs' } }
+      },
     ]
   },
   {
     title: 'Community',
     items: [
-      { label: 'Communities', icon: CommunityIcon, route: 'Communities' },
-      { label: 'Organizations', icon: OrganizationIcon, route: 'Organizations' },
+      {
+        label: 'Communities',
+        icon: CommunityIcon,
+        route: 'MainTabs',
+        params: { screen: 'Home', params: { screen: 'Communities' } }
+      },
+      {
+        label: 'Organizations',
+        icon: OrganizationIcon,
+        route: 'MainTabs',
+        params: { screen: 'Home', params: { screen: 'Organizations' } }
+      },
       { label: 'Social Response', icon: SocialResIcon, route: 'SocialResponse' },
     ]
   },

@@ -18,6 +18,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { get } from '../../services/api';
 import TobNav from '../../components/TobNav';
 import LinearGradient from 'react-native-linear-gradient';
+import CustomHeader from '../../components/common/CustomHeader';
 
 const { width } = Dimensions.get('window');
 
@@ -145,7 +146,12 @@ const Marketplace = ({ navigation }: any) => {
 
     return (
         <View style={styles.container}>
-            <TobNav navigation={navigation} />
+            {/* <TobNav navigation={navigation} />
+             */}
+
+            <CustomHeader
+                title="Marketplace"
+            />
             <StatusBar barStyle="dark-content" />
 
             <ScrollView

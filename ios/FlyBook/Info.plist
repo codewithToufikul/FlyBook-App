@@ -71,5 +71,7 @@
 	<string>FlyBook needs access to your photo library to select profile and cover photos</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>FlyBook needs access to save photos to your library</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>FlyBook needs your microphone for listening exam recordings.</string>
 </dict>
 </plist>

@@ -8,7 +8,10 @@ import ChannelStack from './ChannelStacks';
 import LearningStack from './LearningStack';
 import MarketplaceStack from './MarketplaceStack';
 import Peoples from '../../screens/CommunityScreens/Peoples';
-
+import AudioBookStack from './AudioBookStack';
+import JobStack from './JobStack';
+import OrganizationStack from './OrganizationStack';
+import CommunityStack from './CommunityStack';
 
 const Stack = createNativeStackNavigator();
 
@@ -23,6 +26,10 @@ export default function HomeStack() {
             <Stack.Screen name="ELearning" component={LearningStack} />
             <Stack.Screen name="Marketplace" component={MarketplaceStack} />
             <Stack.Screen name="Peoples" component={Peoples} />
+            <Stack.Screen name="AudioBooks" component={AudioBookStack} />
+            <Stack.Screen name="EJobs" component={JobStack} />
+            <Stack.Screen name="Organizations" component={OrganizationStack} />
+            <Stack.Screen name="Communities" component={CommunityStack} />
         </Stack.Navigator>
     );
 }

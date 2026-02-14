@@ -16,6 +16,7 @@ import { useQuery } from '@tanstack/react-query';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { get } from '../../services/api';
 import TobNav from '../../components/TobNav';
+import CustomHeader from '../../components/common/CustomHeader';
 
 const { width } = Dimensions.get('window');
 const COLUMN_COUNT = 2;
@@ -132,8 +133,11 @@ const PdfHome = ({ navigation }: any) => {
     return (
         <View style={styles.container}>
             <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-            <TobNav navigation={navigation} />
+            {/* <TobNav navigation={navigation} /> */}
 
+            <CustomHeader
+                title="PDF Books"
+            />
             <View style={styles.searchSection}>
                 <View style={styles.searchBar}>
                     <Ionicons name="search-outline" size={20} color="#6B7280" />

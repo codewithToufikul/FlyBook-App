@@ -16,6 +16,7 @@ import { useQuery } from '@tanstack/react-query';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { get } from '../../services/api';
 import TobNav from '../../components/TobNav';
+import CustomHeader from '../../components/common/CustomHeader';
 
 const { width } = Dimensions.get('window');
 
@@ -176,8 +177,11 @@ const ELearning = ({ navigation }: any) => {
     return (
         <View style={styles.container}>
             <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-            <TobNav navigation={navigation} />
+            {/* <TobNav navigation={navigation} /> */}
 
+            <CustomHeader
+                title="E-Learning"
+            />
             <ScrollView stickyHeaderIndices={[2]} showsVerticalScrollIndicator={false}>
                 <View style={styles.heroSection}>
                     <Text style={styles.heroTitle}>

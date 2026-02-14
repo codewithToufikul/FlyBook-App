@@ -19,12 +19,10 @@ import { Platform } from 'react-native';
 // 2. FOR PRODUCTION:
 // - Use: 'https://fly-book-server-lzu4.onrender.com'
 
-import { API_URL } from '@env';
-
 // Current configuration (change as needed):
 const USE_LOCAL_SERVER = true; // Set to false for production
 
-const PRODUCTION_URL = API_URL;
+const PRODUCTION_URL = 'https://fly-book-server-lzu4.onrender.com';
 
 // For local development - automatically detects platform
 const LOCAL_URL = Platform.select({

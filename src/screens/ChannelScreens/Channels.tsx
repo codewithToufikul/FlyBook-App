@@ -19,6 +19,7 @@ import TobNav from '../../components/TobNav';
 import { useAuth } from '../../contexts/AuthContext';
 import Toast from 'react-native-toast-message';
 import { handleImageUpload } from '../../utils/imageUpload';
+import CustomHeader from '../../components/common/CustomHeader';
 
 const { width } = Dimensions.get('window');
 
@@ -175,8 +176,11 @@ const Channels = ({ navigation }: any) => {
     return (
         <View style={styles.container}>
             <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-            <TobNav navigation={navigation} />
+            {/* <TobNav navigation={navigation} /> */}
 
+            <CustomHeader
+                title="Channels"
+            />
             <View style={styles.header}>
                 <View>
                     <Text style={styles.headerTitle}>Channels</Text>
