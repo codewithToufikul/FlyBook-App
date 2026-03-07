@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTheme } from '../../contexts/ThemeContext';
 import {
     View,
     Text,
@@ -20,6 +21,7 @@ import { createCommunity, updateCommunity } from '../../services/communityServic
 
 const CreateCommunityScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
+    const { isDark } = useTheme();
     const editData = route.params?.community;
     const isEdit = !!editData;
 
@@ -90,24 +92,24 @@ const CreateCommunityScreen = ({ navigation, route }: any) => {
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={[styles.container, { paddingTop: insets.top }]}
+            style={[styles.container, isDark && { backgroundColor: '#0f172a' }, { paddingTop: insets.top }]}
         >
-            <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={isDark ? "#0f172a" : "#FFFFFF"} />
 
-            <View style={styles.header}>
+            <View style={[styles.header, isDark && { backgroundColor: '#0f172a', borderBottomColor: '#1e293b' }]}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#1F2937" />
+                    <Ionicons name="arrow-back" size={24} color={isDark ? "#f8fafc" : "#1F2937"} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{isEdit ? 'Edit Community' : 'Create Community'}</Text>
+                <Text style={[styles.headerTitle, isDark && { color: '#f8fafc' }]}>{isEdit ? 'Edit Community' : 'Create Community'}</Text>
                 <View style={{ width: 40 }} />
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 <View style={styles.form}>
                     {/* Cover Image */}
-                    <Text style={styles.label}>Cover Image</Text>
+                    <Text style={[styles.label, isDark && { color: '#f8fafc' }]}>Cover Image</Text>
                     <TouchableOpacity
-                        style={styles.coverPicker}
+                        style={[styles.coverPicker, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}
                         onPress={() => handlePickImage('cover')}
                         disabled={uploadingCover}
                     >
@@ -116,7 +118,7 @@ const CreateCommunityScreen = ({ navigation, route }: any) => {
                         ) : (
                             <View style={styles.placeholder}>
                                 {uploadingCover ? (
-                                    <ActivityIndicator color="#0D9488" />
+                                    <ActivityIndicator color={isDark ? "#14b8a6" : "#0D9488"} />
                                 ) : (
                                     <>
                                         <Ionicons name="image-outline" size={40} color="#9CA3AF" />
@@ -130,7 +132,7 @@ const CreateCommunityScreen = ({ navigation, route }: any) => {
                     {/* Logo */}
                     <View style={styles.logoRow}>
                         <TouchableOpacity
-                            style={styles.logoPicker}
+                            style={[styles.logoPicker, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}
                             onPress={() => handlePickImage('logo')}
                             disabled={uploadingLogo}
                         >
@@ -139,7 +141,7 @@ const CreateCommunityScreen = ({ navigation, route }: any) => {
                             ) : (
                                 <View style={styles.placeholder}>
                                     {uploadingLogo ? (
-                                        <ActivityIndicator color="#0D9488" />
+                                        <ActivityIndicator color={isDark ? "#14b8a6" : "#0D9488"} />
                                     ) : (
                                         <Ionicons name="camera" size={30} color="#9CA3AF" />
                                     )}
@@ -147,42 +149,46 @@ const CreateCommunityScreen = ({ navigation, route }: any) => {
                             )}
                         </TouchableOpacity>
                         <View style={styles.logoInfo}>
-                            <Text style={styles.label}>Community Logo *</Text>
-                            <Text style={styles.hintText}>Upload a square image for better results.</Text>
+                            <Text style={[styles.label, isDark && { color: '#f8fafc' }]}>Community Logo *</Text>
+                            <Text style={[styles.hintText, isDark && { color: '#64748b' }]}>Upload a square image for better results.</Text>
                         </View>
                     </View>
 
-                    <Text style={styles.label}>Community Name *</Text>
+                    <Text style={[styles.label, isDark && { color: '#f8fafc' }]}>Community Name *</Text>
                     <TextInput
-                        style={styles.input}
+                        style={[styles.input, isDark && { backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc' }]}
                         placeholder="Enter a catchy name"
+                        placeholderTextColor={isDark ? "#64748b" : "#9CA3AF"}
                         value={formData.name}
                         onChangeText={text => setFormData({ ...formData, name: text })}
                     />
 
-                    <Text style={styles.label}>Description *</Text>
+                    <Text style={[styles.label, isDark && { color: '#f8fafc' }]}>Description *</Text>
                     <TextInput
-                        style={[styles.input, styles.textArea]}
+                        style={[styles.input, styles.textArea, isDark && { backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc' }]}
                         placeholder="What's this community about?"
+                        placeholderTextColor={isDark ? "#64748b" : "#9CA3AF"}
                         multiline
                         numberOfLines={4}
                         value={formData.description}
                         onChangeText={text => setFormData({ ...formData, description: text })}
                     />
 
-                    <Text style={styles.label}>Category *</Text>
+                    <Text style={[styles.label, isDark && { color: '#f8fafc' }]}>Category *</Text>
                     <View style={styles.categoryContainer}>
                         {categories.map(cat => (
                             <TouchableOpacity
                                 key={cat}
                                 style={[
                                     styles.categoryChip,
-                                    formData.category === cat && styles.activeChip
+                                    isDark && { backgroundColor: '#1e293b', borderColor: '#334155' },
+                                    formData.category === cat && [styles.activeChip, isDark && { backgroundColor: '#14b8a6', borderColor: '#14b8a6' }]
                                 ]}
                                 onPress={() => setFormData({ ...formData, category: cat })}
                             >
                                 <Text style={[
                                     styles.chipText,
+                                    isDark && { color: '#94a3b8' },
                                     formData.category === cat && styles.activeChipText
                                 ]}>{cat}</Text>
                             </TouchableOpacity>
@@ -190,7 +196,7 @@ const CreateCommunityScreen = ({ navigation, route }: any) => {
                     </View>
 
                     <TouchableOpacity
-                        style={[styles.submitBtn, loading && styles.disabledBtn]}
+                        style={[styles.submitBtn, loading && styles.disabledBtn, isDark && { backgroundColor: '#14b8a6', shadowColor: '#14b8a6' }]}
                         onPress={handleSubmit}
                         disabled={loading}
                     >

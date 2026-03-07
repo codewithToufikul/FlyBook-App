@@ -1,0 +1,63 @@
+{
+  "project_info": {
+    "project_number": "241186970198",
+    "firebase_url": "https://flybook-f23c5-default-rtdb.firebaseio.com",
+    "project_id": "flybook-f23c5",
+    "storage_bucket": "flybook-f23c5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:241186970198:android:0a2c74e8888fce6f8b39f7",
+        "android_client_info": {
+          "package_name": "com.flybook"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "241186970198-drftj1feh9g2j00q9l3181g7nptjrea2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.flybook",
+            "certificate_hash": "342c294534661a8daa1e426a8bddb16b921ef752"
+          }
+        },
+        {
+          "client_id": "241186970198-g162uburdqb8dlq8u3g5v3f9k1o29ml4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.flybook",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "241186970198-b34lcn110c65ahhu754gi7p2tek57vji.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDcZJXvw3g1rN1eXF6QkepgvXniAYZvVn8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "241186970198-b34lcn110c65ahhu754gi7p2tek57vji.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "241186970198-53oa3mu0si4knor3ae7f6v8mdf4k7gtq.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "org.FlyBook"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

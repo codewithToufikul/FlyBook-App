@@ -12,6 +12,9 @@ linkage = ENV['USE_FRAMEWORKS']
 if linkage != nil
   Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
   use_frameworks! :linkage => linkage.to_sym
+else
+  # For Firebase and RN 0.83 New Arch compatibility
+  use_frameworks! :linkage => :static
 end
 
 target 'FlyBook' do

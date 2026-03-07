@@ -12,11 +12,13 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
 import CustomHeader from '../../components/common/CustomHeader';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width - 40;
 
 const JobHome = ({ navigation }: any) => {
+    const { isDark } = useTheme();
     const Card = ({
         title,
         badge,
@@ -37,13 +39,13 @@ const JobHome = ({ navigation }: any) => {
 
 
                 {/* Card Body */}
-                <View style={styles.cardBody}>
-                    <Text style={styles.cardTitle}>{title}</Text>
+                <View style={[styles.cardBody, isDark && { backgroundColor: '#1e293b' }]}>
+                    <Text style={[styles.cardTitle, isDark && { color: '#f8fafc' }]}>{title}</Text>
 
                     {/* Features Grid */}
                     <View style={styles.featuresContainer}>
                         {features.map((item: any, index: number) => (
-                            <View key={index} style={styles.featureItem}>
+                            <View key={index} style={[styles.featureItem, isDark && { backgroundColor: '#0f172a', borderColor: '#334155' }]}>
                                 <View
                                     style={[
                                         styles.featureIconCircle,
@@ -52,7 +54,7 @@ const JobHome = ({ navigation }: any) => {
                                 >
                                     <Ionicons name={item.icon} size={16} color={badgeColor} />
                                 </View>
-                                <Text style={styles.featureText}>{item.text}</Text>
+                                <Text style={[styles.featureText, isDark && { color: '#94a3b8' }]}>{item.text}</Text>
                             </View>
                         ))}
                     </View>
@@ -70,8 +72,11 @@ const JobHome = ({ navigation }: any) => {
     );
 
     return (
-        <View style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
+        <View style={[styles.container, isDark && { backgroundColor: '#0f172a' }]}>
+            <StatusBar
+                barStyle={isDark ? "light-content" : "dark-content"}
+                backgroundColor={isDark ? "#0f172a" : "#F8FAFC"}
+            />
             <CustomHeader title="Jobs & Freelance" />
 
             <ScrollView
@@ -82,7 +87,7 @@ const JobHome = ({ navigation }: any) => {
                 <View style={styles.heroSection}>
                     <View style={styles.heroIconContainer}>
                         <LinearGradient
-                            colors={['#3B82F6', '#8B5CF6']}
+                            colors={isDark ? ['#14b8a6', '#0D9488'] : ['#3B82F6', '#8B5CF6']}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
                             style={styles.heroIconGradient}
@@ -90,17 +95,17 @@ const JobHome = ({ navigation }: any) => {
                             <Ionicons name="briefcase" size={32} color="#FFFFFF" />
                         </LinearGradient>
                     </View>
-                    <Text style={styles.heroTitle}>Shape Your Career Path</Text>
-                    <Text style={styles.heroSubtitle}>
+                    <Text style={[styles.heroTitle, isDark && { color: '#f8fafc' }]}>Shape Your Career Path</Text>
+                    <Text style={[styles.heroSubtitle, isDark && { color: '#94a3b8' }]}>
                         Choose stability with employment or freedom with freelancing.
                     </Text>
-                    <View style={styles.heroDivider} />
+                    <View style={[styles.heroDivider, isDark && { backgroundColor: '#14b8a6' }]} />
                 </View>
 
                 {/* Section Title */}
                 <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Choose Your Path</Text>
-                    <Text style={styles.sectionSubtitle}>
+                    <Text style={[styles.sectionTitle, isDark && { color: '#f8fafc' }]}>Choose Your Path</Text>
+                    <Text style={[styles.sectionSubtitle, isDark && { color: '#64748b' }]}>
                         Select the opportunity that fits your lifestyle
                     </Text>
                 </View>
@@ -109,8 +114,8 @@ const JobHome = ({ navigation }: any) => {
                 <Card
                     title="Job Board"
                     badge="🎯 Traditional Career"
-                    badgeColor="#2563EB"
-                    gradientColors={['#3B82F6', '#2563EB']}
+                    badgeColor={isDark ? "#14b8a6" : "#2563EB"}
+                    gradientColors={isDark ? ['#14b8a6', '#10B981'] : ['#3B82F6', '#2563EB']}
                     icon="briefcase"
                     onPress={() => navigation.navigate('JobBoard')}
                     features={[
@@ -125,8 +130,8 @@ const JobHome = ({ navigation }: any) => {
                 <Card
                     title="Freelance Marketplace"
                     badge="🚀 Modern Work Style"
-                    badgeColor="#059669"
-                    gradientColors={['#10B981', '#059669']}
+                    badgeColor={isDark ? "#14b8a6" : "#059669"}
+                    gradientColors={isDark ? ['#14b8a6', '#059669'] : ['#10B981', '#059669']}
                     icon="rocket"
                     onPress={() => navigation.navigate('FreelanceMarketplace')}
                     features={[

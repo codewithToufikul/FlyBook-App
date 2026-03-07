@@ -12,11 +12,13 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../contexts/ThemeContext';
 import { getOrgActivities, OrgActivity } from '../../services/orgService';
 
 const OrgActivities = ({ route, navigation }: any) => {
     const { orgId } = route.params;
     const insets = useSafeAreaInsets();
+    const { isDark } = useTheme();
     const [activities, setActivities] = useState<OrgActivity[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -45,7 +47,7 @@ const OrgActivities = ({ route, navigation }: any) => {
 
     const renderActivityItem = ({ item }: { item: any }) => (
         <TouchableOpacity
-            style={styles.activityCard}
+            style={[styles.activityCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}
             onPress={() => navigation.navigate('ActivityDetails', { activityId: item._id })}
         >
             <Image
@@ -53,42 +55,42 @@ const OrgActivities = ({ route, navigation }: any) => {
                 style={styles.activityImage}
             />
             <View style={styles.activityInfo}>
-                <Text style={styles.activityTitle}>{item.title}</Text>
-                <Text style={styles.activityDate}>
+                <Text style={[styles.activityTitle, isDark && { color: '#f8fafc' }]}>{item.title}</Text>
+                <Text style={[styles.activityDate, isDark && { color: '#14b8a6' }]}>
                     {item.date || new Date(item.createdAt).toLocaleDateString()}
                     {item.place ? ` • ${item.place}` : ''}
                 </Text>
-                <Text style={styles.activityDetails} numberOfLines={3}>
+                <Text style={[styles.activityDetails, isDark && { color: '#94a3b8' }]} numberOfLines={3}>
                     {item.details || item.content}
                 </Text>
-                <View style={styles.cardFooter}>
-                    <Text style={styles.readMore}>View Details</Text>
-                    <Ionicons name="arrow-forward" size={16} color="#6366F1" />
+                <View style={[styles.cardFooter, isDark && { borderTopColor: '#334155' }]}>
+                    <Text style={[styles.readMore, isDark && { color: '#14b8a6' }]}>View Details</Text>
+                    <Ionicons name="arrow-forward" size={16} color={isDark ? "#14b8a6" : "#6366F1"} />
                 </View>
             </View>
         </TouchableOpacity>
     );
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-            <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+        <View style={[styles.container, isDark && { backgroundColor: '#0f172a' }, { paddingTop: insets.top }]}>
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={isDark ? "#0f172a" : "#FFFFFF"} />
 
-            <View style={styles.header}>
+            <View style={[styles.header, isDark && { backgroundColor: '#0f172a', borderBottomColor: '#1e293b' }]}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#1F2937" />
+                    <Ionicons name="arrow-back" size={24} color={isDark ? "#f8fafc" : "#1F2937"} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Organization Activities</Text>
+                <Text style={[styles.headerTitle, isDark && { color: '#f8fafc' }]}>Organization Activities</Text>
                 <TouchableOpacity
                     onPress={() => navigation.navigate('AddActivity', { orgId })}
-                    style={styles.addButton}
+                    style={[styles.addButton, isDark && { backgroundColor: '#14b8a6' }]}
                 >
                     <Ionicons name="add" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
             </View>
 
             {loading && !refreshing ? (
-                <View style={styles.centerLoader}>
-                    <ActivityIndicator size="large" color="#6366F1" />
+                <View style={[styles.centerLoader, isDark && { backgroundColor: '#0f172a' }]}>
+                    <ActivityIndicator size="large" color={isDark ? "#14b8a6" : "#6366F1"} />
                 </View>
             ) : (
                 <FlatList
@@ -98,17 +100,22 @@ const OrgActivities = ({ route, navigation }: any) => {
                     contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
                     refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            colors={[isDark ? '#14b8a6' : '#6366F1']}
+                            tintColor={isDark ? '#14b8a6' : '#6366F1'}
+                        />
                     }
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
-                            <Ionicons name="newspaper-outline" size={80} color="#D1D5DB" />
-                            <Text style={styles.emptyTitle}>No Activities Yet</Text>
-                            <Text style={styles.emptySubtitle}>
+                            <Ionicons name="newspaper-outline" size={80} color={isDark ? "#1e293b" : "#D1D5DB"} />
+                            <Text style={[styles.emptyTitle, isDark && { color: '#f8fafc' }]}>No Activities Yet</Text>
+                            <Text style={[styles.emptySubtitle, isDark && { color: '#64748b' }]}>
                                 This organization hasn't posted any activities or events yet.
                             </Text>
                             <TouchableOpacity
-                                style={styles.createBtn}
+                                style={[styles.createBtn, isDark && { backgroundColor: '#14b8a6' }]}
                                 onPress={() => navigation.navigate('AddActivity', { orgId })}
                             >
                                 <Text style={styles.createBtnText}>Post First Activity</Text>

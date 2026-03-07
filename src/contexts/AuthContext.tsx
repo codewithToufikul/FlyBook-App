@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
-import { isAuthenticated, getUser, clearAuth } from '../services/api';
+import { isAuthenticated, getUser, clearAuth, getToken } from '../services/api';
 import { User, getProfile } from '../services/authServices';
 
 interface AuthContextType {
@@ -10,6 +10,7 @@ interface AuthContextType {
   loginUser: (userData: User) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  token: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,6 +23,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuthStatus();
@@ -32,10 +34,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       const hasToken = await isAuthenticated();
       if (hasToken) {
+        const tokenData = await getToken();
+        setToken(tokenData);
         const userData = await getProfile();
         setUser(userData);
         setAuthenticated(true);
       } else {
+        setToken(null);
         setUser(null);
         setAuthenticated(false);
       }
@@ -60,7 +65,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setUser(userData);
       setAuthenticated(true);
-      // Fetch fresh profile data in background to ensure all fields are mapped
+      const tokenData = await getToken();
+      setToken(tokenData);
       const freshData = await getProfile();
       setUser(freshData);
     } catch (error) {
@@ -74,6 +80,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsLoading(true);
     try {
       await clearAuth();
+      setToken(null);
       setUser(null);
       setAuthenticated(false);
     } catch (error) {
@@ -87,6 +94,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const hasToken = await isAuthenticated();
       if (hasToken) {
+        const tokenData = await getToken();
+        setToken(tokenData);
         const userData = await getProfile();
         setUser(userData);
         setAuthenticated(true);
@@ -107,6 +116,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loginUser,
     logout,
     refreshUser: refreshUserData,
+    token,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

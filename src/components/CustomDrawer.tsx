@@ -4,6 +4,7 @@ import { DrawerContentScrollView } from '@react-navigation/drawer';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import { useAuth } from '../hooks/useAuth';
+import { useTheme } from '../contexts/ThemeContext';
 import { ButtonLoader } from './common';
 import ArrowRightIcon from '../icons/ArrowRightIcon';
 import HomeThinIcon from '../icons/HomeThinIcon';
@@ -20,6 +21,10 @@ import CommunityIcon from '../icons/CommunityIcon';
 import SocialResIcon from '../icons/SocialResIcon';
 import SettingIcon from '../icons/SettingIcon';
 import HelpIcon from '../icons/HelpIcon';
+import WalletIcon from '../icons/WalletIcon';
+function WalletIconWrapper({ size, color }: { size: number; color: string }) {
+  return <WalletIcon size={size} color={color} />;
+}
 const MENU_SECTIONS = [
   {
     title: 'Main',
@@ -46,8 +51,7 @@ const MENU_SECTIONS = [
       {
         label: 'Marketplace',
         icon: MarketThinIcon,
-        route: 'MainTabs',
-        params: { screen: 'Home', params: { screen: 'Marketplace' } }
+        route: 'Marketplace',
       },
       {
         label: 'E-Learning',
@@ -61,7 +65,18 @@ const MENU_SECTIONS = [
         route: 'MainTabs',
         params: { screen: 'Home', params: { screen: 'AudioBooks' } }
       },
-      { label: 'Wallet Shop', icon: WalletShopIcon, route: 'WalletShop' },
+      {
+        label: 'My Wallet',
+        icon: WalletIconWrapper,
+        route: 'MainTabs',
+        params: { screen: 'Home', params: { screen: 'Wallet' } }
+      },
+      {
+        label: 'Wallet Shop',
+        icon: WalletShopIcon,
+        route: 'MainTabs',
+        params: { screen: 'Home', params: { screen: 'WalletShop' } }
+      },
       {
         label: 'E-Jobs',
         icon: EJobsIcon,
@@ -85,14 +100,19 @@ const MENU_SECTIONS = [
         route: 'MainTabs',
         params: { screen: 'Home', params: { screen: 'Organizations' } }
       },
-      { label: 'Social Response', icon: SocialResIcon, route: 'SocialResponse' },
+      {
+        label: 'Social Response',
+        icon: SocialResIcon,
+        route: 'MainTabs',
+        params: { screen: 'Home', params: { screen: 'Communities', params: { screen: 'SocialResponse' } } }
+      },
     ]
   },
   {
     title: 'Support',
     items: [
       { label: 'Settings', icon: SettingIcon, route: 'Settings' },
-      { label: 'Help & Support', icon: HelpIcon, route: 'Help' },
+      // { label: 'Help & Support', icon: HelpIcon, route: 'HelpCenter' },
     ]
   }
 ];
@@ -100,6 +120,7 @@ const MENU_SECTIONS = [
 export default function CustomDrawer(props: any) {
   const { navigation, state } = props;
   const { user, logout } = useAuth();
+  const { isDark } = useTheme();
   const [loggingOut, setLoggingOut] = useState(false);
 
   // Helper to get the deeply nested active route name
@@ -158,38 +179,42 @@ export default function CustomDrawer(props: any) {
   const defaultAvatar = 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png';
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50 dark:bg-slate-950">
       {/* Premium Header with Gradient Effect */}
-      <View className="bg-white pt-3 pb-4 px-5 rounded-3xl mx-4 mt-20 shadow-lg shadow-gray-200">
+      <Pressable
+        onPress={() => navigation.navigate('MainTabs', { screen: 'Home', params: { screen: 'Profile' } })}
+        className="bg-white dark:bg-slate-900 pt-3 pb-4 px-5 rounded-3xl mx-4 mt-20 shadow-lg shadow-gray-200 dark:shadow-none border border-gray-100 dark:border-slate-800"
+        android_ripple={{ color: isDark ? '#334155' : '#f3f4f6' }}
+      >
         <View className="flex-row items-center gap-4 mt-2">
           {/* Profile Image with Ring */}
           <View className="relative ">
             <Image
               source={{ uri: user?.profileImage || defaultAvatar }}
-              className="w-16 h-16 rounded-full border-3 border-white/30"
+              className="w-16 h-16 rounded-full border-3 border-white/30 dark:border-slate-700/30"
             />
-            <View className="absolute bottom-0 right-0 w-5 h-5 bg-green-400 rounded-full border-2 border-white" />
+            <View className="absolute bottom-0 right-0 w-5 h-5 bg-green-400 rounded-full border-2 border-white dark:border-slate-800" />
           </View>
 
           {/* User Info */}
           <View className="flex-1">
-            <Text className="text-black text-lg font-bold leading-tight">
+            <Text className="text-black dark:text-slate-50 text-lg font-bold leading-tight">
               {user?.name || 'User'}
             </Text>
-            <Text className="text-slate-500 text-sm mt-0.5">
+            <Text className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">
               {user?.email || 'user@flybook.com'}
             </Text>
             {user?.coins !== undefined && (
               <View className="flex-row items-center mt-1">
                 <Ionicons name="wallet-outline" size={14} color="#F59E0B" />
                 <Text className="text-amber-500 text-xs font-semibold ml-1">
-                  {user.coins} coins
+                  {Number(user.coins || 0).toFixed(2)} coins
                 </Text>
               </View>
             )}
           </View>
         </View>
-      </View>
+      </Pressable>
 
       {/* Menu Content */}
       <DrawerContentScrollView
@@ -201,12 +226,12 @@ export default function CustomDrawer(props: any) {
         {MENU_SECTIONS.map((section) => (
           <View key={section.title} className="mb-6">
             {/* Section Header */}
-            <Text className="text-gray-400 text-xs font-bold uppercase tracking-wider px-5 mb-2">
+            <Text className="text-gray-400 dark:text-slate-500 text-xs font-bold uppercase tracking-wider px-5 mb-2">
               {section.title}
             </Text>
 
             {/* Section Items */}
-            <View className="bg-white mx-3 rounded-2xl overflow-hidden shadow-sm shadow-gray-200">
+            <View className="bg-white dark:bg-slate-900 mx-3 rounded-2xl overflow-hidden shadow-sm shadow-gray-200 dark:shadow-none border border-gray-100 dark:border-slate-800">
               {section.items.map((item, itemIndex) => {
                 // Check if this item is active
                 const isActive = item.params
@@ -229,9 +254,9 @@ export default function CustomDrawer(props: any) {
         ))}
 
         {/* App Version & Branding */}
-        <View className="items-center mt-6 px-5">
-          <Text className="text-gray-400 text-xs">FlyBook v1.0.0</Text>
-          <Text className="text-gray-400 text-xs mt-1">Your Social Learning Platform</Text>
+        <View className="items-center mt-6 px-5 pb-6">
+          <Text className="text-gray-400 dark:text-slate-500 text-xs">FlyBook v1.0.0</Text>
+          <Text className="text-gray-400 dark:text-slate-500 text-xs mt-1">Your Social Learning Platform</Text>
         </View>
       </DrawerContentScrollView>
 
@@ -240,8 +265,8 @@ export default function CustomDrawer(props: any) {
         <Pressable
           onPress={handleLogout}
           disabled={loggingOut}
-          className="bg-white border border-red-200 py-3.5 rounded-xl flex-row items-center justify-center gap-2 shadow-sm shadow-red-100"
-          android_ripple={{ color: '#fef2f2' }}
+          className="bg-white dark:bg-slate-900 border border-red-200 dark:border-red-900/30 py-3.5 rounded-xl flex-row items-center justify-center gap-2 shadow-sm shadow-red-100 dark:shadow-none"
+          android_ripple={{ color: isDark ? '#450a0a' : '#fef2f2' }}
         >
           {loggingOut ? (
             <ButtonLoader color="#EF4444" size="small" />
@@ -268,35 +293,32 @@ function DrawerItem({
   isLast,
 }: {
   label: string;
-  Icon: React.ComponentType<{
-    size?: number;
-    color?: string;
-    strokeWidth?: number;
-  }>;
+  Icon: any;
   onPress: () => void;
   active: boolean;
   isLast: boolean;
 }) {
+  const { isDark } = useTheme();
 
   return (
     <Pressable
       onPress={onPress}
       className={`flex-row items-center px-4 py-3.5 transition-colors duration-200
-        ${active ? 'bg-teal-50' : 'bg-white hover:bg-gray-50'}
-        ${!isLast ? 'border-b border-gray-100' : ''}
+        ${active ? (isDark ? 'bg-teal-500/10' : 'bg-teal-50') : (isDark ? 'bg-slate-900' : 'bg-white')}
+        ${!isLast ? (isDark ? 'border-b border-slate-800' : 'border-b border-gray-100') : ''}
       `}
-      android_ripple={{ color: '#f0fdfa' }}
+      android_ripple={{ color: isDark ? '#115e59' : '#f0fdfa' }}
     >
       {/* Icon Container */}
       <View className={`w-10 h-10 rounded-full items-center justify-center
-        ${active ? 'bg-teal-100' : 'bg-gray-100'}
+        ${active ? (isDark ? 'bg-teal-500/20' : 'bg-teal-100') : (isDark ? 'bg-slate-800' : 'bg-gray-100')}
       `}>
-        <Icon size={20} color={active ? '#14b8a6' : '#9ca3af'} />
+        <Icon size={20} color={active ? '#14b8a6' : (isDark ? '#64748b' : '#9ca3af')} />
       </View>
 
       {/* Label */}
       <Text className={`flex-1 ml-3 font-medium text-base
-        ${active ? 'text-teal-700' : 'text-gray-700'}
+        ${active ? (isDark ? 'text-teal-400' : 'text-teal-700') : (isDark ? 'text-slate-300' : 'text-gray-700')}
       `}>
         {label}
       </Text>

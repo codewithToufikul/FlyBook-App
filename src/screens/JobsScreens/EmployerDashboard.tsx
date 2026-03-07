@@ -14,6 +14,7 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { getEmployerJobs, getJobApplications } from '../../services/jobService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface Applicant {
     _id: string;
@@ -45,6 +46,7 @@ interface Job {
 
 const EmployerDashboard = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { isDark } = useTheme();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [jobs, setJobs] = useState<Job[]>([]);
@@ -98,35 +100,35 @@ const EmployerDashboard = ({ navigation }: any) => {
         if (supported) {
             await Linking.openURL(url);
         } else {
-            console.log("Don't know how to open URI: " + url);
+
         }
     };
 
     const renderApplication = (app: Application) => (
-        <View key={app._id} style={styles.applicationItem}>
+        <View key={app._id} style={[styles.applicationItem, isDark && { backgroundColor: '#0f172a', borderColor: '#334155' }]}>
             <View style={styles.applicationHeader}>
                 <View style={styles.applicantInfo}>
-                    <Text style={styles.applicantName}>
+                    <Text style={[styles.applicantName, isDark && { color: '#f8fafc' }]}>
                         {app.applicant?.name || app.applicantName || 'Anonymous'}
                     </Text>
-                    {app.applicant?.email && <Text style={styles.applicantEmail}>{app.applicant.email}</Text>}
-                    <Text style={styles.appliedDate}>
+                    {app.applicant?.email && <Text style={[styles.applicantEmail, isDark && { color: '#94a3b8' }]}>{app.applicant.email}</Text>}
+                    <Text style={[styles.appliedDate, isDark && { color: '#64748b' }]}>
                         Applied: {new Date(app.appliedAt || app.createdAt || '').toLocaleDateString()}
                     </Text>
                 </View>
                 {app.cvUrl && (
                     <TouchableOpacity
-                        style={styles.viewCVButton}
+                        style={[styles.viewCVButton, isDark && { backgroundColor: 'rgba(20, 184, 166, 0.1)' }]}
                         onPress={() => openURL(app.cvUrl!)}
                     >
-                        <Text style={styles.viewCVText}>View CV</Text>
+                        <Text style={[styles.viewCVText, isDark && { color: '#14b8a6' }]}>View CV</Text>
                     </TouchableOpacity>
                 )}
             </View>
             {app.coverLetter && (
-                <View style={styles.coverLetterBox}>
-                    <Text style={styles.coverLetterLabel}>Cover Letter:</Text>
-                    <Text style={styles.coverLetterText}>{app.coverLetter}</Text>
+                <View style={[styles.coverLetterBox, isDark && { borderTopColor: '#1e293b' }]}>
+                    <Text style={[styles.coverLetterLabel, isDark && { color: '#94a3b8' }]}>Cover Letter:</Text>
+                    <Text style={[styles.coverLetterText, isDark && { color: '#64748b' }]}>{app.coverLetter}</Text>
                 </View>
             )}
         </View>
@@ -137,16 +139,16 @@ const EmployerDashboard = ({ navigation }: any) => {
         const apps = applications[item._id] || [];
 
         return (
-            <View style={styles.jobCard}>
+            <View style={[styles.jobCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
                 <View style={styles.jobMainContent}>
                     <View style={styles.jobHeaderRow}>
-                        <Text style={styles.jobTitle} numberOfLines={1}>{item.title}</Text>
+                        <Text style={[styles.jobTitle, isDark && { color: '#f8fafc' }]} numberOfLines={1}>{item.title}</Text>
                         <View style={styles.statusBadges}>
-                            <View style={[styles.typeBadge, styles.blueBadge]}>
-                                <Text style={styles.blueBadgeText}>{item.jobType}</Text>
+                            <View style={[styles.typeBadge, styles.blueBadge, isDark && { backgroundColor: 'rgba(59, 130, 246, 0.1)' }]}>
+                                <Text style={[styles.blueBadgeText, isDark && { color: '#3B82F6' }]}>{item.jobType}</Text>
                             </View>
-                            <View style={[styles.typeBadge, item.status === 'active' ? styles.greenBadge : styles.grayBadge]}>
-                                <Text style={item.status === 'active' ? styles.greenBadgeText : styles.grayBadgeText}>
+                            <View style={[styles.typeBadge, item.status === 'active' ? styles.greenBadge : styles.grayBadge, isDark && (item.status === 'active' ? { backgroundColor: 'rgba(20, 184, 166, 0.1)' } : { backgroundColor: 'rgba(75, 85, 99, 0.1)' })]}>
+                                <Text style={[item.status === 'active' ? styles.greenBadgeText : styles.grayBadgeText, isDark && (item.status === 'active' ? { color: '#14b8a6' } : { color: '#94a3b8' })]}>
                                     {item.status === 'active' ? 'Active' : 'Inactive'}
                                 </Text>
                             </View>
@@ -156,25 +158,25 @@ const EmployerDashboard = ({ navigation }: any) => {
                     <View style={styles.jobMeta}>
                         {item.location && (
                             <View style={styles.metaItem}>
-                                <Ionicons name="location-outline" size={14} color="#6B7280" />
-                                <Text style={styles.metaText}>{item.location}</Text>
+                                <Ionicons name="location-outline" size={14} color={isDark ? "#94a3b8" : "#6B7280"} />
+                                <Text style={[styles.metaText, isDark && { color: '#94a3b8' }]}>{item.location}</Text>
                             </View>
                         )}
                         {item.category && (
                             <View style={styles.metaItem}>
-                                <Ionicons name="folder-outline" size={14} color="#6B7280" />
-                                <Text style={styles.metaText}>{item.category}</Text>
+                                <Ionicons name="folder-outline" size={14} color={isDark ? "#94a3b8" : "#6B7280"} />
+                                <Text style={[styles.metaText, isDark && { color: '#94a3b8' }]}>{item.category}</Text>
                             </View>
                         )}
                         <View style={styles.metaItem}>
-                            <Ionicons name="calendar-outline" size={14} color="#6B7280" />
-                            <Text style={styles.metaText}>
+                            <Ionicons name="calendar-outline" size={14} color={isDark ? "#94a3b8" : "#6B7280"} />
+                            <Text style={[styles.metaText, isDark && { color: '#94a3b8' }]}>
                                 Posted: {new Date(item.createdAt).toLocaleDateString()}
                             </Text>
                         </View>
                     </View>
 
-                    <View style={styles.jobActions}>
+                    <View style={[styles.jobActions, isDark && { borderTopColor: '#334155' }]}>
                         <TouchableOpacity
                             style={styles.expandButton}
                             onPress={() => toggleExpand(item._id)}
@@ -182,9 +184,9 @@ const EmployerDashboard = ({ navigation }: any) => {
                             <Ionicons
                                 name={isExpanded ? 'chevron-up' : 'chevron-down'}
                                 size={18}
-                                color="#3B82F6"
+                                color={isDark ? "#14b8a6" : "#3B82F6"}
                             />
-                            <Text style={styles.expandButtonText}>
+                            <Text style={[styles.expandButtonText, isDark && { color: '#14b8a6' }]}>
                                 {isExpanded ? 'Hide' : 'View'} Applications ({apps.length})
                             </Text>
                         </TouchableOpacity>
@@ -192,18 +194,18 @@ const EmployerDashboard = ({ navigation }: any) => {
                             style={styles.viewLink}
                             onPress={() => navigation.navigate('JobDetails', { jobId: item._id })}
                         >
-                            <Text style={styles.viewLinkText}>View Job</Text>
-                            <Ionicons name="arrow-forward" size={14} color="#4B5563" />
+                            <Text style={[styles.viewLinkText, isDark && { color: '#94a3b8' }]}>View Job</Text>
+                            <Ionicons name="arrow-forward" size={14} color={isDark ? "#94a3b8" : "#4B5563"} />
                         </TouchableOpacity>
                     </View>
                 </View>
 
                 {isExpanded && (
-                    <View style={styles.applicationsList}>
-                        <Text style={styles.applicationsTitle}>Applications ({apps.length})</Text>
+                    <View style={[styles.applicationsList, isDark && { backgroundColor: '#111827', borderTopColor: '#334155' }]}>
+                        <Text style={[styles.applicationsTitle, isDark && { color: '#f8fafc' }]}>Applications ({apps.length})</Text>
                         {apps.length === 0 ? (
                             <View style={styles.noAppsBox}>
-                                <Text style={styles.noAppsText}>No applications yet.</Text>
+                                <Text style={[styles.noAppsText, isDark && { color: '#64748b' }]}>No applications yet.</Text>
                             </View>
                         ) : (
                             apps.map(renderApplication)
@@ -215,24 +217,27 @@ const EmployerDashboard = ({ navigation }: any) => {
     };
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-            <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-            <View style={styles.header}>
+        <View style={[styles.container, isDark && { backgroundColor: '#0f172a' }, { paddingTop: insets.top }]}>
+            <StatusBar
+                barStyle={isDark ? "light-content" : "dark-content"}
+                backgroundColor={isDark ? "#0f172a" : "#fff"}
+            />
+            <View style={[styles.header, isDark && { backgroundColor: '#0f172a', borderBottomColor: '#1e293b' }]}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#1F2937" />
+                    <Ionicons name="arrow-back" size={24} color={isDark ? "#f8fafc" : "#1F2937"} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Employer Dashboard</Text>
+                <Text style={[styles.headerTitle, isDark && { color: '#f8fafc' }]}>Employer Dashboard</Text>
                 <TouchableOpacity
                     onPress={() => navigation.navigate('PostJob')}
                     style={styles.addButton}
                 >
-                    <Ionicons name="add" size={24} color="#3B82F6" />
+                    <Ionicons name="add" size={24} color={isDark ? "#14b8a6" : "#3B82F6"} />
                 </TouchableOpacity>
             </View>
 
             {loading && !refreshing ? (
-                <View style={styles.centerLoader}>
-                    <ActivityIndicator size="large" color="#3B82F6" />
+                <View style={[styles.centerLoader, isDark && { backgroundColor: '#0f172a' }]}>
+                    <ActivityIndicator size="large" color={isDark ? "#14b8a6" : "#3B82F6"} />
                 </View>
             ) : (
                 <FlatList
@@ -245,9 +250,9 @@ const EmployerDashboard = ({ navigation }: any) => {
                     }
                     ListHeaderComponent={
                         <View style={styles.listHeader}>
-                            <Text style={styles.listTitle}>My Jobs</Text>
+                            <Text style={[styles.listTitle, isDark && { color: '#f8fafc' }]}>My Jobs</Text>
                             <TouchableOpacity
-                                style={styles.postNewButton}
+                                style={[styles.postNewButton, isDark && { backgroundColor: '#14b8a6' }]}
                                 onPress={() => navigation.navigate('PostJob')}
                             >
                                 <Text style={styles.postNewText}>Post New Job</Text>
@@ -256,15 +261,15 @@ const EmployerDashboard = ({ navigation }: any) => {
                     }
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
-                            <View style={styles.emptyIconContainer}>
-                                <Ionicons name="briefcase-outline" size={64} color="#D1D5DB" />
+                            <View style={[styles.emptyIconContainer, isDark && { backgroundColor: '#1e293b' }]}>
+                                <Ionicons name="briefcase-outline" size={64} color={isDark ? "#14b8a6" : "#D1D5DB"} />
                             </View>
-                            <Text style={styles.emptyTitle}>No Jobs Posted</Text>
-                            <Text style={styles.emptyText}>
+                            <Text style={[styles.emptyTitle, isDark && { color: '#f8fafc' }]}>No Jobs Posted</Text>
+                            <Text style={[styles.emptyText, isDark && { color: '#94a3b8' }]}>
                                 You haven't posted any job listings yet.
                             </Text>
                             <TouchableOpacity
-                                style={styles.postFirstButton}
+                                style={[styles.postFirstButton, isDark && { backgroundColor: '#14b8a6' }]}
                                 onPress={() => navigation.navigate('PostJob')}
                             >
                                 <Text style={styles.postFirstText}>Post Your First Job</Text>

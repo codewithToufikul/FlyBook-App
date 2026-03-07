@@ -19,24 +19,21 @@ import { Platform } from 'react-native';
 // 2. FOR PRODUCTION:
 // - Use: 'https://fly-book-server-lzu4.onrender.com'
 
-// Current configuration (change as needed):
-const USE_LOCAL_SERVER = true; // Set to false for production
+const USE_LOCAL_SERVER = false; // Set to false for production
 
 const PRODUCTION_URL = 'https://fly-book-server-lzu4.onrender.com';
 
 // For local development - automatically detects platform
 const LOCAL_URL = Platform.select({
-  ios: 'http://localhost:3000', // iOS Simulator
-  android: 'http://10.0.2.2:3000', // Android Emulator
-  default: 'http://localhost:3000',
+  android: 'http://10.0.2.2:3000', // Special Android emulator localhost
+  ios: 'http://localhost:3000',
+  default: 'http://192.168.8.191:3000', // Your computer's current IP
 });
 
 // IMPORTANT: If testing on physical device, replace with your computer's IP:
-// const LOCAL_URL = 'http://192.168.1.100:3000'; // Replace with your IP
+// const LOCAL_URL = 'http://192.168.8.191:3000'; // Replace with your IP
 
-const BASE_URL = USE_LOCAL_SERVER ? LOCAL_URL : PRODUCTION_URL;
-
-console.log('🌐 API Base URL:', BASE_URL);
+export const BASE_URL = USE_LOCAL_SERVER ? LOCAL_URL : PRODUCTION_URL;
 
 // Storage keys
 const TOKEN_KEY = '@flybook_token';
@@ -61,21 +58,8 @@ apiClient.interceptors.request.use(
     try {
       const token = await AsyncStorage.getItem(TOKEN_KEY);
 
-      // Debug logging
-      console.log('🔑 Request Interceptor Debug:');
-      console.log('  - URL:', config.url);
-      console.log('  - Token exists:', !!token);
-      console.log(
-        '  - Token preview:',
-        token ? `${token.substring(0, 20)}...` : 'null',
-      );
-
       if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
-        console.log(
-          '  - Authorization header set:',
-          `Bearer ${token.substring(0, 20)}...`,
-        );
       } else {
         console.warn('  - ⚠️ No token found or headers unavailable!');
       }

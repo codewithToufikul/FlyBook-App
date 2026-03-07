@@ -1,13 +1,18 @@
 import React from 'react';
-import { View, StyleSheet, Image } from 'react-native';
+import { View, StyleSheet, Image, StatusBar } from 'react-native';
 import { Loader } from '../../components/common';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const SplashScreen = () => {
+  const { isDark } = useTheme();
+  const bg = isDark ? '#0f172a' : '#FFFFFF';
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: bg }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={bg} />
       <Image
         source={require('../../assets/logo.png')}
-        style={styles.logo}
+        style={[styles.logo, isDark && { opacity: 0.9 }]}
         resizeMode="contain"
       />
       <Loader
@@ -23,7 +28,6 @@ const SplashScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
   },

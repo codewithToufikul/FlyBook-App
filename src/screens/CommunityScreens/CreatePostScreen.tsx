@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTheme } from '../../contexts/ThemeContext';
 import {
     View,
     Text,
@@ -22,6 +23,7 @@ import { handleVideoUpload } from '../../utils/videoUpload';
 const CreatePostScreen = ({ navigation, route }: any) => {
     const { communityId, communityName } = route.params;
     const insets = useSafeAreaInsets();
+    const { isDark } = useTheme();
     const [loading, setLoading] = useState(false);
 
     // Form State
@@ -127,22 +129,22 @@ const CreatePostScreen = ({ navigation, route }: any) => {
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={[styles.container]}
+            style={[styles.container, isDark && { backgroundColor: '#0f172a' }]}
         >
-            <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={isDark ? "#0f172a" : "#FFFFFF"} />
 
             {/* Drag Indicator for Modal feel */}
-            <View style={styles.modalDragHandleContainer}>
-                <View style={styles.modalDragHandle} />
+            <View style={[styles.modalDragHandleContainer, isDark && { backgroundColor: '#0f172a' }]}>
+                <View style={[styles.modalDragHandle, isDark && { backgroundColor: '#1e293b' }]} />
             </View>
 
-            <View style={styles.header}>
+            <View style={[styles.header, isDark && { backgroundColor: '#0f172a', borderBottomColor: '#1e293b' }]}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="close" size={28} color="#1F2937" />
+                    <Ionicons name="close" size={28} color={isDark ? "#f8fafc" : "#1F2937"} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Create Post</Text>
+                <Text style={[styles.headerTitle, isDark && { color: '#f8fafc' }]}>Create Post</Text>
                 <TouchableOpacity
-                    style={[styles.postButton, !title && styles.disabledPostButton]}
+                    style={[styles.postButton, !title && styles.disabledPostButton, isDark && { backgroundColor: '#14b8a6' }, !title && isDark && { opacity: 0.5 }]}
                     onPress={handleSubmit}
                     disabled={loading || !title}
                 >
@@ -155,9 +157,9 @@ const CreatePostScreen = ({ navigation, route }: any) => {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-                <View style={styles.communityIndicator}>
-                    <Ionicons name="people" size={16} color="#6B7280" />
-                    <Text style={styles.communityName}>Posting in {communityName}</Text>
+                <View style={[styles.communityIndicator, isDark && { backgroundColor: '#1e293b' }]}>
+                    <Ionicons name="people" size={16} color={isDark ? "#14b8a6" : "#6B7280"} />
+                    <Text style={[styles.communityName, isDark && { color: '#14b8a6' }]}>Posting in {communityName}</Text>
                 </View>
 
                 {/* Content Type Picker */}
@@ -165,15 +167,15 @@ const CreatePostScreen = ({ navigation, route }: any) => {
                     {(['text', 'video', 'course'] as const).map((t) => (
                         <TouchableOpacity
                             key={t}
-                            style={[styles.typeChip, type === t && styles.activeTypeChip]}
+                            style={[styles.typeChip, type === t && styles.activeTypeChip, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }, type === t && isDark && { backgroundColor: '#14b8a6', borderColor: '#14b8a6' }]}
                             onPress={() => setType(t)}
                         >
                             <Ionicons
                                 name={t === 'text' ? 'document-text' : t === 'video' ? 'videocam' : 'school'}
                                 size={18}
-                                color={type === t ? '#FFFFFF' : '#6B7280'}
+                                color={type === t ? '#FFFFFF' : (isDark ? "#94a3b8" : '#6B7280')}
                             />
-                            <Text style={[styles.typeText, type === t && styles.activeTypeText]}>
+                            <Text style={[styles.typeText, type === t && styles.activeTypeText, isDark && { color: '#94a3b8' }, type === t && isDark && { color: '#ffffff' }]}>
                                 {t.charAt(0).toUpperCase() + t.slice(1)}
                             </Text>
                         </TouchableOpacity>
@@ -181,23 +183,23 @@ const CreatePostScreen = ({ navigation, route }: any) => {
                 </View>
 
                 <TextInput
-                    style={styles.titleInput}
+                    style={[styles.titleInput, isDark && { color: '#f8fafc' }]}
                     placeholder="Post Title"
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={isDark ? "#64748b" : "#9CA3AF"}
                     value={title}
                     onChangeText={setTitle}
                 />
 
                 <TextInput
-                    style={styles.descriptionInput}
+                    style={[styles.descriptionInput, isDark && { color: '#94a3b8' }]}
                     placeholder="Short description (optional)"
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={isDark ? "#64748b" : "#9CA3AF"}
                     multiline
                     value={description}
                     onChangeText={setDescription}
                 />
 
-                <View style={styles.divider} />
+                <View style={[styles.divider, isDark && { backgroundColor: '#1e293b' }]} />
 
                 {/* Visibility Toggle */}
                 <View style={styles.visibilityRow}>
@@ -205,39 +207,39 @@ const CreatePostScreen = ({ navigation, route }: any) => {
                         <Ionicons
                             name={visibility === 'public' ? 'globe-outline' : 'lock-closed-outline'}
                             size={20}
-                            color="#4B5563"
+                            color={isDark ? "#94a3b8" : "#4B5563"}
                         />
-                        <Text style={styles.visibilityLabel}>
+                        <Text style={[styles.visibilityLabel, isDark && { color: '#94a3b8' }]}>
                             {visibility === 'public' ? 'Public Post' : 'Private Post'}
                         </Text>
                     </View>
                     <TouchableOpacity
-                        style={styles.toggleBtn}
+                        style={[styles.toggleBtn, isDark && { backgroundColor: 'rgba(20, 184, 166, 0.1)' }]}
                         onPress={() => setVisibility(v => v === 'public' ? 'private' : 'public')}
                     >
-                        <Text style={styles.toggleBtnText}>Change</Text>
+                        <Text style={[styles.toggleBtnText, isDark && { color: '#14b8a6' }]}>Change</Text>
                     </TouchableOpacity>
                 </View>
 
                 {visibility === 'private' && (
                     <TextInput
-                        style={styles.accessCodeInput}
+                        style={[styles.accessCodeInput, isDark && { backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc' }]}
                         placeholder="Set Access Code (required for private)"
-                        placeholderTextColor="#9CA3AF"
+                        placeholderTextColor={isDark ? "#64748b" : "#9CA3AF"}
                         value={accessCode}
                         onChangeText={setAccessCode}
                     />
                 )}
 
-                <View style={styles.divider} />
+                <View style={[styles.divider, isDark && { backgroundColor: '#1e293b' }]} />
 
                 {/* Dynamic Content Area */}
                 {type === 'text' && (
                     <View style={styles.textContentArea}>
                         <TextInput
-                            style={styles.contentInput}
+                            style={[styles.contentInput, isDark && { color: '#f8fafc' }]}
                             placeholder="Share something with your community..."
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={isDark ? "#64748b" : "#9CA3AF"}
                             multiline
                             value={content}
                             onChangeText={setContent}
@@ -256,14 +258,14 @@ const CreatePostScreen = ({ navigation, route }: any) => {
                                 </View>
                             ))}
                             <TouchableOpacity
-                                style={styles.addMediaBtn}
+                                style={[styles.addMediaBtn, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}
                                 onPress={handlePickMedia}
                                 disabled={uploadingMedia}
                             >
                                 {uploadingMedia ? (
-                                    <ActivityIndicator color="#0D9488" />
+                                    <ActivityIndicator color={isDark ? "#14b8a6" : "#0D9488"} />
                                 ) : (
-                                    <Ionicons name="camera-outline" size={30} color="#0D9488" />
+                                    <Ionicons name="camera-outline" size={30} color={isDark ? "#14b8a6" : "#0D9488"} />
                                 )}
                             </TouchableOpacity>
                         </ScrollView>
@@ -274,16 +276,16 @@ const CreatePostScreen = ({ navigation, route }: any) => {
                     <View style={styles.videoContentArea}>
                         <View style={styles.uploadSection}>
                             <TouchableOpacity
-                                style={[styles.videoUploadBtn, uploadingMedia && styles.disabledBtn]}
+                                style={[styles.videoUploadBtn, uploadingMedia && styles.disabledBtn, isDark && { backgroundColor: 'rgba(20, 184, 166, 0.1)', borderColor: '#14b8a6' }]}
                                 onPress={handleUploadVideoFile}
                                 disabled={uploadingMedia}
                             >
                                 {uploadingMedia ? (
-                                    <ActivityIndicator color="#0D9488" />
+                                    <ActivityIndicator color={isDark ? "#14b8a6" : "#0D9488"} />
                                 ) : (
                                     <>
-                                        <Ionicons name="cloud-upload-outline" size={24} color="#0D9488" />
-                                        <Text style={styles.videoUploadText}>Upload Video File</Text>
+                                        <Ionicons name="cloud-upload-outline" size={24} color={isDark ? "#14b8a6" : "#0D9488"} />
+                                        <Text style={[styles.videoUploadText, isDark && { color: '#14b8a6' }]}>Upload Video File</Text>
                                     </>
                                 )}
                             </TouchableOpacity>

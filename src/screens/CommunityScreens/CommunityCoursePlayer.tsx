@@ -12,12 +12,14 @@ import Video from 'react-native-video';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
 const CommunityCoursePlayer = ({ route, navigation }: any) => {
     const { courseId, chapterIndex, videoIndex, videoUrl: paramVideoUrl } = route.params;
     const insets = useSafeAreaInsets();
+    const { isDark } = useTheme();
 
     // In a real app, we might fetch the full course here again or pass the whole chapter/video list
     // For simplicity, let's assume we receive the URL directly or fetch minimal info.
@@ -47,8 +49,8 @@ const CommunityCoursePlayer = ({ route, navigation }: any) => {
 
     if (loading) {
         return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#FFFFFF" />
+            <View style={[styles.loadingContainer, isDark && { backgroundColor: '#000000' }]}>
+                <ActivityIndicator size="large" color={isDark ? "#14b8a6" : "#FFFFFF"} />
             </View>
         );
     }
@@ -57,7 +59,7 @@ const CommunityCoursePlayer = ({ route, navigation }: any) => {
         <View style={[styles.container, { paddingTop: insets.top }]}>
             <StatusBar barStyle="light-content" backgroundColor="#000000" />
 
-            <TouchableOpacity style={styles.closeButton} onPress={() => navigation.goBack()}>
+            <TouchableOpacity style={[styles.closeButton, { top: Math.max(insets.top, 20) }]} onPress={() => navigation.goBack()}>
                 <Ionicons name="close" size={30} color="#FFFFFF" />
             </TouchableOpacity>
 
@@ -75,7 +77,7 @@ const CommunityCoursePlayer = ({ route, navigation }: any) => {
                             style={styles.nativeVideo}
                             controls={true}
                             resizeMode="contain"
-                            onError={(e) => console.log('Video Error:', e)}
+                            onError={(e) => { }}
                         />
                     )
                 )}

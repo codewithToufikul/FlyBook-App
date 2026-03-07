@@ -13,6 +13,7 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { getMyApplications } from '../../services/jobService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface Application {
 
@@ -34,10 +35,19 @@ interface Application {
 
 const MyApplications = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { isDark } = useTheme();
     const [applications, setApplications] = useState<Application[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [expandedId, setExpandedId] = useState<string | null>(null);
+
+    const bg = isDark ? '#0f172a' : '#F9FAFB';
+    const cardBg = isDark ? '#1e293b' : '#fff';
+    const headerBg = isDark ? '#0f172a' : '#fff';
+    const border = isDark ? '#334155' : '#E5E7EB';
+    const titleColor = isDark ? '#f8fafc' : '#111827';
+    const subtitleColor = isDark ? '#64748b' : '#6B7280';
+    const metaColor = isDark ? '#475569' : '#6B7280';
 
     const fetchApplications = useCallback(async () => {
         try {
@@ -71,7 +81,7 @@ const MyApplications = ({ navigation }: any) => {
             if (supported) {
                 await Linking.openURL(url);
             } else {
-                console.log("Can't open URL:", url);
+
             }
         } catch (error) {
             console.error('Error opening CV:', error);
@@ -93,13 +103,13 @@ const MyApplications = ({ navigation }: any) => {
         const salary = formatSalary(job.salaryMin, job.salaryMax);
 
         return (
-            <View style={styles.applicationCard}>
+            <View style={[styles.applicationCard, { backgroundColor: cardBg, borderColor: border }]}>
                 <View style={styles.cardHeader}>
                     <View style={styles.headerLeft}>
-                        <Text style={styles.jobTitle} numberOfLines={1}>
+                        <Text style={[styles.jobTitle, { color: titleColor }]} numberOfLines={1}>
                             {job.title}
                         </Text>
-                        <View style={styles.jobTypeBadge}>
+                        <View style={[styles.jobTypeBadge, isDark && { backgroundColor: 'rgba(59,130,246,0.15)' }]}>
                             <Text style={styles.jobTypeText}>{job.jobType}</Text>
                         </View>
                     </View>
@@ -108,27 +118,27 @@ const MyApplications = ({ navigation }: any) => {
                 <View style={styles.metaContainer}>
                     {job.location && (
                         <View style={styles.metaItem}>
-                            <Ionicons name="location-outline" size={14} color="#6B7280" />
-                            <Text style={styles.metaText}>{job.location}</Text>
+                            <Ionicons name="location-outline" size={14} color={metaColor} />
+                            <Text style={[styles.metaText, { color: metaColor }]}>{job.location}</Text>
                         </View>
                     )}
                     {job.category && (
                         <View style={styles.metaItem}>
-                            <Ionicons name="folder-outline" size={14} color="#6B7280" />
-                            <Text style={styles.metaText}>{job.category}</Text>
+                            <Ionicons name="folder-outline" size={14} color={metaColor} />
+                            <Text style={[styles.metaText, { color: metaColor }]}>{job.category}</Text>
                         </View>
                     )}
                     {salary && (
                         <View style={styles.metaItem}>
-                            <Ionicons name="cash-outline" size={14} color="#6B7280" />
-                            <Text style={styles.metaText}>{salary}</Text>
+                            <Ionicons name="cash-outline" size={14} color={metaColor} />
+                            <Text style={[styles.metaText, { color: metaColor }]}>{salary}</Text>
                         </View>
                     )}
                 </View>
 
-                <View style={styles.appliedDateRow}>
-                    <Ionicons name="calendar-outline" size={14} color="#9CA3AF" />
-                    <Text style={styles.appliedDateText}>
+                <View style={[styles.appliedDateRow, { borderTopColor: isDark ? '#334155' : '#F3F4F6' }]}>
+                    <Ionicons name="calendar-outline" size={14} color={isDark ? '#475569' : '#9CA3AF'} />
+                    <Text style={[styles.appliedDateText, { color: isDark ? '#475569' : '#9CA3AF' }]}>
                         Applied: {new Date(item.createdAt || item.appliedAt || Date.now()).toLocaleDateString('en-US', {
                             year: 'numeric',
                             month: 'short',
@@ -144,16 +154,16 @@ const MyApplications = ({ navigation }: any) => {
                             style={styles.coverLetterHeader}
                             onPress={() => toggleExpand(item._id)}
                         >
-                            <Text style={styles.coverLetterTitle}>Your Cover Letter</Text>
+                            <Text style={[styles.coverLetterTitle, { color: isDark ? '#94a3b8' : '#374151' }]}>Your Cover Letter</Text>
                             <Ionicons
                                 name={isExpanded ? 'chevron-up' : 'chevron-down'}
                                 size={20}
-                                color="#6B7280"
+                                color={metaColor}
                             />
                         </TouchableOpacity>
 
                         {isExpanded && (
-                            <Text style={styles.coverLetterText}>{item.coverLetter}</Text>
+                            <Text style={[styles.coverLetterText, { color: isDark ? '#94a3b8' : '#4B5563', borderTopColor: isDark ? '#334155' : '#F3F4F6' }]}>{item.coverLetter}</Text>
                         )}
                     </View>
                 )}
@@ -170,7 +180,7 @@ const MyApplications = ({ navigation }: any) => {
 
                     {item.cvUrl && (
                         <TouchableOpacity
-                            style={styles.viewCVButton}
+                            style={[styles.viewCVButton, { backgroundColor: isDark ? '#1e293b' : '#fff', borderColor: '#3B82F6' }]}
                             onPress={() => openCV(item.cvUrl)}
                         >
                             <Ionicons name="document-text-outline" size={16} color="#3B82F6" />
@@ -183,15 +193,15 @@ const MyApplications = ({ navigation }: any) => {
     };
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-            <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+        <View style={[styles.container, { paddingTop: insets.top, backgroundColor: bg }]}>
+            <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={headerBg} />
 
             {/* Header */}
-            <View style={styles.header}>
+            <View style={[styles.header, { backgroundColor: headerBg, borderBottomColor: border }]}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#1F2937" />
+                    <Ionicons name="arrow-back" size={24} color={isDark ? '#f8fafc' : '#1F2937'} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>My Applications</Text>
+                <Text style={[styles.headerTitle, { color: titleColor }]}>My Applications</Text>
                 <TouchableOpacity
                     onPress={() => navigation.navigate('JobBoard')}
                     style={styles.browseButton}
@@ -216,11 +226,11 @@ const MyApplications = ({ navigation }: any) => {
                     }
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
-                            <View style={styles.emptyIconContainer}>
-                                <Ionicons name="document-text-outline" size={64} color="#D1D5DB" />
+                            <View style={[styles.emptyIconContainer, { backgroundColor: isDark ? '#1e293b' : '#F3F4F6' }]}>
+                                <Ionicons name="document-text-outline" size={64} color={isDark ? '#334155' : '#D1D5DB'} />
                             </View>
-                            <Text style={styles.emptyTitle}>No Applications Yet</Text>
-                            <Text style={styles.emptyText}>
+                            <Text style={[styles.emptyTitle, { color: titleColor }]}>No Applications Yet</Text>
+                            <Text style={[styles.emptyText, { color: subtitleColor }]}>
                                 You haven't applied to any jobs yet.{'\n'}
                                 Start browsing and apply to your dream job!
                             </Text>

@@ -20,6 +20,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import Toast from 'react-native-toast-message';
 import { handleImageUpload } from '../../utils/imageUpload';
 import CustomHeader from '../../components/common/CustomHeader';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
@@ -46,6 +47,7 @@ const fetchChannels = async (): Promise<Channel[]> => {
 
 const Channels = ({ navigation }: any) => {
     const { user } = useAuth();
+    const { isDark } = useTheme();
     const [searchQuery, setSearchQuery] = useState('');
     const [isCreateModalVisible, setCreateModalVisible] = useState(false);
     const [newChannel, setNewChannel] = useState({ name: '', description: '', avatar: '' });
@@ -139,52 +141,55 @@ const Channels = ({ navigation }: any) => {
 
     const renderChannelItem = ({ item, isMatched }: { item: Channel, isMatched?: boolean }) => (
         <TouchableOpacity
-            style={[styles.channelCard, isMatched && styles.matchedCard]}
+            style={[
+                styles.channelCard,
+                isDark && { backgroundColor: '#1e293b', borderColor: '#334155' },
+                isMatched && (isDark ? styles.matchedCardDark : styles.matchedCard)
+            ]}
             onPress={() => navigation.navigate('ChannelChat', { channelId: item._id, channelName: item.name })}
             activeOpacity={0.7}
         >
             <View style={styles.avatarContainer}>
                 <Image
                     source={{ uri: item.avatar || 'https://i.ibb.co/YDyHdGX/default-channel.jpg' }}
-                    style={styles.avatar}
+                    style={[styles.avatar, isDark && { backgroundColor: '#0f172a' }]}
                 />
-                {item.isOnline && <View style={styles.onlineBadge} />}
+                {item.isOnline && <View style={[styles.onlineBadge, isDark && { borderColor: '#1e293b' }]} />}
             </View>
             <View style={styles.channelInfo}>
                 <View style={styles.channelHeader}>
-                    <Text style={styles.channelName} numberOfLines={1}>{item.name}</Text>
+                    <Text style={[styles.channelName, isDark && { color: '#F8FAFC' }]} numberOfLines={1}>{item.name}</Text>
                     {isMatched && (
-                        <View style={styles.locationBadge}>
-                            <Ionicons name="location" size={10} color="#3B82F6" />
-                            <Text style={styles.locationBadgeText}>Matched</Text>
+                        <View style={[styles.locationBadge, isDark && { backgroundColor: '#1e3a8a' }]}>
+                            <Ionicons name="location" size={10} color={isDark ? "#60A5FA" : "#3B82F6"} />
+                            <Text style={[styles.locationBadgeText, isDark && { color: '#60A5FA' }]}>Matched</Text>
                         </View>
                     )}
                 </View>
-                <Text style={styles.lastMessage} numberOfLines={1}>
+                <Text style={[styles.lastMessage, isDark && { color: '#94A3B8' }]} numberOfLines={1}>
                     {item.lastMessage || 'No messages yet'}
                 </Text>
                 {item.description ? (
-                    <Text style={styles.description} numberOfLines={1}>
+                    <Text style={[styles.description, isDark && { color: '#64748B' }]} numberOfLines={1}>
                         {item.description}
                     </Text>
                 ) : null}
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#D1D5DB" />
+            <Ionicons name="chevron-forward" size={20} color={isDark ? "#4B5563" : "#D1D5DB"} />
         </TouchableOpacity>
     );
 
     return (
-        <View style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-            {/* <TobNav navigation={navigation} /> */}
-
-            <CustomHeader
-                title="Channels"
+        <View style={[styles.container, isDark && { backgroundColor: '#0f172a' }]}>
+            <StatusBar
+                barStyle={isDark ? "light-content" : "dark-content"}
+                backgroundColor={isDark ? "#0f172a" : "#FFFFFF"}
             />
-            <View style={styles.header}>
+            <CustomHeader title="Channels" />
+
+            <View style={[styles.header, isDark && { backgroundColor: '#0f172a', borderBottomWidth: 1, borderBottomColor: '#1e293b' }]}>
                 <View>
-                    <Text style={styles.headerTitle}>Channels</Text>
-                    <Text style={styles.headerSubtitle}>{channels.length} active communities</Text>
+                    <Text style={[styles.headerSubtitle, isDark && { color: '#94A3B8' }]}>{channels.length} active communities</Text>
                 </View>
                 <TouchableOpacity
                     style={styles.createButton}
@@ -195,22 +200,22 @@ const Channels = ({ navigation }: any) => {
                 </TouchableOpacity>
             </View>
 
-            <View style={styles.searchSection}>
-                <View style={styles.searchBar}>
-                    <Ionicons name="search-outline" size={20} color="#9CA3AF" />
+            <View style={[styles.searchSection, isDark && { backgroundColor: '#0f172a' }]}>
+                <View style={[styles.searchBar, isDark && { backgroundColor: '#1e293b' }]}>
+                    <Ionicons name="search-outline" size={20} color={isDark ? "#94A3B8" : "#9CA3AF"} />
                     <TextInput
-                        style={styles.searchInput}
+                        style={[styles.searchInput, isDark && { color: '#F8FAFC' }]}
                         placeholder="Search channels..."
                         value={searchQuery}
                         onChangeText={setSearchQuery}
-                        placeholderTextColor="#9CA3AF"
+                        placeholderTextColor={isDark ? "#64748B" : "#9CA3AF"}
                     />
                 </View>
             </View>
 
             {isLoading ? (
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#3B82F6" />
+                <View style={[styles.loadingContainer, isDark && { backgroundColor: '#0f172a' }]}>
+                    <ActivityIndicator size="large" color={isDark ? "#14b8a6" : "#3B82F6"} />
                 </View>
             ) : (
                 <FlatList
@@ -223,26 +228,26 @@ const Channels = ({ navigation }: any) => {
                             {matchedChannels.length > 0 && !searchQuery && (
                                 <View style={styles.matchedSection}>
                                     <View style={styles.sectionHeader}>
-                                        <Ionicons name="pin" size={16} color="#3B82F6" />
-                                        <Text style={styles.sectionTitle}>Address Matched Channels</Text>
+                                        <Ionicons name="pin" size={16} color={isDark ? "#60A5FA" : "#3B82F6"} />
+                                        <Text style={[styles.sectionTitle, isDark && { color: '#60A5FA' }]}>Address Matched Channels</Text>
                                     </View>
                                     {matchedChannels.map(item => (
                                         <View key={item._id}>
                                             {renderChannelItem({ item, isMatched: true })}
                                         </View>
                                     ))}
-                                    <View style={styles.divider} />
+                                    <View style={[styles.divider, isDark && { backgroundColor: '#1e293b' }]} />
                                 </View>
                             )}
                             {displayChannels.length > 0 && (
-                                <Text style={styles.sectionTitleMain}>All Channels</Text>
+                                <Text style={[styles.sectionTitleMain, isDark && { color: '#64748B' }]}>All Channels</Text>
                             )}
                         </>
                     )}
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
-                            <Ionicons name="chatbubbles-outline" size={64} color="#D1D5DB" />
-                            <Text style={styles.emptyText}>No channels found</Text>
+                            <Ionicons name="chatbubbles-outline" size={64} color={isDark ? "#334155" : "#D1D5DB"} />
+                            <Text style={[styles.emptyText, isDark && { color: '#4B5563' }]}>No channels found</Text>
                         </View>
                     }
                     onRefresh={refetch}
@@ -257,48 +262,48 @@ const Channels = ({ navigation }: any) => {
                 transparent={true}
                 onRequestClose={() => setCreateModalVisible(false)}
             >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
+                <View style={[styles.modalOverlay, isDark && { backgroundColor: 'rgba(0,0,0,0.8)' }]}>
+                    <View style={[styles.modalContent, isDark && { backgroundColor: '#1e293b' }]}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Create New Channel</Text>
+                            <Text style={[styles.modalTitle, isDark && { color: '#F8FAFC' }]}>Create New Channel</Text>
                             <TouchableOpacity onPress={() => setCreateModalVisible(false)}>
-                                <Ionicons name="close" size={24} color="#4B5563" />
+                                <Ionicons name="close" size={24} color={isDark ? "#94A3B8" : "#4B5563"} />
                             </TouchableOpacity>
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Channel Name *</Text>
+                            <Text style={[styles.label, isDark && { color: '#94A3B8' }]}>Channel Name *</Text>
                             <TextInput
-                                style={styles.input}
+                                style={[styles.input, isDark && styles.inputDark]}
                                 value={newChannel.name}
                                 onChangeText={(text) => setNewChannel({ ...newChannel, name: text })}
                                 placeholder="e.g. Dhaka Enthusiasts"
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={isDark ? "#64748B" : "#9CA3AF"}
                             />
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Description</Text>
+                            <Text style={[styles.label, isDark && { color: '#94A3B8' }]}>Description</Text>
                             <TextInput
-                                style={[styles.input, styles.textArea]}
+                                style={[styles.input, styles.textArea, isDark && styles.inputDark]}
                                 value={newChannel.description}
                                 onChangeText={(text) => setNewChannel({ ...newChannel, description: text })}
                                 placeholder="What is this channel about?"
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={isDark ? "#64748B" : "#9CA3AF"}
                                 multiline
                                 numberOfLines={3}
                             />
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Channel Avatar</Text>
+                            <Text style={[styles.label, isDark && { color: '#94A3B8' }]}>Channel Avatar</Text>
                             <View style={styles.avatarInputRow}>
                                 <TextInput
-                                    style={[styles.input, { flex: 1 }]}
+                                    style={[styles.input, { flex: 1 }, isDark && styles.inputDark]}
                                     value={newChannel.avatar}
                                     onChangeText={(text) => setNewChannel({ ...newChannel, avatar: text })}
                                     placeholder="Enter or upload image"
-                                    placeholderTextColor="#9CA3AF"
+                                    placeholderTextColor={isDark ? "#64748B" : "#9CA3AF"}
                                 />
                                 <TouchableOpacity
                                     style={[styles.uploadSmallBtn, isUploadingAvatar && styles.disabledButton]}
@@ -314,7 +319,7 @@ const Channels = ({ navigation }: any) => {
                             </View>
                             {newChannel.avatar ? (
                                 <View style={styles.previewContainer}>
-                                    <Image source={{ uri: newChannel.avatar }} style={styles.avatarPreview} />
+                                    <Image source={{ uri: newChannel.avatar }} style={[styles.avatarPreview, isDark && { backgroundColor: '#0f172a' }]} />
                                     <TouchableOpacity
                                         style={styles.removePreview}
                                         onPress={() => setNewChannel(prev => ({ ...prev, avatar: '' }))}
@@ -339,7 +344,6 @@ const Channels = ({ navigation }: any) => {
                     </View>
                 </View>
             </Modal>
-            <Toast />
         </View>
     );
 };
@@ -426,6 +430,10 @@ const styles = StyleSheet.create({
     matchedCard: {
         borderColor: '#DBEAFE',
         backgroundColor: '#F0F9FF',
+    },
+    matchedCardDark: {
+        borderColor: '#1e3a8a',
+        backgroundColor: '#172554',
     },
     avatarContainer: {
         position: 'relative',
@@ -567,6 +575,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15,
         height: 48,
         color: '#1F2937',
+    },
+    inputDark: {
+        backgroundColor: '#0f172a',
+        borderColor: '#334155',
+        color: '#F8FAFC',
     },
     textArea: {
         height: 100,

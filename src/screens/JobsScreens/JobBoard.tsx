@@ -16,9 +16,11 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getJobs, Job, getEmployerStatus } from '../../services/jobService';
 import { formatDistanceToNow } from 'date-fns';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const JobBoard = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { isDark } = useTheme();
     const [jobs, setJobs] = useState<Job[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -70,7 +72,7 @@ const JobBoard = ({ navigation }: any) => {
             }
         } catch (error) {
             // User not authenticated or not an employer
-            console.log('Not an employer or error fetching status');
+
         }
     }, []);
 
@@ -111,41 +113,41 @@ const JobBoard = ({ navigation }: any) => {
 
     const renderJobItem = ({ item }: { item: Job }) => (
         <TouchableOpacity
-            style={styles.jobCard}
+            style={[styles.jobCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155', shadowOpacity: 0 }]}
             onPress={() => navigation.navigate('JobDetails', { jobId: item._id })}
             activeOpacity={0.9}
         >
             <View style={styles.cardHeader}>
                 <View style={styles.headerInfo}>
-                    <Text style={styles.jobTitle} numberOfLines={1}>{item.title}</Text>
-                    <Text style={styles.companyName}>{item.postedByUser?.name || 'Company'}</Text>
+                    <Text style={[styles.jobTitle, isDark && { color: '#f8fafc' }]} numberOfLines={1}>{item.title}</Text>
+                    <Text style={[styles.companyName, isDark && { color: '#94a3b8' }]}>{item.postedByUser?.name || 'Company'}</Text>
                 </View>
-                <View style={styles.jobTypeBadge}>
-                    <Text style={styles.jobTypeText}>{item.jobType}</Text>
+                <View style={[styles.jobTypeBadge, isDark && { backgroundColor: 'rgba(20, 184, 166, 0.1)' }]}>
+                    <Text style={[styles.jobTypeText, isDark && { color: '#14b8a6' }]}>{item.jobType}</Text>
                 </View>
             </View>
 
-            <Text style={styles.description} numberOfLines={2}>
+            <Text style={[styles.description, isDark && { color: '#94a3b8' }]} numberOfLines={2}>
                 {item.description}
             </Text>
 
             <View style={styles.tagsContainer}>
                 {item.location && (
-                    <View style={styles.tag}>
-                        <Ionicons name="location-outline" size={12} color="#6B7280" />
-                        <Text style={styles.tagText}>{item.location}</Text>
+                    <View style={[styles.tag, isDark && { backgroundColor: '#0f172a' }]}>
+                        <Ionicons name="location-outline" size={12} color={isDark ? "#94a3b8" : "#6B7280"} />
+                        <Text style={[styles.tagText, isDark && { color: '#94a3b8' }]}>{item.location}</Text>
                     </View>
                 )}
                 {item.experienceLevel && (
-                    <View style={styles.tag}>
-                        <Ionicons name="briefcase-outline" size={12} color="#6B7280" />
-                        <Text style={styles.tagText}>{item.experienceLevel}</Text>
+                    <View style={[styles.tag, isDark && { backgroundColor: '#0f172a' }]}>
+                        <Ionicons name="briefcase-outline" size={12} color={isDark ? "#94a3b8" : "#6B7280"} />
+                        <Text style={[styles.tagText, isDark && { color: '#94a3b8' }]}>{item.experienceLevel}</Text>
                     </View>
                 )}
                 {(item.salaryMin || item.salaryMax) && (
-                    <View style={styles.tag}>
-                        <Ionicons name="cash-outline" size={12} color="#6B7280" />
-                        <Text style={styles.tagText}>{formatSalary(item.salaryMin, item.salaryMax)}</Text>
+                    <View style={[styles.tag, isDark && { backgroundColor: '#0f172a' }]}>
+                        <Ionicons name="cash-outline" size={12} color={isDark ? "#94a3b8" : "#6B7280"} />
+                        <Text style={[styles.tagText, isDark && { color: '#94a3b8' }]}>{formatSalary(item.salaryMin, item.salaryMax)}</Text>
                     </View>
                 )}
             </View>
@@ -160,56 +162,58 @@ const JobBoard = ({ navigation }: any) => {
             onRequestClose={() => setShowFilters(false)}
         >
             <View style={styles.modalOverlay}>
-                <View style={styles.modalContent}>
-                    <View style={styles.modalHeader}>
-                        <Text style={styles.modalTitle}>Filters</Text>
+                <View style={[styles.modalContent, isDark && { backgroundColor: '#1e293b' }]}>
+                    <View style={[styles.modalHeader, isDark && { borderBottomColor: '#334155' }]}>
+                        <Text style={[styles.modalTitle, isDark && { color: '#f8fafc' }]}>Filters</Text>
                         <TouchableOpacity onPress={() => setShowFilters(false)}>
-                            <Ionicons name="close" size={24} color="#1F2937" />
+                            <Ionicons name="close" size={24} color={isDark ? "#f8fafc" : "#1F2937"} />
                         </TouchableOpacity>
                     </View>
 
                     <ScrollView style={styles.filtersList} showsVerticalScrollIndicator={false}>
-                        <Text style={styles.filterLabel}>Search</Text>
+                        <Text style={[styles.filterLabel, isDark && { color: '#f8fafc' }]}>Search</Text>
                         <TextInput
-                            style={styles.filterInput}
+                            style={[styles.filterInput, isDark && { backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc' }]}
                             placeholder="Search title or keyword"
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={isDark ? "#64748b" : "#9CA3AF"}
                             value={searchQuery}
                             onChangeText={setSearchQuery}
                         />
 
-                        <Text style={styles.filterLabel}>Category</Text>
+                        <Text style={[styles.filterLabel, isDark && { color: '#f8fafc' }]}>Category</Text>
                         <TextInput
-                            style={styles.filterInput}
+                            style={[styles.filterInput, isDark && { backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc' }]}
                             placeholder="e.g., IT, Marketing"
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={isDark ? "#64748b" : "#9CA3AF"}
                             value={category}
                             onChangeText={setCategory}
                         />
 
-                        <Text style={styles.filterLabel}>Location</Text>
+                        <Text style={[styles.filterLabel, isDark && { color: '#f8fafc' }]}>Location</Text>
                         <TextInput
-                            style={styles.filterInput}
+                            style={[styles.filterInput, isDark && { backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc' }]}
                             placeholder="e.g., Dhaka, Remote"
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={isDark ? "#64748b" : "#9CA3AF"}
                             value={location}
                             onChangeText={setLocation}
                         />
 
-                        <Text style={styles.filterLabel}>Job Type</Text>
+                        <Text style={[styles.filterLabel, isDark && { color: '#f8fafc' }]}>Job Type</Text>
                         <View style={styles.pickerContainer}>
                             {['', 'Full-time', 'Part-time', 'Contract', 'Internship', 'Remote'].map((type) => (
                                 <TouchableOpacity
                                     key={type}
                                     style={[
                                         styles.pickerOption,
-                                        jobType === type && styles.pickerOptionActive
+                                        isDark && { backgroundColor: '#0f172a', borderColor: '#334155' },
+                                        jobType === type && [styles.pickerOptionActive, isDark && { backgroundColor: '#14b8a6', borderColor: '#14b8a6' }]
                                     ]}
                                     onPress={() => setJobType(type)}
                                 >
                                     <Text style={[
                                         styles.pickerOptionText,
-                                        jobType === type && styles.pickerOptionTextActive
+                                        isDark && { color: '#94a3b8' },
+                                        jobType === type && [styles.pickerOptionTextActive, { color: '#fff' }]
                                     ]}>
                                         {type || 'All'}
                                     </Text>
@@ -217,20 +221,22 @@ const JobBoard = ({ navigation }: any) => {
                             ))}
                         </View>
 
-                        <Text style={styles.filterLabel}>Experience Level</Text>
+                        <Text style={[styles.filterLabel, isDark && { color: '#f8fafc' }]}>Experience Level</Text>
                         <View style={styles.pickerContainer}>
                             {['', 'Any', 'Entry', 'Mid', 'Senior', 'Lead'].map((level) => (
                                 <TouchableOpacity
                                     key={level}
                                     style={[
                                         styles.pickerOption,
-                                        experienceLevel === level && styles.pickerOptionActive
+                                        isDark && { backgroundColor: '#0f172a', borderColor: '#334155' },
+                                        experienceLevel === level && [styles.pickerOptionActive, isDark && { backgroundColor: '#14b8a6', borderColor: '#14b8a6' }]
                                     ]}
                                     onPress={() => setExperienceLevel(level)}
                                 >
                                     <Text style={[
                                         styles.pickerOptionText,
-                                        experienceLevel === level && styles.pickerOptionTextActive
+                                        isDark && { color: '#94a3b8' },
+                                        experienceLevel === level && [styles.pickerOptionTextActive, { color: '#fff' }]
                                     ]}>
                                         {level || 'All'}
                                     </Text>
@@ -239,15 +245,15 @@ const JobBoard = ({ navigation }: any) => {
                         </View>
                     </ScrollView>
 
-                    <View style={styles.modalFooter}>
+                    <View style={[styles.modalFooter, isDark && { borderTopColor: '#334155' }]}>
                         <TouchableOpacity
-                            style={styles.clearButton}
+                            style={[styles.clearButton, isDark && { borderColor: '#334155' }]}
                             onPress={clearFilters}
                         >
-                            <Text style={styles.clearButtonText}>Clear All</Text>
+                            <Text style={[styles.clearButtonText, isDark && { color: '#94a3b8' }]}>Clear All</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
-                            style={styles.applyButton}
+                            style={[styles.applyButton, isDark && { backgroundColor: '#14b8a6' }]}
                             onPress={applyFilters}
                         >
                             <Text style={styles.applyButtonText}>Apply Filters</Text>
@@ -259,25 +265,28 @@ const JobBoard = ({ navigation }: any) => {
     );
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-            <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+        <View style={[styles.container, isDark && { backgroundColor: '#0f172a' }, { paddingTop: insets.top }]}>
+            <StatusBar
+                barStyle={isDark ? "light-content" : "dark-content"}
+                backgroundColor={isDark ? "#0f172a" : "#fff"}
+            />
 
             {/* Header */}
-            <View style={styles.header}>
+            <View style={[styles.header, isDark && { backgroundColor: '#0f172a', borderBottomColor: '#1e293b' }]}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#1F2937" />
+                    <Ionicons name="arrow-back" size={24} color={isDark ? "#f8fafc" : "#1F2937"} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Flybook Job Board</Text>
+                <Text style={[styles.headerTitle, isDark && { color: '#f8fafc' }]}>Flybook Job Board</Text>
                 <TouchableOpacity onPress={() => setShowFilters(true)} style={styles.filterButton}>
-                    <Ionicons name="options-outline" size={24} color="#1F2937" />
+                    <Ionicons name="options-outline" size={24} color={isDark ? "#f8fafc" : "#1F2937"} />
                 </TouchableOpacity>
             </View>
 
             {/* Action Buttons */}
-            <View style={styles.actionsContainer}>
+            <View style={[styles.actionsContainer, isDark && { backgroundColor: '#0f172a', borderBottomColor: '#1e293b' }]}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.actionsList}>
                     <TouchableOpacity
-                        style={styles.actionButton}
+                        style={[styles.actionButton, isDark && { backgroundColor: '#14b8a6' }]}
                         onPress={() => navigation.navigate('MyApplications')}
                     >
                         <Ionicons name="document-text-outline" size={16} color="#fff" />
@@ -287,14 +296,14 @@ const JobBoard = ({ navigation }: any) => {
                     {employerInfo.approved ? (
                         <>
                             <TouchableOpacity
-                                style={[styles.actionButton, styles.actionButtonGreen]}
+                                style={[styles.actionButton, styles.actionButtonGreen, isDark && { backgroundColor: '#10B981' }]}
                                 onPress={() => navigation.navigate('EmployerDashboard')}
                             >
                                 <Ionicons name="briefcase-outline" size={16} color="#fff" />
                                 <Text style={styles.actionButtonText}>Manage Jobs</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={[styles.actionButton, styles.actionButtonBlue]}
+                                style={[styles.actionButton, styles.actionButtonBlue, isDark && { backgroundColor: '#3B82F6' }]}
                                 onPress={() => navigation.navigate('PostJob')}
                             >
                                 <Ionicons name="add-circle-outline" size={16} color="#fff" />
@@ -302,16 +311,16 @@ const JobBoard = ({ navigation }: any) => {
                             </TouchableOpacity>
                         </>
                     ) : employerInfo.status === 'pending' ? (
-                        <View style={styles.pendingBadge}>
-                            <Text style={styles.pendingText}>Employer approval pending</Text>
+                        <View style={[styles.pendingBadge, isDark && { backgroundColor: 'rgba(254, 243, 199, 0.1)', borderColor: '#D97706' }]}>
+                            <Text style={[styles.pendingText, isDark && { color: '#D97706' }]}>Employer approval pending</Text>
                         </View>
                     ) : (
                         <TouchableOpacity
-                            style={[styles.actionButton, styles.actionButtonOutline]}
+                            style={[styles.actionButton, styles.actionButtonOutline, isDark && { backgroundColor: 'transparent', borderColor: '#14b8a6' }]}
                             onPress={() => navigation.navigate('EmployerRequest')}
                         >
-                            <Ionicons name="business-outline" size={16} color="#3B82F6" />
-                            <Text style={[styles.actionButtonText, { color: '#3B82F6' }]}>Become Employer</Text>
+                            <Ionicons name="business-outline" size={16} color={isDark ? "#14b8a6" : "#3B82F6"} />
+                            <Text style={[styles.actionButtonText, { color: isDark ? "#14b8a6" : "#3B82F6" }]}>Become Employer</Text>
                         </TouchableOpacity>
                     )}
                 </ScrollView>
@@ -319,11 +328,11 @@ const JobBoard = ({ navigation }: any) => {
 
             {/* Info Banner */}
             {!employerInfo.approved && employerInfo.status !== 'pending' && (
-                <View style={styles.infoBanner}>
-                    <Text style={styles.infoBannerText}>
+                <View style={[styles.infoBanner, isDark && { backgroundColor: 'rgba(59, 130, 246, 0.1)', borderColor: '#3B82F6' }]}>
+                    <Text style={[styles.infoBannerText, isDark && { color: '#94a3b8' }]}>
                         You're viewing the employee portal. Browse jobs and apply. Want to post jobs?{' '}
                         <Text
-                            style={styles.infoBannerLink}
+                            style={[styles.infoBannerLink, isDark && { color: '#14b8a6' }]}
                             onPress={() => navigation.navigate('EmployerRequest')}
                         >
                             Apply to become an employer
@@ -333,11 +342,11 @@ const JobBoard = ({ navigation }: any) => {
             )}
 
             {employerInfo.approved && (
-                <View style={[styles.infoBanner, styles.infoBannerSuccess]}>
-                    <Text style={styles.infoBannerText}>
+                <View style={[styles.infoBanner, styles.infoBannerSuccess, isDark && { backgroundColor: 'rgba(16, 185, 129, 0.1)', borderColor: '#10B981' }]}>
+                    <Text style={[styles.infoBannerText, isDark && { color: '#94a3b8' }]}>
                         You're approved as an employer. You can post jobs and manage applications.{' '}
                         <Text
-                            style={styles.infoBannerLink}
+                            style={[styles.infoBannerLink, isDark && { color: '#14b8a6' }]}
                             onPress={() => navigation.navigate('EmployerDashboard')}
                         >
                             Go to Dashboard
@@ -348,8 +357,8 @@ const JobBoard = ({ navigation }: any) => {
 
             {/* Jobs List */}
             {loading && page === 1 ? (
-                <View style={styles.centerLoader}>
-                    <ActivityIndicator size="large" color="#3B82F6" />
+                <View style={[styles.centerLoader, isDark && { backgroundColor: '#0f172a' }]}>
+                    <ActivityIndicator size="large" color={isDark ? "#14b8a6" : "#3B82F6"} />
                 </View>
             ) : (
                 <FlatList
@@ -359,42 +368,42 @@ const JobBoard = ({ navigation }: any) => {
                     contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
                     refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#3B82F6']} />
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[isDark ? '#14b8a6' : '#3B82F6']} tintColor={isDark ? '#14b8a6' : '#3B82F6'} />
                     }
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
-                            <Ionicons name="briefcase-outline" size={64} color="#D1D5DB" />
-                            <Text style={styles.emptyText}>No jobs found</Text>
-                            <Text style={styles.emptySubtext}>Try adjusting your filters</Text>
+                            <Ionicons name="briefcase-outline" size={64} color={isDark ? "#334155" : "#D1D5DB"} />
+                            <Text style={[styles.emptyText, isDark && { color: '#f8fafc' }]}>No jobs found</Text>
+                            <Text style={[styles.emptySubtext, isDark && { color: '#64748b' }]}>Try adjusting your filters</Text>
                         </View>
                     }
                     ListFooterComponent={
                         jobs.length > 0 ? (
-                            <View style={styles.pagination}>
+                            <View style={[styles.pagination, isDark && { borderTopColor: '#1e293b' }]}>
                                 <TouchableOpacity
-                                    style={[styles.pageButton, page <= 1 && styles.pageButtonDisabled]}
+                                    style={[styles.pageButton, isDark && { borderColor: '#334155' }, page <= 1 && styles.pageButtonDisabled]}
                                     onPress={() => setPage(p => Math.max(1, p - 1))}
                                     disabled={page <= 1}
                                 >
-                                    <Ionicons name="chevron-back" size={20} color={page <= 1 ? '#D1D5DB' : '#3B82F6'} />
-                                    <Text style={[styles.pageButtonText, page <= 1 && styles.pageButtonTextDisabled]}>
+                                    <Ionicons name="chevron-back" size={20} color={page <= 1 ? (isDark ? '#334155' : '#D1D5DB') : (isDark ? '#14b8a6' : '#3B82F6')} />
+                                    <Text style={[styles.pageButtonText, isDark && { color: '#14b8a6' }, page <= 1 && styles.pageButtonTextDisabled]}>
                                         Previous
                                     </Text>
                                 </TouchableOpacity>
 
-                                <Text style={styles.pageInfo}>
+                                <Text style={[styles.pageInfo, isDark && { color: '#94a3b8' }]}>
                                     Page {page} of {totalPages}
                                 </Text>
 
                                 <TouchableOpacity
-                                    style={[styles.pageButton, page >= totalPages && styles.pageButtonDisabled]}
+                                    style={[styles.pageButton, isDark && { borderColor: '#334155' }, page >= totalPages && styles.pageButtonDisabled]}
                                     onPress={() => setPage(p => Math.min(totalPages, p + 1))}
                                     disabled={page >= totalPages}
                                 >
-                                    <Text style={[styles.pageButtonText, page >= totalPages && styles.pageButtonTextDisabled]}>
+                                    <Text style={[styles.pageButtonText, isDark && { color: '#14b8a6' }, page >= totalPages && styles.pageButtonTextDisabled]}>
                                         Next
                                     </Text>
-                                    <Ionicons name="chevron-forward" size={20} color={page >= totalPages ? '#D1D5DB' : '#3B82F6'} />
+                                    <Ionicons name="chevron-forward" size={20} color={page >= totalPages ? (isDark ? '#334155' : '#D1D5DB') : (isDark ? '#14b8a6' : '#3B82F6')} />
                                 </TouchableOpacity>
                             </View>
                         ) : null

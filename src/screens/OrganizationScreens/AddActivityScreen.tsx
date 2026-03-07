@@ -15,12 +15,14 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../contexts/ThemeContext';
 import { handleImageUpload } from '../../utils/imageUpload';
 import { addActivity } from '../../services/orgService';
 
 const AddActivity = ({ route, navigation }: any) => {
     const { orgId } = route.params;
     const insets = useSafeAreaInsets();
+    const { isDark } = useTheme();
     const [loading, setLoading] = useState(false);
     const [uploadingImage, setUploadingImage] = useState(false);
 
@@ -77,57 +79,61 @@ const AddActivity = ({ route, navigation }: any) => {
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={[styles.container, { paddingTop: insets.top }]}
+            style={[styles.container, isDark && { backgroundColor: '#0f172a' }, { paddingTop: insets.top }]}
         >
-            <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={isDark ? "#0f172a" : "#FFFFFF"} />
 
-            <View style={styles.header}>
+            <View style={[styles.header, isDark && { backgroundColor: '#0f172a', borderBottomColor: '#1e293b' }]}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#1F2937" />
+                    <Ionicons name="arrow-back" size={24} color={isDark ? "#f8fafc" : "#1F2937"} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Post Activity</Text>
+                <Text style={[styles.headerTitle, isDark && { color: '#f8fafc' }]}>Post Activity</Text>
                 <View style={{ width: 40 }} />
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 <View style={styles.form}>
-                    <Text style={styles.label}>Activity Title *</Text>
+                    <Text style={[styles.label, isDark && { color: '#94a3b8' }]}>Activity Title *</Text>
                     <TextInput
-                        style={styles.input}
+                        style={[styles.input, isDark && { backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc' }]}
                         placeholder="What's happening?"
+                        placeholderTextColor={isDark ? "#475569" : "#9CA3AF"}
                         value={formData.title}
                         onChangeText={text => setFormData({ ...formData, title: text })}
                     />
 
-                    <Text style={styles.label}>Location / Place *</Text>
+                    <Text style={[styles.label, isDark && { color: '#94a3b8' }]}>Location / Place *</Text>
                     <TextInput
-                        style={styles.input}
+                        style={[styles.input, isDark && { backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc' }]}
                         placeholder="Where is it taking place?"
+                        placeholderTextColor={isDark ? "#475569" : "#9CA3AF"}
                         value={formData.place}
                         onChangeText={text => setFormData({ ...formData, place: text })}
                     />
 
-                    <Text style={styles.label}>Event Date (YYYY-MM-DD) *</Text>
+                    <Text style={[styles.label, isDark && { color: '#94a3b8' }]}>Event Date (YYYY-MM-DD) *</Text>
                     <TextInput
-                        style={styles.input}
+                        style={[styles.input, isDark && { backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc' }]}
                         placeholder="2024-05-20"
+                        placeholderTextColor={isDark ? "#475569" : "#9CA3AF"}
                         value={formData.date}
                         onChangeText={text => setFormData({ ...formData, date: text })}
                     />
 
-                    <Text style={styles.label}>Details *</Text>
+                    <Text style={[styles.label, isDark && { color: '#94a3b8' }]}>Details *</Text>
                     <TextInput
-                        style={[styles.input, styles.textArea]}
+                        style={[styles.input, styles.textArea, isDark && { backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc' }]}
                         placeholder="Provide more information about the activity..."
+                        placeholderTextColor={isDark ? "#475569" : "#9CA3AF"}
                         multiline
                         numberOfLines={6}
                         value={formData.details}
                         onChangeText={text => setFormData({ ...formData, details: text })}
                     />
 
-                    <Text style={styles.label}>Activity Banner *</Text>
+                    <Text style={[styles.label, isDark && { color: '#94a3b8' }]}>Activity Banner *</Text>
                     <TouchableOpacity
-                        style={styles.imagePicker}
+                        style={[styles.imagePicker, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}
                         onPress={handlePickImage}
                         disabled={uploadingImage}
                     >
@@ -136,11 +142,11 @@ const AddActivity = ({ route, navigation }: any) => {
                         ) : (
                             <View style={styles.placeholder}>
                                 {uploadingImage ? (
-                                    <ActivityIndicator color="#6366F1" />
+                                    <ActivityIndicator color={isDark ? "#14b8a6" : "#6366F1"} />
                                 ) : (
                                     <>
-                                        <Ionicons name="image-outline" size={40} color="#9CA3AF" />
-                                        <Text style={styles.placeholderText}>Select Banner Image</Text>
+                                        <Ionicons name="image-outline" size={40} color={isDark ? "#334155" : "#9CA3AF"} />
+                                        <Text style={[styles.placeholderText, isDark && { color: '#475569' }]}>Select Banner Image</Text>
                                     </>
                                 )}
                             </View>
@@ -148,7 +154,7 @@ const AddActivity = ({ route, navigation }: any) => {
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        style={[styles.submitBtn, loading && styles.disabledBtn]}
+                        style={[styles.submitBtn, isDark && { backgroundColor: '#14b8a6', shadowColor: '#14b8a6' }, loading && styles.disabledBtn]}
                         onPress={handleSubmit}
                         disabled={loading}
                     >

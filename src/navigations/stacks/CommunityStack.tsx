@@ -10,6 +10,7 @@ import CommunityCoursePlayer from '../../screens/CommunityScreens/CommunityCours
 import CommunityStudentDashboard from '../../screens/CommunityScreens/CommunityStudentDashboard';
 import CommunityExamRunner from '../../screens/CommunityScreens/CommunityExamRunner';
 import CommunityExamGrading from '../../screens/CommunityScreens/CommunityExamGrading';
+import SocialResponseScreen from '../../screens/CommunityScreens/SocialResponseScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -17,6 +18,7 @@ const CommunityStack = () => {
     return (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name="CommunitiesList" component={CommunitiesScreen} />
+            <Stack.Screen name="SocialResponse" component={SocialResponseScreen} />
             <Stack.Screen name="CommunityDetails" component={CommunityDetailsScreen} />
             <Stack.Screen name="CreateCommunity" component={CreateCommunityScreen} />
             <Stack.Screen

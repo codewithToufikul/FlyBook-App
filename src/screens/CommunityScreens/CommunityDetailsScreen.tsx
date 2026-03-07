@@ -15,6 +15,7 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
+import { useTheme } from '../../contexts/ThemeContext';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import Video from 'react-native-video';
 import {
@@ -37,6 +38,7 @@ const CommunityDetailsScreen = ({ route, navigation }: any) => {
     const { communityId } = route.params;
     const insets = useSafeAreaInsets();
     const { user } = useAuth();
+    const { isDark } = useTheme();
 
     const [community, setCommunity] = useState<Community | null>(null);
     const [posts, setPosts] = useState<CommunityPost[]>([]);
@@ -176,30 +178,30 @@ const CommunityDetailsScreen = ({ route, navigation }: any) => {
             : [];
 
         return (
-            <View style={styles.postCard}>
+            <View style={[styles.postCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
                 {/* Header - Matching Web */}
                 <View style={[styles.postHeader, { marginBottom: 8 }]}>
                     <View style={{ flex: 1 }}>
                         <View style={styles.authorRow}>
-                            <Text style={styles.postCardTitle}>{item.title}</Text>
-                            <View style={[styles.typeBadge, (styles as any)[`${item.type}Badge`] || styles.textBadge]}>
+                            <Text style={[styles.postCardTitle, isDark && { color: '#f8fafc' }]}>{item.title}</Text>
+                            <View style={[styles.typeBadge, (styles as any)[`${item.type}Badge`] || styles.textBadge, isDark && { borderColor: '#334155', backgroundColor: 'rgba(59, 130, 246, 0.1)' }]}>
                                 <Ionicons
                                     name={item.type === 'course' ? 'school' : item.type === 'video' ? 'videocam' : 'document-text'}
                                     size={10}
-                                    color="#FFFFFF"
+                                    color={isDark ? "#3b82f6" : "#FFFFFF"}
                                 />
-                                <Text style={styles.typeBadgeText}>{item.type.toUpperCase()}</Text>
+                                <Text style={[styles.typeBadgeText, isDark && { color: '#3b82f6' }]}>{item.type.toUpperCase()}</Text>
                             </View>
                             {item.visibility === 'private' && (
-                                <View style={styles.privateBadge}>
+                                <View style={[styles.privateBadge, isDark && { backgroundColor: 'rgba(180, 83, 9, 0.1)', borderColor: '#b45309' }]}>
                                     <Ionicons name="lock-closed" size={10} color="#B45309" />
                                     <Text style={styles.privateBadgeText}>Private</Text>
                                 </View>
                             )}
                         </View>
                         <View style={styles.postMetaRow}>
-                            <Ionicons name="calendar-outline" size={14} color="#9CA3AF" />
-                            <Text style={styles.postTime}>
+                            <Ionicons name="calendar-outline" size={14} color={isDark ? "#64748b" : "#9CA3AF"} />
+                            <Text style={[styles.postTime, isDark && { color: '#64748b' }]}>
                                 {new Date(item.createdAt).toLocaleDateString('en-US', {
                                     year: 'numeric',
                                     month: 'short',
@@ -211,16 +213,16 @@ const CommunityDetailsScreen = ({ route, navigation }: any) => {
                         </View>
                     </View>
                     <TouchableOpacity>
-                        <Ionicons name="ellipsis-horizontal" size={20} color="#9CA3AF" />
+                        <Ionicons name="ellipsis-horizontal" size={20} color={isDark ? "#64748b" : "#9CA3AF"} />
                     </TouchableOpacity>
                 </View>
 
-                {item.description ? <Text style={styles.postDescription}>{item.description}</Text> : null}
+                {item.description ? <Text style={[styles.postDescription, isDark && { color: '#94a3b8' }]}>{item.description}</Text> : null}
 
                 {/* Content Area */}
                 {item.type === 'text' && item.content && (
-                    <View style={styles.textContentBox}>
-                        <Text style={styles.postContentMain}>{item.content}</Text>
+                    <View style={[styles.textContentBox, isDark && { backgroundColor: '#111827', borderColor: '#1e293b' }]}>
+                        <Text style={[styles.postContentMain, isDark && { color: '#f8fafc' }]}>{item.content}</Text>
                     </View>
                 )}
 
@@ -266,7 +268,8 @@ const CommunityDetailsScreen = ({ route, navigation }: any) => {
                         <TouchableOpacity
                             style={[
                                 styles.enrollBtnFull,
-                                enrolledPosts[item._id]?.enrolled && styles.enrolledBtn
+                                enrolledPosts[item._id]?.enrolled && styles.enrolledBtn,
+                                isDark && { backgroundColor: '#14b8a6' }
                             ]}
                             disabled={joinLoading === item._id}
                             onPress={() => enrolledPosts[item._id]?.enrolled ? handleOpenCourse(item._id) : handleJoinCourse(item._id)}
@@ -295,23 +298,23 @@ const CommunityDetailsScreen = ({ route, navigation }: any) => {
                     </View>
                 )}
 
-                <View style={styles.postFooter}>
+                <View style={[styles.postFooter, isDark && { borderTopColor: '#334155' }]}>
                     <TouchableOpacity style={styles.postAction}>
                         <Ionicons
                             name={item.isLiked ? "heart" : "heart-outline"}
                             size={22}
-                            color={item.isLiked ? "#EF4444" : "#4B5563"}
+                            color={item.isLiked ? "#EF4444" : (isDark ? "#94a3b8" : "#4B5563")}
                         />
-                        <Text style={[styles.postActionText, item.isLiked && { color: "#EF4444" }]}>
+                        <Text style={[styles.postActionText, item.isLiked && { color: "#EF4444" }, isDark && !item.isLiked && { color: "#94a3b8" }]}>
                             {item.likesCount}
                         </Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.postAction}>
-                        <Ionicons name="chatbubble-outline" size={20} color="#4B5563" />
-                        <Text style={styles.postActionText}>{item.commentsCount}</Text>
+                        <Ionicons name="chatbubble-outline" size={20} color={isDark ? "#94a3b8" : "#4B5563"} />
+                        <Text style={[styles.postActionText, isDark && { color: "#94a3b8" }]}>{item.commentsCount}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.postAction}>
-                        <Ionicons name="share-social-outline" size={20} color="#4B5563" />
+                        <Ionicons name="share-social-outline" size={20} color={isDark ? "#94a3b8" : "#4B5563"} />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -340,73 +343,73 @@ const CommunityDetailsScreen = ({ route, navigation }: any) => {
                 </View>
             </View>
 
-            <View style={styles.profileSection}>
+            <View style={[styles.profileSection, isDark && { backgroundColor: '#1e293b' }]}>
                 <View style={styles.profileInfo}>
                     <Image
                         source={{ uri: community?.logo || 'https://via.placeholder.com/150' }}
-                        style={styles.logo}
+                        style={[styles.logo, isDark && { borderColor: '#1e293b', backgroundColor: '#0f172a' }]}
                     />
                     <View style={styles.titleContainer}>
                         <View style={styles.nameRow}>
-                            <Text style={styles.name}>{community?.name}</Text>
+                            <Text style={[styles.name, isDark && { color: '#f8fafc' }]}>{community?.name}</Text>
                             {community?.isVerified && (
-                                <Ionicons name="checkmark-circle" size={18} color="#0D9488" style={{ marginLeft: 5 }} />
+                                <Ionicons name="checkmark-circle" size={18} color={isDark ? "#14b8a6" : "#0D9488"} style={{ marginLeft: 5 }} />
                             )}
                         </View>
-                        <Text style={styles.memberCount}>{community?.membersCount} Members</Text>
+                        <Text style={[styles.memberCount, isDark && { color: '#94a3b8' }]}>{community?.membersCount} Members</Text>
                     </View>
                 </View>
 
                 {user?._id === community?.mainAdmin ? (
                     <TouchableOpacity
-                        style={[styles.followBtn, styles.editBtn]}
+                        style={[styles.followBtn, styles.editBtn, isDark && { backgroundColor: '#0f172a' }]}
                         onPress={() => navigation.navigate('CreateCommunity', { community })}
                     >
-                        <Ionicons name="create-outline" size={20} color="#0D9488" />
-                        <Text style={[styles.followBtnText, styles.editBtnText]}>Edit Info</Text>
+                        <Ionicons name="create-outline" size={20} color={isDark ? "#14b8a6" : "#0D9488"} />
+                        <Text style={[styles.followBtnText, styles.editBtnText, isDark && { color: '#14b8a6' }]}>Edit Info</Text>
                     </TouchableOpacity>
                 ) : (
                     <TouchableOpacity
-                        style={[styles.followBtn, isFollowing && styles.followingBtn]}
+                        style={[styles.followBtn, isFollowing && styles.followingBtn, isDark && (isFollowing ? { backgroundColor: '#0f172a' } : { backgroundColor: '#14b8a6' })]}
                         onPress={handleToggleFollow}
                     >
                         <Ionicons
                             name={isFollowing ? "checkmark" : "add"}
                             size={20}
-                            color={isFollowing ? "#0D9488" : "#FFFFFF"}
+                            color={isFollowing ? (isDark ? "#14b8a6" : "#0D9488") : "#FFFFFF"}
                         />
-                        <Text style={[styles.followBtnText, isFollowing && styles.followingBtnText]}>
+                        <Text style={[styles.followBtnText, isFollowing && styles.followingBtnText, isDark && isFollowing && { color: '#14b8a6' }]}>
                             {isFollowing ? "Following" : "Join"}
                         </Text>
                     </TouchableOpacity>
                 )}
             </View>
 
-            <View style={styles.descriptionSection}>
-                <Text style={styles.description}>{community?.description}</Text>
+            <View style={[styles.descriptionSection, isDark && { backgroundColor: '#1e293b' }]}>
+                <Text style={[styles.description, isDark && { color: '#94a3b8' }]}>{community?.description}</Text>
                 <View style={styles.tagsContainer}>
-                    <View style={styles.tag}>
-                        <Text style={styles.tagText}>{community?.category}</Text>
+                    <View style={[styles.tag, isDark && { backgroundColor: '#0f172a', borderColor: '#334155' }]}>
+                        <Text style={[styles.tagText, isDark && { color: '#14b8a6' }]}>{community?.category}</Text>
                     </View>
                 </View>
             </View>
 
             {/* Tabs */}
-            <View style={styles.tabs}>
+            <View style={[styles.tabs, isDark && { backgroundColor: '#1e293b', borderBottomColor: '#334155' }]}>
                 {['Feed', 'Members', 'About'].map(tab => (
                     <TouchableOpacity
                         key={tab}
                         onPress={() => setActiveTab(tab)}
-                        style={[styles.tab, activeTab === tab && styles.activeTab]}
+                        style={[styles.tab, activeTab === tab && [styles.activeTab, isDark && { borderBottomColor: '#14b8a6' }]]}
                     >
-                        <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>{tab}</Text>
+                        <Text style={[styles.tabText, isDark && { color: '#64748b' }, activeTab === tab && [styles.activeTabText, isDark && { color: '#14b8a6' }]]}>{tab}</Text>
                     </TouchableOpacity>
                 ))}
             </View>
 
             {activeTab === 'Feed' && (permissions.isMainAdmin || permissions.isAdmin || permissions.isEditor) && (
                 <TouchableOpacity
-                    style={styles.createPostBtn}
+                    style={[styles.createPostBtn, isDark && { backgroundColor: '#1e293b', borderBottomWidth: 0 }]}
                     onPress={() => navigation.navigate('CreatePost', {
                         communityId,
                         communityName: community?.name
@@ -417,9 +420,9 @@ const CommunityDetailsScreen = ({ route, navigation }: any) => {
                         style={styles.userSmallAvatar}
                     />
                     <View style={styles.createPostPlaceholderContainer}>
-                        <Text style={styles.createPostPlaceholder}>Post something in {community?.name}...</Text>
+                        <Text style={[styles.createPostPlaceholder, isDark && { color: '#64748b' }]}>Post something in {community?.name}...</Text>
                     </View>
-                    <Ionicons name="image-outline" size={24} color="#0D9488" />
+                    <Ionicons name="image-outline" size={24} color={isDark ? "#14b8a6" : "#0D9488"} />
                 </TouchableOpacity>
             )}
         </View>
@@ -427,14 +430,14 @@ const CommunityDetailsScreen = ({ route, navigation }: any) => {
 
     if (loading && !refreshing) {
         return (
-            <View style={styles.centerLoader}>
-                <ActivityIndicator size="large" color="#0D9488" />
+            <View style={[styles.centerLoader, isDark && { backgroundColor: '#0f172a' }]}>
+                <ActivityIndicator size="large" color={isDark ? "#14b8a6" : "#0D9488"} />
             </View>
         );
     }
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, isDark && { backgroundColor: '#0f172a' }]}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             <FlatList
@@ -447,9 +450,9 @@ const CommunityDetailsScreen = ({ route, navigation }: any) => {
                 ListEmptyComponent={
                     activeTab === 'Feed' ? (
                         <View style={styles.emptyContainer}>
-                            <Ionicons name="newspaper-outline" size={60} color="#D1D5DB" />
-                            <Text style={styles.emptyTitle}>No posts yet</Text>
-                            <Text style={styles.emptySubtitle}>Be the first to share something in this community!</Text>
+                            <Ionicons name="newspaper-outline" size={60} color={isDark ? "#1e293b" : "#D1D5DB"} />
+                            <Text style={[styles.emptyTitle, isDark && { color: '#f8fafc' }]}>No posts yet</Text>
+                            <Text style={[styles.emptySubtitle, isDark && { color: '#94a3b8' }]}>Be the first to share something in this community!</Text>
                         </View>
                     ) : null
                 }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useTheme } from '../../contexts/ThemeContext';
 import {
     View,
     Text,
@@ -23,6 +24,7 @@ const { width } = Dimensions.get('window');
 const CommunityCourseDetails = ({ route, navigation }: any) => {
     const { courseId } = route.params;
     const insets = useSafeAreaInsets();
+    const { isDark } = useTheme();
 
     // State
     const [loading, setLoading] = useState(true);
@@ -221,9 +223,9 @@ const CommunityCourseDetails = ({ route, navigation }: any) => {
     // Render Logic
     if (loading) {
         return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#4F46E5" />
-                <Text style={styles.loadingText}>Loading course...</Text>
+            <View style={[styles.loadingContainer, isDark && { backgroundColor: '#0f172a' }]}>
+                <ActivityIndicator size="large" color={isDark ? "#14b8a6" : "#4F46E5"} />
+                <Text style={[styles.loadingText, isDark && { color: '#94a3b8' }]}>Loading course...</Text>
             </View>
         );
     }
@@ -239,22 +241,22 @@ const CommunityCourseDetails = ({ route, navigation }: any) => {
     const isCompleted = activeLessonId ? isLessonCompleted(activeLessonId) : false;
 
     return (
-        <View style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+        <View style={[styles.container, isDark && { backgroundColor: '#0f172a' }]}>
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={isDark ? "#0f172a" : "#FFFFFF"} />
 
             {/* Header / Nav */}
-            <View style={[styles.header, { paddingTop: insets.top }]}>
+            <View style={[styles.header, isDark && { backgroundColor: '#0f172a', borderBottomColor: '#1e293b' }, { paddingTop: insets.top }]}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                    <Ionicons name="chevron-back" size={24} color="#1F2937" />
+                    <Ionicons name="chevron-back" size={24} color={isDark ? "#f8fafc" : "#1F2937"} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle} numberOfLines={1}>{outline?.title || 'Course'}</Text>
+                <Text style={[styles.headerTitle, isDark && { color: '#f8fafc' }]} numberOfLines={1}>{outline?.title || 'Course'}</Text>
                 <TouchableOpacity onPress={requestCertificate}>
-                    <Ionicons name="ribbon-outline" size={24} color={progressPercent === 100 ? "#059669" : "#9CA3AF"} />
+                    <Ionicons name="ribbon-outline" size={24} color={progressPercent === 100 ? "#14b8a6" : (isDark ? "#475569" : "#9CA3AF")} />
                 </TouchableOpacity>
             </View>
 
             {/* Video Player Area */}
-            <View style={styles.playerContainer}>
+            <View style={[styles.playerContainer, isDark && { backgroundColor: '#0f172a', borderBottomColor: '#1e293b' }]}>
                 {activeLessonData ? (
                     <>
                         {(() => {
@@ -299,7 +301,7 @@ const CommunityCourseDetails = ({ route, navigation }: any) => {
                                 );
                             } else {
                                 return (
-                                    <View style={styles.noVideoPlaceholder}>
+                                    <View style={[styles.noVideoPlaceholder, isDark && { backgroundColor: '#000000' }]}>
                                         <Text style={styles.noVideoText}>No video available for this lesson</Text>
                                     </View>
                                 );
@@ -309,18 +311,18 @@ const CommunityCourseDetails = ({ route, navigation }: any) => {
                         {/* Playback Controls */}
                         <View style={styles.playerControls}>
                             <View>
-                                <Text style={styles.lessonMeta}>Chapter {active.chapterIdx + 1} • Lesson {active.lessonIdx + 1}</Text>
-                                <Text style={styles.lessonTitle}>{activeLessonData.title || `Lesson ${active.lessonIdx + 1}`}</Text>
+                                <Text style={[styles.lessonMeta, isDark && { color: '#64748b' }]}>Chapter {active.chapterIdx + 1} • Lesson {active.lessonIdx + 1}</Text>
+                                <Text style={[styles.lessonTitle, isDark && { color: '#f8fafc' }]}>{activeLessonData.title || `Lesson ${active.lessonIdx + 1}`}</Text>
                             </View>
 
                             <View style={styles.actionButtons}>
                                 <TouchableOpacity
-                                    style={[styles.actionBtn, isCompleted ? styles.completedBtn : styles.markBtn]}
+                                    style={[styles.actionBtn, isCompleted ? (isDark ? styles.completedBtnDark : styles.completedBtn) : (isDark ? styles.markBtnDark : styles.markBtn)]}
                                     onPress={() => handleCompleteLesson(activeLessonId)}
                                     disabled={isCompleted}
                                 >
-                                    <Ionicons name={isCompleted ? "checkmark-circle" : "checkmark-circle-outline"} size={20} color="#FFFFFF" />
-                                    <Text style={styles.actionBtnText}>{isCompleted ? "Completed" : "Mark Done"}</Text>
+                                    <Ionicons name={isCompleted ? "checkmark-circle" : "checkmark-circle-outline"} size={20} color={isCompleted ? (isDark ? "#14b8a6" : "#059669") : "#FFFFFF"} />
+                                    <Text style={[styles.actionBtnText, isCompleted && isDark && { color: '#14b8a6' }]}>{isCompleted ? "Completed" : "Mark Done"}</Text>
                                 </TouchableOpacity>
 
                                 <TouchableOpacity style={styles.nextBtn} onPress={goNext}>
@@ -332,27 +334,27 @@ const CommunityCourseDetails = ({ route, navigation }: any) => {
                     </>
                 ) : (
                     <View style={styles.noContentPlaceholder}>
-                        <Text style={styles.noContentText}>Select a lesson to start learning</Text>
-                        <Text style={styles.progressText}>Course Progress: {progressPercent}%</Text>
-                        <View style={styles.progressBarBg}>
-                            <View style={[styles.progressBarFill, { width: `${progressPercent}%` }]} />
+                        <Text style={[styles.noContentText, isDark && { color: '#f8fafc' }]}>Select a lesson to start learning</Text>
+                        <Text style={[styles.progressText, isDark && { color: '#94a3b8' }]}>Course Progress: {progressPercent}%</Text>
+                        <View style={[styles.progressBarBg, isDark && { backgroundColor: '#1e293b' }]}>
+                            <View style={[styles.progressBarFill, { width: `${progressPercent}%` }, isDark && { backgroundColor: '#14b8a6' }]} />
                         </View>
                     </View>
                 )}
             </View>
 
             {/* Syllabus List */}
-            <ScrollView style={styles.syllabusContainer}>
-                <Text style={styles.sectionHeader}>Course Content</Text>
+            <ScrollView style={styles.syllabusContainer} showsVerticalScrollIndicator={false}>
+                <Text style={[styles.sectionHeader, isDark && { color: '#64748b' }]}>Course Content</Text>
                 {chapters.map((ch: any, cIdx: number) => {
                     const chLessons = ch.lessons || ch.videos || [];
                     const isActiveChapter = active.chapterIdx === cIdx;
 
                     return (
-                        <View key={cIdx} style={styles.chapterCard}>
-                            <View style={styles.chapterHeader}>
-                                <Text style={styles.chapterTitle}>{ch.title}</Text>
-                                <Text style={styles.chapterMeta}>{chLessons.length} Lessons</Text>
+                        <View key={cIdx} style={[styles.chapterCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
+                            <View style={[styles.chapterHeader, isDark && { backgroundColor: 'rgba(20, 184, 166, 0.05)' }]}>
+                                <Text style={[styles.chapterTitle, isDark && { color: '#f8fafc' }]}>{ch.title}</Text>
+                                <Text style={[styles.chapterMeta, isDark && { color: '#64748b' }]}>{chLessons.length} Lessons</Text>
                             </View>
 
                             <View style={styles.lessonList}>
@@ -364,28 +366,28 @@ const CommunityCourseDetails = ({ route, navigation }: any) => {
                                     return (
                                         <TouchableOpacity
                                             key={lIdx}
-                                            style={[styles.lessonRow, isActive && styles.activeLessonRow]}
+                                            style={[styles.lessonRow, isActive && (isDark ? styles.activeLessonRowDark : styles.activeLessonRow), isDark && { borderBottomColor: '#334155' }]}
                                             onPress={() => setActive({ chapterIdx: cIdx, lessonIdx: lIdx })}
                                         >
                                             <Ionicons
                                                 name={isDone ? "checkmark-circle" : (isActive ? "play-circle" : "play-circle-outline")}
                                                 size={20}
-                                                color={isDone ? "#059669" : (isActive ? "#4F46E5" : "#9CA3AF")}
+                                                color={isDone ? (isDark ? "#14b8a6" : "#059669") : (isActive ? (isDark ? "#14b8a6" : "#4F46E5") : (isDark ? "#475569" : "#9CA3AF"))}
                                             />
                                             <Text
-                                                style={[styles.lessonRowTitle, isActive && styles.activeLessonTitle]}
+                                                style={[styles.lessonRowTitle, isDark && { color: '#94a3b8' }, isActive && (isDark ? styles.activeLessonTitleDark : styles.activeLessonTitle)]}
                                                 numberOfLines={1}
                                             >
                                                 {l.title || `Lesson ${lIdx + 1}`}
                                             </Text>
-                                            {isActive && <View style={styles.playingIndicator} />}
+                                            {isActive && <View style={[styles.playingIndicator, isDark && { backgroundColor: '#14b8a6' }]} />}
                                         </TouchableOpacity>
                                     );
                                 })}
 
                                 {/* Exam in Chapter */}
                                 {ch.exam && (
-                                    <View style={styles.examRow}>
+                                    <View style={[styles.examRow, isDark && { backgroundColor: 'rgba(245, 158, 11, 0.05)' }]}>
                                         {(() => {
                                             const passed = getLatestAttemptPassed(ch.exam.examId || ch.exam._id);
                                             return (
@@ -397,11 +399,11 @@ const CommunityCourseDetails = ({ route, navigation }: any) => {
                                                         examType: ch.exam.type
                                                     })}
                                                 >
-                                                    <Ionicons name="document-text" size={18} color="#D97706" />
-                                                    <Text style={styles.examText}>
+                                                    <Ionicons name="document-text" size={18} color={isDark ? "#fbbf24" : "#D97706"} />
+                                                    <Text style={[styles.examText, isDark && { color: '#fbbf24' }]}>
                                                         {ch.exam.type === 'quiz' ? 'Quiz' : 'Exam'}
                                                     </Text>
-                                                    {passed && <Ionicons name="checkmark-circle" size={16} color="#059669" style={{ marginLeft: 'auto' }} />}
+                                                    {passed && <Ionicons name="checkmark-circle" size={16} color={isDark ? "#14b8a6" : "#059669"} style={{ marginLeft: 'auto' }} />}
                                                 </TouchableOpacity>
                                             );
                                         })()}
@@ -514,7 +516,9 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     markBtn: { backgroundColor: '#1F2937' },
+    markBtnDark: { backgroundColor: '#14b8a6' },
     completedBtn: { backgroundColor: '#E5E7EB' },
+    completedBtnDark: { backgroundColor: 'rgba(20, 184, 166, 0.1)', borderWidth: 1, borderColor: '#14b8a6' },
     actionBtnText: {
         color: '#FFFFFF',
         fontWeight: '600',
@@ -583,6 +587,9 @@ const styles = StyleSheet.create({
     activeLessonRow: {
         backgroundColor: '#EEF2FF',
     },
+    activeLessonRowDark: {
+        backgroundColor: 'rgba(20, 184, 166, 0.1)',
+    },
     lessonRowTitle: {
         flex: 1,
         fontSize: 14,
@@ -590,6 +597,10 @@ const styles = StyleSheet.create({
     },
     activeLessonTitle: {
         color: '#4F46E5',
+        fontWeight: '600',
+    },
+    activeLessonTitleDark: {
+        color: '#14b8a6',
         fontWeight: '600',
     },
     playingIndicator: {

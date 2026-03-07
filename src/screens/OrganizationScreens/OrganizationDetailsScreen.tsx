@@ -11,6 +11,7 @@ import {
     Linking,
     StatusBar,
 } from 'react-native';
+import { useTheme } from '../../contexts/ThemeContext';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
@@ -22,6 +23,7 @@ const { width } = Dimensions.get('window');
 const OrganizationDetails = ({ route, navigation }: any) => {
     const { orgId } = route.params;
     const insets = useSafeAreaInsets();
+    const { isDark } = useTheme();
     const [organization, setOrganization] = useState<Organization | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -55,19 +57,19 @@ const OrganizationDetails = ({ route, navigation }: any) => {
 
     if (loading) {
         return (
-            <View style={styles.centerLoader}>
-                <ActivityIndicator size="large" color="#6366F1" />
+            <View style={[styles.centerLoader, isDark && { backgroundColor: '#0f172a' }]}>
+                <ActivityIndicator size="large" color={isDark ? "#14b8a6" : "#6366F1"} />
             </View>
         );
     }
 
     if (!organization) {
         return (
-            <View style={styles.centerLoader}>
+            <View style={[styles.centerLoader, isDark && { backgroundColor: '#0f172a' }]}>
                 <Ionicons name="alert-circle-outline" size={64} color="#EF4444" />
-                <Text style={styles.errorText}>Organization not found</Text>
+                <Text style={[styles.errorText, isDark && { color: '#f8fafc' }]}>Organization not found</Text>
                 <TouchableOpacity
-                    style={styles.backButton}
+                    style={[styles.backButton, isDark && { backgroundColor: '#14b8a6' }]}
                     onPress={() => navigation.goBack()}
                 >
                     <Text style={styles.backButtonText}>Go Back</Text>
@@ -77,14 +79,14 @@ const OrganizationDetails = ({ route, navigation }: any) => {
     }
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, isDark && { backgroundColor: '#0f172a' }]}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Hero Header */}
                 <View style={styles.heroHeader}>
                     <LinearGradient
-                        colors={['#6366F1', '#8B5CF6']}
+                        colors={isDark ? ['#1e293b', '#0f172a'] : ['#6366F1', '#8B5CF6']}
                         style={styles.heroGradient}
                     />
                     <View style={[styles.headerNav, { paddingTop: insets.top + 10 }]}>
@@ -100,43 +102,43 @@ const OrganizationDetails = ({ route, navigation }: any) => {
                     </View>
 
                     <View style={styles.heroContent}>
-                        <View style={styles.profileImageContainer}>
+                        <View style={[styles.profileImageContainer, isDark && { borderColor: '#1e293b' }]}>
                             <Image
                                 source={{ uri: organization.profileImage || 'https://via.placeholder.com/128' }}
                                 style={styles.profileImage}
                             />
                         </View>
                         <Text style={styles.orgName}>{organization.orgName}</Text>
-                        <Text style={styles.orgTypeBadge}>{organization.orgType}</Text>
+                        <Text style={[styles.orgTypeBadge, isDark && { backgroundColor: 'rgba(20, 184, 166, 0.2)', color: '#14b8a6' }]}>{organization.orgType}</Text>
                     </View>
                 </View>
 
                 {/* Info Card */}
                 <View style={styles.contentPadding}>
-                    <View style={styles.infoCard}>
-                        <Text style={styles.sectionTitle}>About Organization</Text>
-                        <Text style={styles.descriptionText}>{organization.description}</Text>
+                    <View style={[styles.infoCard, isDark && { backgroundColor: '#1e293b' }]}>
+                        <Text style={[styles.sectionTitle, isDark && { color: '#f8fafc' }]}>About Organization</Text>
+                        <Text style={[styles.descriptionText, isDark && { color: '#94a3b8' }]}>{organization.description}</Text>
 
-                        <View style={styles.divider} />
+                        <View style={[styles.divider, isDark && { backgroundColor: '#334155' }]} />
 
                         <View style={styles.contactContainer}>
                             <View style={styles.contactItem}>
-                                <View style={[styles.contactIcon, { backgroundColor: '#EEF2FF' }]}>
+                                <View style={[styles.contactIcon, { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.1)' : '#EEF2FF' }]}>
                                     <Ionicons name="mail" size={18} color="#6366F1" />
                                 </View>
                                 <View>
-                                    <Text style={styles.contactLabel}>Email</Text>
-                                    <Text style={styles.contactValue}>{organization.email}</Text>
+                                    <Text style={[styles.contactLabel, isDark && { color: '#64748b' }]}>Email</Text>
+                                    <Text style={[styles.contactValue, isDark && { color: '#94a3b8' }]}>{organization.email}</Text>
                                 </View>
                             </View>
 
                             <View style={styles.contactItem}>
-                                <View style={[styles.contactIcon, { backgroundColor: '#ECFDF5' }]}>
+                                <View style={[styles.contactIcon, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.1)' : '#ECFDF5' }]}>
                                     <Ionicons name="call" size={18} color="#10B981" />
                                 </View>
                                 <View>
-                                    <Text style={styles.contactLabel}>Phone</Text>
-                                    <Text style={styles.contactValue}>{organization.phone}</Text>
+                                    <Text style={[styles.contactLabel, isDark && { color: '#64748b' }]}>Phone</Text>
+                                    <Text style={[styles.contactValue, isDark && { color: '#94a3b8' }]}>{organization.phone}</Text>
                                 </View>
                             </View>
 
@@ -145,23 +147,23 @@ const OrganizationDetails = ({ route, navigation }: any) => {
                                     style={styles.contactItem}
                                     onPress={() => handleOpenLink(organization.website)}
                                 >
-                                    <View style={[styles.contactIcon, { backgroundColor: '#F5F3FF' }]}>
+                                    <View style={[styles.contactIcon, { backgroundColor: isDark ? 'rgba(139, 92, 246, 0.1)' : '#F5F3FF' }]}>
                                         <Ionicons name="globe" size={18} color="#8B5CF6" />
                                     </View>
                                     <View>
-                                        <Text style={styles.contactLabel}>Website</Text>
-                                        <Text style={[styles.contactValue, { color: '#6366F1' }]}>Visit Website</Text>
+                                        <Text style={[styles.contactLabel, isDark && { color: '#64748b' }]}>Website</Text>
+                                        <Text style={[styles.contactValue, { color: isDark ? '#14b8a6' : '#6366F1' }]}>Visit Website</Text>
                                     </View>
                                 </TouchableOpacity>
                             )}
 
                             <View style={styles.contactItem}>
-                                <View style={[styles.contactIcon, { backgroundColor: '#FFF7ED' }]}>
+                                <View style={[styles.contactIcon, { backgroundColor: isDark ? 'rgba(249, 115, 22, 0.1)' : '#FFF7ED' }]}>
                                     <Ionicons name="location" size={18} color="#F97316" />
                                 </View>
                                 <View>
-                                    <Text style={styles.contactLabel}>Address</Text>
-                                    <Text style={styles.contactValue}>{organization.address}</Text>
+                                    <Text style={[styles.contactLabel, isDark && { color: '#64748b' }]}>Address</Text>
+                                    <Text style={[styles.contactValue, isDark && { color: '#94a3b8' }]}>{organization.address}</Text>
                                 </View>
                             </View>
                         </View>
@@ -169,7 +171,7 @@ const OrganizationDetails = ({ route, navigation }: any) => {
 
                     {/* Quick Action */}
                     <TouchableOpacity
-                        style={styles.activitiesBtn}
+                        style={[styles.activitiesBtn, isDark && { backgroundColor: '#14b8a6', shadowColor: '#14b8a6' }]}
                         onPress={() => navigation.navigate('OrgActivities', { orgId: organization._id })}
                     >
                         <Ionicons name="newspaper-outline" size={20} color="#FFFFFF" />
@@ -178,13 +180,13 @@ const OrganizationDetails = ({ route, navigation }: any) => {
 
                     {/* Dynamic Sections */}
                     {organization.sections?.map((section, index) => (
-                        <View key={index} style={styles.sectionCard}>
+                        <View key={index} style={[styles.sectionCard, isDark && { backgroundColor: '#1e293b' }]}>
                             <View style={styles.sectionHeaderRow}>
-                                <View style={styles.titleIndicator} />
-                                <Text style={styles.sectionCardTitle}>{section.title}</Text>
+                                <View style={[styles.titleIndicator, isDark && { backgroundColor: '#14b8a6' }]} />
+                                <Text style={[styles.sectionCardTitle, isDark && { color: '#f8fafc' }]}>{section.title}</Text>
                             </View>
 
-                            <Text style={styles.sectionDetails}>
+                            <Text style={[styles.sectionDetails, isDark && { color: '#94a3b8' }]}>
                                 {expandedSections[index]
                                     ? section.details
                                     : section.details.length > 200
@@ -194,7 +196,7 @@ const OrganizationDetails = ({ route, navigation }: any) => {
 
                             {section.details.length > 200 && (
                                 <TouchableOpacity onPress={() => toggleSection(index)}>
-                                    <Text style={styles.seeMoreBtn}>
+                                    <Text style={[styles.seeMoreBtn, isDark && { color: '#14b8a6' }]}>
                                         {expandedSections[index] ? 'See Less' : 'See More'}
                                     </Text>
                                 </TouchableOpacity>

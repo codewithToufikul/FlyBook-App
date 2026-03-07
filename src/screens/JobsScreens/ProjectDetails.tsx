@@ -20,6 +20,7 @@ import {
     updateProposalStatus,
 } from '../../services/jobService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface Proposal {
     _id: string;
@@ -39,6 +40,7 @@ interface Proposal {
 
 const ProjectDetails = ({ route, navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { isDark } = useTheme();
     const { projectId } = route.params;
     const [project, setProject] = useState<Project | null>(null);
     const [loading, setLoading] = useState(true);
@@ -165,7 +167,7 @@ const ProjectDetails = ({ route, navigation }: any) => {
 
     if (loading) {
         return (
-            <View style={styles.centerLoader}>
+            <View style={[styles.centerLoader, isDark && styles.containerDark]}>
                 <ActivityIndicator size="large" color="#10B981" />
             </View>
         );
@@ -173,9 +175,9 @@ const ProjectDetails = ({ route, navigation }: any) => {
 
     if (!project) {
         return (
-            <View style={styles.centerLoader}>
+            <View style={[styles.centerLoader, isDark && styles.containerDark]}>
                 <Ionicons name="alert-circle-outline" size={64} color="#EF4444" />
-                <Text style={styles.errorText}>Project not found</Text>
+                <Text style={[styles.errorText, isDark && styles.textLight]}>Project not found</Text>
                 <TouchableOpacity
                     style={styles.backToListButton}
                     onPress={() => navigation.goBack()}
@@ -187,88 +189,88 @@ const ProjectDetails = ({ route, navigation }: any) => {
     }
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-            <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+        <View style={[styles.container, isDark && styles.containerDark, { paddingTop: insets.top }]}>
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={isDark ? "#0f172a" : "#fff"} />
 
             {/* Header */}
-            <View style={styles.header}>
+            <View style={[styles.header, isDark && styles.headerDark]}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#1F2937" />
+                    <Ionicons name="arrow-back" size={24} color={isDark ? "#FFF" : "#1F2937"} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Project Details</Text>
+                <Text style={[styles.headerTitle, isDark && styles.textLight]}>Project Details</Text>
                 <View style={{ width: 24 }} />
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 {/* Project Information Card */}
-                <View style={styles.projectInfoCard}>
+                <View style={[styles.projectInfoCard, isDark && styles.cardDark]}>
                     <View style={styles.projectHeaderRow}>
-                        <Text style={styles.projectTitle}>{project.title}</Text>
+                        <Text style={[styles.projectTitle, isDark && styles.textLight]}>{project.title}</Text>
                     </View>
 
                     <View style={styles.badgesRow}>
-                        <View style={[styles.badge, project.budgetType === 'fixed' ? styles.badgeFixed : styles.badgeHourly]}>
-                            <Text style={styles.badgeText}>
+                        <View style={[styles.badge, project.budgetType === 'fixed' ? (isDark ? { backgroundColor: '#1E3A8A' } : styles.badgeFixed) : (isDark ? { backgroundColor: '#78350F' } : styles.badgeHourly)]}>
+                            <Text style={[styles.badgeText, isDark && { color: '#F8FAFC' }]}>
                                 {project.budgetType === 'fixed' ? 'Fixed Price' : 'Hourly Rate'}
                             </Text>
                         </View>
-                        <View style={[styles.badge, styles.badgeStatus]}>
-                            <Text style={styles.badgeText}>{project.status}</Text>
+                        <View style={[styles.badge, isDark ? { backgroundColor: '#134E4A' } : styles.badgeStatus]}>
+                            <Text style={[styles.badgeText, isDark && { color: '#F8FAFC' }]}>{project.status}</Text>
                         </View>
                     </View>
 
                     <View style={styles.metaSection}>
                         {project.category && (
                             <View style={styles.metaRow}>
-                                <Ionicons name="folder-outline" size={16} color="#6B7280" />
-                                <Text style={styles.metaLabel}>Category:</Text>
-                                <Text style={styles.metaValue}>{project.category}</Text>
+                                <Ionicons name="folder-outline" size={16} color={isDark ? "#94A3B8" : "#6B7280"} />
+                                <Text style={[styles.metaLabel, isDark && { color: '#94A3B8' }]}>Category:</Text>
+                                <Text style={[styles.metaValue, isDark && { color: '#F8FAFC' }]}>{project.category}</Text>
                             </View>
                         )}
                         {project.budgetType === 'fixed' && project.budget && (
                             <View style={styles.metaRow}>
                                 <Ionicons name="cash-outline" size={16} color="#10B981" />
-                                <Text style={styles.metaLabel}>Budget:</Text>
-                                <Text style={styles.metaValue}>৳{project.budget.toLocaleString()}</Text>
+                                <Text style={[styles.metaLabel, isDark && { color: '#94A3B8' }]}>Budget:</Text>
+                                <Text style={[styles.metaValue, isDark && { color: '#F8FAFC' }]}>৳{project.budget.toLocaleString()}</Text>
                             </View>
                         )}
                         {project.budgetType === 'hourly' && project.hourlyRate && (
                             <View style={styles.metaRow}>
                                 <Ionicons name="cash-outline" size={16} color="#10B981" />
-                                <Text style={styles.metaLabel}>Hourly Rate:</Text>
-                                <Text style={styles.metaValue}>৳{project.hourlyRate.toLocaleString()}/hr</Text>
+                                <Text style={[styles.metaLabel, isDark && { color: '#94A3B8' }]}>Hourly Rate:</Text>
+                                <Text style={[styles.metaValue, isDark && { color: '#F8FAFC' }]}>৳{project.hourlyRate.toLocaleString()}/hr</Text>
                             </View>
                         )}
                         {project.postedByUser && (
                             <View style={styles.metaRow}>
                                 <Ionicons name="person-outline" size={16} color="#3B82F6" />
-                                <Text style={styles.metaLabel}>Posted by:</Text>
-                                <Text style={styles.metaValue}>{project.postedByUser.name}</Text>
+                                <Text style={[styles.metaLabel, isDark && { color: '#94A3B8' }]}>Posted by:</Text>
+                                <Text style={[styles.metaValue, isDark && { color: '#F8FAFC' }]}>{project.postedByUser.name}</Text>
                             </View>
                         )}
                         {project.deadline && (
                             <View style={styles.metaRow}>
                                 <Ionicons name="calendar-outline" size={16} color="#EF4444" />
-                                <Text style={styles.metaLabel}>Deadline:</Text>
-                                <Text style={styles.metaValue}>
+                                <Text style={[styles.metaLabel, isDark && { color: '#94A3B8' }]}>Deadline:</Text>
+                                <Text style={[styles.metaValue, isDark && { color: '#F8FAFC' }]}>
                                     {new Date(project.deadline).toLocaleDateString()}
                                 </Text>
                             </View>
                         )}
                     </View>
 
-                    <View style={styles.descriptionSection}>
-                        <Text style={styles.descriptionText}>{project.description}</Text>
+                    <View style={[styles.descriptionSection, isDark && { borderTopColor: '#334155' }]}>
+                        <Text style={[styles.descriptionText, isDark && { color: '#94A3B8' }]}>{project.description}</Text>
                     </View>
 
                     {/* Skills */}
                     {project.skills && project.skills.length > 0 && (
-                        <View style={styles.skillsSection}>
-                            <Text style={styles.skillsTitle}>Required Skills</Text>
+                        <View style={[styles.skillsSection, isDark && { borderTopColor: '#334155' }]}>
+                            <Text style={[styles.skillsTitle, isDark && styles.textLight]}>Required Skills</Text>
                             <View style={styles.skillsContainer}>
                                 {project.skills.map((skill, index) => (
-                                    <View key={index} style={styles.skillChip}>
-                                        <Text style={styles.skillText}>{skill}</Text>
+                                    <View key={index} style={[styles.skillChip, isDark && { backgroundColor: '#1E293B' }]}>
+                                        <Text style={[styles.skillText, isDark && { color: '#10B981' }]}>{skill}</Text>
                                     </View>
                                 ))}
                             </View>
@@ -278,13 +280,13 @@ const ProjectDetails = ({ route, navigation }: any) => {
 
                 {/* Chat Button (if proposal accepted and project in progress) */}
                 {project.status === 'in_progress' && project.selectedFreelancer && (
-                    <View style={styles.chatCard}>
-                        <View style={styles.chatIconContainer}>
+                    <View style={[styles.chatCard, isDark && { backgroundColor: '#134E4A', borderColor: '#064E3B' }]}>
+                        <View style={[styles.chatIconContainer, isDark && { backgroundColor: '#064E3B' }]}>
                             <Ionicons name="chatbubbles" size={24} color="#10B981" />
                         </View>
                         <View style={styles.chatInfo}>
-                            <Text style={styles.chatTitle}>Project in Progress</Text>
-                            <Text style={styles.chatText}>
+                            <Text style={[styles.chatTitle, isDark && styles.textLight]}>Project in Progress</Text>
+                            <Text style={[styles.chatText, isDark && { color: '#94A3B8' }]}>
                                 You can now chat with {isClient ? 'the freelancer' : 'the client'} about this project.
                             </Text>
                         </View>
@@ -303,9 +305,9 @@ const ProjectDetails = ({ route, navigation }: any) => {
 
                 {/* Client View - Proposals */}
                 {isClient ? (
-                    <View style={styles.proposalsCard}>
+                    <View style={[styles.proposalsCard, isDark && styles.cardDark]}>
                         <View style={styles.proposalsHeader}>
-                            <Text style={styles.proposalsTitle}>Proposals ({proposals.length})</Text>
+                            <Text style={[styles.proposalsTitle, isDark && styles.textLight]}>Proposals ({proposals.length})</Text>
                             <TouchableOpacity
                                 style={styles.toggleButton}
                                 onPress={() => setShowProposals(!showProposals)}
@@ -319,41 +321,41 @@ const ProjectDetails = ({ route, navigation }: any) => {
                         {showProposals && (
                             <View style={styles.proposalsList}>
                                 {proposals.length === 0 ? (
-                                    <Text style={styles.noProposalsText}>No proposals yet.</Text>
+                                    <Text style={[styles.noProposalsText, isDark && { color: '#64748B' }]}>No proposals yet.</Text>
                                 ) : (
                                     proposals.map((proposal) => (
-                                        <View key={proposal._id} style={styles.proposalItem}>
+                                        <View key={proposal._id} style={[styles.proposalItem, isDark && { backgroundColor: '#1E293B', borderColor: '#334155' }]}>
                                             <View style={styles.proposalHeader}>
-                                                <Text style={styles.freelancerName}>
+                                                <Text style={[styles.freelancerName, isDark && styles.textLight]}>
                                                     {proposal.freelancer?.name || 'Freelancer'}
                                                 </Text>
-                                                <Text style={styles.proposalDate}>
+                                                <Text style={[styles.proposalDate, isDark && { color: '#64748B' }]}>
                                                     {new Date(proposal.createdAt).toLocaleDateString()}
                                                 </Text>
                                             </View>
 
                                             <View style={styles.proposalMeta}>
                                                 {proposal.proposedPrice && (
-                                                    <Text style={styles.proposalMetaText}>
+                                                    <Text style={[styles.proposalMetaText, isDark && { color: '#94A3B8' }]}>
                                                         💰 Proposed: ৳{proposal.proposedPrice.toLocaleString()}
                                                     </Text>
                                                 )}
                                                 {proposal.hourlyRate && (
-                                                    <Text style={styles.proposalMetaText}>
+                                                    <Text style={[styles.proposalMetaText, isDark && { color: '#94A3B8' }]}>
                                                         💰 Rate: ৳{proposal.hourlyRate.toLocaleString()}/hr
                                                     </Text>
                                                 )}
                                                 {proposal.deliveryTime && (
-                                                    <Text style={styles.proposalMetaText}>
+                                                    <Text style={[styles.proposalMetaText, isDark && { color: '#94A3B8' }]}>
                                                         ⏱️ Delivery: {proposal.deliveryTime}
                                                     </Text>
                                                 )}
                                             </View>
 
                                             {proposal.coverLetter && (
-                                                <View style={styles.coverLetterSection}>
-                                                    <Text style={styles.coverLetterLabel}>Cover Letter:</Text>
-                                                    <Text style={styles.coverLetterText}>{proposal.coverLetter}</Text>
+                                                <View style={[styles.coverLetterSection, isDark && { borderTopColor: '#334155' }]}>
+                                                    <Text style={[styles.coverLetterLabel, isDark && { color: '#F8FAFC' }]}>Cover Letter:</Text>
+                                                    <Text style={[styles.coverLetterText, isDark && { color: '#94A3B8' }]}>{proposal.coverLetter}</Text>
                                                 </View>
                                             )}
 
@@ -393,16 +395,16 @@ const ProjectDetails = ({ route, navigation }: any) => {
                     </View>
                 ) : project.status === 'open' ? (
                     // Freelancer View - Proposal Form
-                    <View style={styles.proposalFormCard}>
-                        <Text style={styles.formTitle}>Submit Proposal</Text>
+                    <View style={[styles.proposalFormCard, isDark && styles.cardDark]}>
+                        <Text style={[styles.formTitle, isDark && styles.textLight]}>Submit Proposal</Text>
 
                         {project.budgetType === 'fixed' ? (
                             <View style={styles.formGroup}>
-                                <Text style={styles.formLabel}>Your Proposed Price (৳) *</Text>
+                                <Text style={[styles.formLabel, isDark && { color: '#94A3B8' }]}>Your Proposed Price (৳) *</Text>
                                 <TextInput
-                                    style={styles.input}
+                                    style={[styles.input, isDark && styles.inputDark]}
                                     placeholder="Enter your price"
-                                    placeholderTextColor="#9CA3AF"
+                                    placeholderTextColor={isDark ? "#64748B" : "#9CA3AF"}
                                     value={proposedPrice}
                                     onChangeText={setProposedPrice}
                                     keyboardType="numeric"
@@ -410,11 +412,11 @@ const ProjectDetails = ({ route, navigation }: any) => {
                             </View>
                         ) : (
                             <View style={styles.formGroup}>
-                                <Text style={styles.formLabel}>Your Hourly Rate (৳) *</Text>
+                                <Text style={[styles.formLabel, isDark && { color: '#94A3B8' }]}>Your Hourly Rate (৳) *</Text>
                                 <TextInput
-                                    style={styles.input}
+                                    style={[styles.input, isDark && styles.inputDark]}
                                     placeholder="Enter your hourly rate"
-                                    placeholderTextColor="#9CA3AF"
+                                    placeholderTextColor={isDark ? "#64748B" : "#9CA3AF"}
                                     value={hourlyRate}
                                     onChangeText={setHourlyRate}
                                     keyboardType="numeric"
@@ -423,22 +425,22 @@ const ProjectDetails = ({ route, navigation }: any) => {
                         )}
 
                         <View style={styles.formGroup}>
-                            <Text style={styles.formLabel}>Delivery Time *</Text>
+                            <Text style={[styles.formLabel, isDark && { color: '#94A3B8' }]}>Delivery Time *</Text>
                             <TextInput
-                                style={styles.input}
+                                style={[styles.input, isDark && styles.inputDark]}
                                 placeholder="e.g., 3 days, 1 week"
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={isDark ? "#64748B" : "#9CA3AF"}
                                 value={deliveryTime}
                                 onChangeText={setDeliveryTime}
                             />
                         </View>
 
                         <View style={styles.formGroup}>
-                            <Text style={styles.formLabel}>Cover Letter *</Text>
+                            <Text style={[styles.formLabel, isDark && { color: '#94A3B8' }]}>Cover Letter *</Text>
                             <TextInput
-                                style={[styles.input, styles.textArea]}
+                                style={[styles.input, styles.textArea, isDark && styles.inputDark]}
                                 placeholder="Explain why you're the best fit for this project..."
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={isDark ? "#64748B" : "#9CA3AF"}
                                 value={coverLetter}
                                 onChangeText={setCoverLetter}
                                 multiline
@@ -465,7 +467,8 @@ const ProjectDetails = ({ route, navigation }: any) => {
                         {message && (
                             <View style={[
                                 styles.messageContainer,
-                                message.includes('success') ? styles.messageSuccess : styles.messageError
+                                message.includes('success') ? styles.messageSuccess : styles.messageError,
+                                isDark && (message.includes('success') ? { backgroundColor: '#064E3B' } : { backgroundColor: '#450A0A' })
                             ]}>
                                 <Ionicons
                                     name={message.includes('success') ? 'checkmark-circle' : 'alert-circle'}
@@ -482,9 +485,9 @@ const ProjectDetails = ({ route, navigation }: any) => {
                         )}
                     </View>
                 ) : (
-                    <View style={styles.closedCard}>
-                        <Ionicons name="lock-closed-outline" size={32} color="#6B7280" />
-                        <Text style={styles.closedText}>
+                    <View style={[styles.closedCard, isDark && styles.cardDark]}>
+                        <Ionicons name="lock-closed-outline" size={32} color={isDark ? "#64748B" : "#6B7280"} />
+                        <Text style={[styles.closedText, isDark && { color: '#94A3B8' }]}>
                             This project is {project.status} and not accepting new proposals.
                         </Text>
                     </View>
@@ -499,6 +502,12 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#F9FAFB',
     },
+    containerDark: {
+        backgroundColor: '#0f172a',
+    },
+    textLight: {
+        color: '#F8FAFC',
+    },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -508,6 +517,10 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         borderBottomWidth: 1,
         borderBottomColor: '#E5E7EB',
+    },
+    headerDark: {
+        backgroundColor: '#1e293b',
+        borderBottomColor: '#334155',
     },
     headerTitle: {
         fontSize: 18,
@@ -554,6 +567,10 @@ const styles = StyleSheet.create({
         borderColor: '#E5E7EB',
         borderLeftWidth: 4,
         borderLeftColor: '#10B981',
+    },
+    cardDark: {
+        backgroundColor: '#1e293b',
+        borderColor: '#334155',
     },
     projectHeaderRow: {
         marginBottom: 12,
@@ -852,6 +869,11 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         fontSize: 15,
         color: '#1F2937',
+    },
+    inputDark: {
+        backgroundColor: '#0f172a',
+        borderColor: '#475569',
+        color: '#F8FAFC',
     },
     textArea: {
         height: 140,

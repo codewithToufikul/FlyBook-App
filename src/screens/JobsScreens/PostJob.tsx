@@ -13,9 +13,11 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { createJob } from '../../services/jobService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const PostJob = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { isDark } = useTheme();
     const [form, setForm] = useState({
         title: '',
         description: '',
@@ -88,14 +90,16 @@ const PostJob = ({ navigation }: any) => {
                         key={option}
                         style={[
                             styles.optionChip,
-                            form[name as keyof typeof form] === option && styles.optionChipActive,
+                            isDark && { backgroundColor: '#0f172a', borderColor: '#334155' },
+                            form[name as keyof typeof form] === option && [styles.optionChipActive, isDark && { backgroundColor: 'rgba(20, 184, 166, 0.1)', borderColor: '#14b8a6' }],
                         ]}
                         onPress={() => onChange(name, option)}
                     >
                         <Text
                             style={[
                                 styles.optionChipText,
-                                form[name as keyof typeof form] === option && styles.optionChipTextActive,
+                                isDark && { color: '#94a3b8' },
+                                form[name as keyof typeof form] === option && [styles.optionChipTextActive, isDark && { color: '#14b8a6' }],
                             ]}
                         >
                             {option}
@@ -107,35 +111,38 @@ const PostJob = ({ navigation }: any) => {
     );
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-            <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-            <View style={styles.header}>
+        <View style={[styles.container, isDark && { backgroundColor: '#0f172a' }, { paddingTop: insets.top }]}>
+            <StatusBar
+                barStyle={isDark ? "light-content" : "dark-content"}
+                backgroundColor={isDark ? "#0f172a" : "#fff"}
+            />
+            <View style={[styles.header, isDark && { backgroundColor: '#0f172a', borderBottomColor: '#1e293b' }]}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#1F2937" />
+                    <Ionicons name="arrow-back" size={24} color={isDark ? "#f8fafc" : "#1F2937"} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Post a Job</Text>
+                <Text style={[styles.headerTitle, isDark && { color: '#f8fafc' }]}>Post a Job</Text>
                 <View style={{ width: 24 }} />
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                <View style={styles.formCard}>
+                <View style={[styles.formCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
                     <View style={styles.formGroup}>
-                        <Text style={styles.formLabel}>Job Title *</Text>
+                        <Text style={[styles.formLabel, isDark && { color: '#f8fafc' }]}>Job Title *</Text>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, isDark && { backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc' }]}
                             placeholder="e.g. Senior React Developer"
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={isDark ? "#64748b" : "#9CA3AF"}
                             value={form.title}
                             onChangeText={(text) => onChange('title', text)}
                         />
                     </View>
 
                     <View style={styles.formGroup}>
-                        <Text style={styles.formLabel}>Job Description *</Text>
+                        <Text style={[styles.formLabel, isDark && { color: '#f8fafc' }]}>Job Description *</Text>
                         <TextInput
-                            style={[styles.input, styles.textArea]}
+                            style={[styles.input, styles.textArea, isDark && { backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc' }]}
                             placeholder="Describe the job role, requirements, and benefits..."
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={isDark ? "#64748b" : "#9CA3AF"}
                             value={form.description}
                             onChangeText={(text) => onChange('description', text)}
                             multiline
@@ -146,21 +153,21 @@ const PostJob = ({ navigation }: any) => {
 
                     <View style={styles.row}>
                         <View style={[styles.formGroup, { flex: 1, marginRight: 8 }]}>
-                            <Text style={styles.formLabel}>Category *</Text>
+                            <Text style={[styles.formLabel, isDark && { color: '#f8fafc' }]}>Category *</Text>
                             <TextInput
-                                style={styles.input}
+                                style={[styles.input, isDark && { backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc' }]}
                                 placeholder="e.g. IT, Design"
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={isDark ? "#64748b" : "#9CA3AF"}
                                 value={form.category}
                                 onChangeText={(text) => onChange('category', text)}
                             />
                         </View>
                         <View style={[styles.formGroup, { flex: 1, marginLeft: 8 }]}>
-                            <Text style={styles.formLabel}>Location *</Text>
+                            <Text style={[styles.formLabel, isDark && { color: '#f8fafc' }]}>Location *</Text>
                             <TextInput
-                                style={styles.input}
+                                style={[styles.input, isDark && { backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc' }]}
                                 placeholder="e.g. Dhaka, Remote"
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={isDark ? "#64748b" : "#9CA3AF"}
                                 value={form.location}
                                 onChangeText={(text) => onChange('location', text)}
                             />
@@ -185,22 +192,22 @@ const PostJob = ({ navigation }: any) => {
 
                     <View style={styles.row}>
                         <View style={[styles.formGroup, { flex: 1, marginRight: 8 }]}>
-                            <Text style={styles.formLabel}>Min Salary (Optional)</Text>
+                            <Text style={[styles.formLabel, isDark && { color: '#f8fafc' }]}>Min Salary (Optional)</Text>
                             <TextInput
-                                style={styles.input}
+                                style={[styles.input, isDark && { backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc' }]}
                                 placeholder="0"
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={isDark ? "#64748b" : "#9CA3AF"}
                                 value={form.salaryMin}
                                 onChangeText={(text) => onChange('salaryMin', text.replace(/[^0-9]/g, ''))}
                                 keyboardType="numeric"
                             />
                         </View>
                         <View style={[styles.formGroup, { flex: 1, marginLeft: 8 }]}>
-                            <Text style={styles.formLabel}>Max Salary (Optional)</Text>
+                            <Text style={[styles.formLabel, isDark && { color: '#f8fafc' }]}>Max Salary (Optional)</Text>
                             <TextInput
-                                style={styles.input}
+                                style={[styles.input, isDark && { backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc' }]}
                                 placeholder="0"
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={isDark ? "#64748b" : "#9CA3AF"}
                                 value={form.salaryMax}
                                 onChangeText={(text) => onChange('salaryMax', text.replace(/[^0-9]/g, ''))}
                                 keyboardType="numeric"
@@ -209,19 +216,19 @@ const PostJob = ({ navigation }: any) => {
                     </View>
 
                     <View style={styles.formGroup}>
-                        <Text style={styles.formLabel}>Deadline *</Text>
+                        <Text style={[styles.formLabel, isDark && { color: '#f8fafc' }]}>Deadline *</Text>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, isDark && { backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc' }]}
                             placeholder="YYYY-MM-DD"
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={isDark ? "#64748b" : "#9CA3AF"}
                             value={form.deadline}
                             onChangeText={(text) => onChange('deadline', text)}
                         />
-                        <Text style={styles.helpText}>Enter date in YYYY-MM-DD format</Text>
+                        <Text style={[styles.helpText, isDark && { color: '#64748b' }]}>Enter date in YYYY-MM-DD format</Text>
                     </View>
 
                     <TouchableOpacity
-                        style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+                        style={[styles.submitButton, loading && styles.submitButtonDisabled, isDark && { backgroundColor: '#14b8a6' }]}
                         onPress={handleSubmit}
                         disabled={loading}
                     >

@@ -16,9 +16,11 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { getProjects, Project } from '../../services/jobService';
 import { formatDistanceToNow } from 'date-fns';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const FreelanceMarketplace = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { isDark } = useTheme();
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -91,46 +93,46 @@ const FreelanceMarketplace = ({ navigation }: any) => {
 
     const renderProjectItem = ({ item }: { item: Project }) => (
         <TouchableOpacity
-            style={styles.projectCard}
+            style={[styles.projectCard, isDark && styles.projectCardDark]}
             onPress={() => navigation.navigate('ProjectDetails', { projectId: item._id })}
             activeOpacity={0.9}
         >
             <View style={styles.cardHeader}>
                 <View style={styles.headerInfo}>
-                    <Text style={styles.projectTitle} numberOfLines={2}>{item.title}</Text>
-                    <Text style={styles.clientName}>Client: {item.postedByUser?.name || 'Unknown'}</Text>
+                    <Text style={[styles.projectTitle, isDark && styles.textLight]} numberOfLines={2}>{item.title}</Text>
+                    <Text style={[styles.clientName, isDark && { color: '#94A3B8' }]}>Client: {item.postedByUser?.name || 'Unknown'}</Text>
                 </View>
                 <View style={styles.badgesContainer}>
-                    <View style={[styles.badge, item.budgetType === 'fixed' ? styles.badgeFixed : styles.badgeHourly]}>
-                        <Text style={styles.badgeText}>
+                    <View style={[styles.badge, item.budgetType === 'fixed' ? (isDark ? { backgroundColor: '#1E3A8A' } : styles.badgeFixed) : (isDark ? { backgroundColor: '#78350F' } : styles.badgeHourly)]}>
+                        <Text style={[styles.badgeText, isDark && { color: '#F8FAFC' }]}>
                             {item.budgetType === 'fixed' ? 'Fixed' : 'Hourly'}
                         </Text>
                     </View>
-                    <View style={[styles.badge, styles.badgeStatus]}>
-                        <Text style={styles.badgeText}>{item.status}</Text>
+                    <View style={[styles.badge, isDark ? { backgroundColor: '#064E3B' } : styles.badgeStatus]}>
+                        <Text style={[styles.badgeText, isDark && { color: '#F8FAFC' }]}>{item.status}</Text>
                     </View>
                 </View>
             </View>
 
-            <Text style={styles.descriptionText} numberOfLines={2}>
+            <Text style={[styles.descriptionText, isDark && { color: '#94A3B8' }]} numberOfLines={2}>
                 {item.description}
             </Text>
 
             <View style={styles.metaRow}>
                 {item.category && (
                     <View style={styles.metaItem}>
-                        <Ionicons name="folder-outline" size={14} color="#6B7280" />
-                        <Text style={styles.metaText}>{item.category}</Text>
+                        <Ionicons name="folder-outline" size={14} color={isDark ? "#94A3B8" : "#6B7280"} />
+                        <Text style={[styles.metaText, isDark && { color: '#94A3B8' }]}>{item.category}</Text>
                     </View>
                 )}
                 <View style={styles.metaItem}>
                     <Ionicons name="cash-outline" size={14} color="#10B981" />
-                    <Text style={styles.metaText}>{formatBudget(item)}</Text>
+                    <Text style={[styles.metaText, isDark && { color: '#94A3B8' }]}>{formatBudget(item)}</Text>
                 </View>
                 {item.deadline && (
                     <View style={styles.metaItem}>
                         <Ionicons name="calendar-outline" size={14} color="#EF4444" />
-                        <Text style={styles.metaText}>
+                        <Text style={[styles.metaText, isDark && { color: '#94A3B8' }]}>
                             {new Date(item.deadline).toLocaleDateString()}
                         </Text>
                     </View>
@@ -140,22 +142,22 @@ const FreelanceMarketplace = ({ navigation }: any) => {
             {item.skills && item.skills.length > 0 && (
                 <View style={styles.tagsContainer}>
                     {item.skills.slice(0, 4).map((skill, index) => (
-                        <View key={index} style={styles.tag}>
-                            <Text style={styles.tagText}>{skill}</Text>
+                        <View key={index} style={[styles.tag, isDark && { backgroundColor: '#1E293B' }]}>
+                            <Text style={[styles.tagText, isDark && { color: '#10B981' }]}>{skill}</Text>
                         </View>
                     ))}
                     {item.skills.length > 4 && (
-                        <View style={styles.tag}>
-                            <Text style={styles.tagText}>+{item.skills.length - 4}</Text>
+                        <View style={[styles.tag, isDark && { backgroundColor: '#1E293B' }]}>
+                            <Text style={[styles.tagText, isDark && { color: '#10B981' }]}>+{item.skills.length - 4}</Text>
                         </View>
                     )}
                 </View>
             )}
 
-            <View style={styles.cardFooter}>
+            <View style={[styles.cardFooter, isDark && { borderTopColor: '#334155' }]}>
                 <View style={styles.proposalRow}>
-                    <Ionicons name="people-outline" size={14} color="#6B7280" />
-                    <Text style={styles.proposalText}>
+                    <Ionicons name="people-outline" size={14} color={isDark ? "#94A3B8" : "#6B7280"} />
+                    <Text style={[styles.proposalText, isDark && { color: '#94A3B8' }]}>
                         {item.proposalCount !== undefined ? `${item.proposalCount} Proposals` : 'Be first'}
                     </Text>
                 </View>
@@ -174,46 +176,48 @@ const FreelanceMarketplace = ({ navigation }: any) => {
             onRequestClose={() => setShowFilters(false)}
         >
             <View style={styles.modalOverlay}>
-                <View style={styles.modalContent}>
-                    <View style={styles.modalHeader}>
-                        <Text style={styles.modalTitle}>Filters</Text>
+                <View style={[styles.modalContent, isDark && { backgroundColor: '#1e293b' }]}>
+                    <View style={[styles.modalHeader, isDark && { borderBottomColor: '#334155' }]}>
+                        <Text style={[styles.modalTitle, isDark && styles.textLight]}>Filters</Text>
                         <TouchableOpacity onPress={() => setShowFilters(false)}>
-                            <Ionicons name="close" size={24} color="#1F2937" />
+                            <Ionicons name="close" size={24} color={isDark ? "#FFF" : "#1F2937"} />
                         </TouchableOpacity>
                     </View>
 
                     <ScrollView style={styles.filtersList} showsVerticalScrollIndicator={false}>
-                        <Text style={styles.filterLabel}>Search</Text>
+                        <Text style={[styles.filterLabel, isDark && styles.textLight]}>Search</Text>
                         <TextInput
-                            style={styles.filterInput}
+                            style={[styles.filterInput, isDark && styles.filterInputDark]}
                             placeholder="Search by title or skill"
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={isDark ? "#64748B" : "#9CA3AF"}
                             value={searchQuery}
                             onChangeText={setSearchQuery}
                         />
 
-                        <Text style={styles.filterLabel}>Category/Skill</Text>
+                        <Text style={[styles.filterLabel, isDark && styles.textLight]}>Category/Skill</Text>
                         <TextInput
-                            style={styles.filterInput}
+                            style={[styles.filterInput, isDark && styles.filterInputDark]}
                             placeholder="e.g., Web Development, Design"
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={isDark ? "#64748B" : "#9CA3AF"}
                             value={category}
                             onChangeText={setCategory}
                         />
 
-                        <Text style={styles.filterLabel}>Budget Type</Text>
+                        <Text style={[styles.filterLabel, isDark && styles.textLight]}>Budget Type</Text>
                         <View style={styles.pickerContainer}>
                             {['', 'fixed', 'hourly'].map((type) => (
                                 <TouchableOpacity
                                     key={type}
                                     style={[
                                         styles.pickerOption,
+                                        isDark && { backgroundColor: '#1E293B', borderColor: '#334155' },
                                         budgetType === type && styles.pickerOptionActive
                                     ]}
                                     onPress={() => setBudgetType(type)}
                                 >
                                     <Text style={[
                                         styles.pickerOptionText,
+                                        isDark && { color: '#94A3B8' },
                                         budgetType === type && styles.pickerOptionTextActive
                                     ]}>
                                         {type === '' ? 'All' : type === 'fixed' ? 'Fixed Price' : 'Hourly Rate'}
@@ -224,21 +228,21 @@ const FreelanceMarketplace = ({ navigation }: any) => {
 
                         {budgetType === 'fixed' && (
                             <>
-                                <Text style={styles.filterLabel}>Budget Range (৳)</Text>
+                                <Text style={[styles.filterLabel, isDark && styles.textLight]}>Budget Range (৳)</Text>
                                 <View style={styles.budgetRow}>
                                     <TextInput
-                                        style={[styles.filterInput, styles.budgetInput]}
+                                        style={[styles.filterInput, styles.budgetInput, isDark && styles.filterInputDark]}
                                         placeholder="Min"
-                                        placeholderTextColor="#9CA3AF"
+                                        placeholderTextColor={isDark ? "#64748B" : "#9CA3AF"}
                                         value={budgetMin}
                                         onChangeText={setBudgetMin}
                                         keyboardType="numeric"
                                     />
-                                    <Text style={styles.budgetSeparator}>to</Text>
+                                    <Text style={[styles.budgetSeparator, isDark && { color: '#94A3B8' }]}>to</Text>
                                     <TextInput
-                                        style={[styles.filterInput, styles.budgetInput]}
+                                        style={[styles.filterInput, styles.budgetInput, isDark && styles.filterInputDark]}
                                         placeholder="Max"
-                                        placeholderTextColor="#9CA3AF"
+                                        placeholderTextColor={isDark ? "#64748B" : "#9CA3AF"}
                                         value={budgetMax}
                                         onChangeText={setBudgetMax}
                                         keyboardType="numeric"
@@ -248,15 +252,15 @@ const FreelanceMarketplace = ({ navigation }: any) => {
                         )}
                     </ScrollView>
 
-                    <View style={styles.modalFooter}>
+                    <View style={[styles.modalFooter, isDark && { backgroundColor: '#1e293b', borderTopColor: '#334155' }]}>
                         <TouchableOpacity
-                            style={styles.clearButton}
+                            style={[styles.clearButton, isDark && { borderColor: '#334155' }]}
                             onPress={clearFilters}
                         >
-                            <Text style={styles.clearButtonText}>Clear All</Text>
+                            <Text style={[styles.clearButtonText, isDark && { color: '#94A3B8' }]}>Clear All</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
-                            style={styles.applyButton}
+                            style={[styles.applyButton, isDark && { backgroundColor: '#14b8a6' }]}
                             onPress={applyFilters}
                         >
                             <Text style={styles.applyButtonText}>Apply Filters</Text>
@@ -268,25 +272,25 @@ const FreelanceMarketplace = ({ navigation }: any) => {
     );
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-            <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+        <View style={[styles.container, isDark && styles.containerDark, { paddingTop: insets.top }]}>
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={isDark ? "#0f172a" : "#fff"} />
 
             {/* Header */}
-            <View style={styles.header}>
+            <View style={[styles.header, isDark && { backgroundColor: '#0f172a', borderBottomColor: '#1e293b' }]}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#1F2937" />
+                    <Ionicons name="arrow-back" size={24} color={isDark ? "#FFF" : "#1F2937"} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Freelance Marketplace</Text>
+                <Text style={[styles.headerTitle, isDark && { color: '#f8fafc' }]}>Freelance Marketplace</Text>
                 <TouchableOpacity onPress={() => setShowFilters(true)} style={styles.filterButton}>
-                    <Ionicons name="options-outline" size={24} color="#1F2937" />
+                    <Ionicons name="options-outline" size={24} color={isDark ? "#FFF" : "#1F2937"} />
                 </TouchableOpacity>
             </View>
 
             {/* Action Buttons */}
-            <View style={styles.actionsContainer}>
+            <View style={[styles.actionsContainer, isDark && { backgroundColor: '#0f172a', borderBottomColor: '#1e293b' }]}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.actionsList}>
                     <TouchableOpacity
-                        style={styles.actionButton}
+                        style={[styles.actionButton, isDark && { backgroundColor: '#14b8a6' }]}
                         onPress={() => navigation.navigate('PostProject')}
                     >
                         <Ionicons name="add-circle-outline" size={16} color="#fff" />
@@ -294,27 +298,27 @@ const FreelanceMarketplace = ({ navigation }: any) => {
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        style={[styles.actionButton, styles.actionButtonGreen]}
+                        style={[styles.actionButton, styles.actionButtonGreen, isDark && { backgroundColor: 'rgba(20, 184, 166, 0.1)', borderWidth: 1, borderColor: '#14b8a6' }]}
                         onPress={() => navigation.navigate('FreelancerDashboard')}
                     >
-                        <Ionicons name="document-text-outline" size={16} color="#fff" />
-                        <Text style={styles.actionButtonText}>My Proposals</Text>
+                        <Ionicons name="document-text-outline" size={16} color={isDark ? "#14b8a6" : "#fff"} />
+                        <Text style={[styles.actionButtonText, isDark && { color: '#14b8a6' }]}>My Proposals</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        style={[styles.actionButton, styles.actionButtonPurple]}
+                        style={[styles.actionButton, styles.actionButtonPurple, isDark && { backgroundColor: 'rgba(139, 92, 246, 0.1)', borderWidth: 1, borderColor: '#8B5CF6' }]}
                         onPress={() => navigation.navigate('ClientDashboard')}
                     >
-                        <Ionicons name="briefcase-outline" size={16} color="#fff" />
-                        <Text style={styles.actionButtonText}>My Projects</Text>
+                        <Ionicons name="briefcase-outline" size={16} color={isDark ? "#8B5CF6" : "#fff"} />
+                        <Text style={[styles.actionButtonText, isDark && { color: '#8B5CF6' }]}>My Projects</Text>
                     </TouchableOpacity>
                 </ScrollView>
             </View>
 
             {/* Projects List */}
             {loading && page === 1 ? (
-                <View style={styles.centerLoader}>
-                    <ActivityIndicator size="large" color="#10B981" />
+                <View style={[styles.centerLoader, isDark && { backgroundColor: '#0f172a' }]}>
+                    <ActivityIndicator size="large" color={isDark ? "#14b8a6" : "#10B981"} />
                 </View>
             ) : (
                 <FlatList
@@ -328,38 +332,38 @@ const FreelanceMarketplace = ({ navigation }: any) => {
                     }
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
-                            <Ionicons name="briefcase-outline" size={64} color="#D1D5DB" />
-                            <Text style={styles.emptyText}>No projects found</Text>
-                            <Text style={styles.emptySubtext}>Try adjusting your filters</Text>
+                            <Ionicons name="briefcase-outline" size={64} color={isDark ? "#1e293b" : "#D1D5DB"} />
+                            <Text style={[styles.emptyText, isDark && { color: '#94a3b8' }]}>No projects found</Text>
+                            <Text style={[styles.emptySubtext, isDark && { color: '#64748b' }]}>Try adjusting your filters</Text>
                         </View>
                     }
                     ListFooterComponent={
                         projects.length > 0 ? (
-                            <View style={styles.pagination}>
+                            <View style={[styles.pagination, isDark && { borderTopColor: '#1e293b' }]}>
                                 <TouchableOpacity
-                                    style={[styles.pageButton, page <= 1 && styles.pageButtonDisabled]}
+                                    style={[styles.pageButton, isDark && { borderColor: '#14b8a6' }, page <= 1 && (isDark ? { borderColor: '#1e293b' } : styles.pageButtonDisabled)]}
                                     onPress={() => setPage(p => Math.max(1, p - 1))}
                                     disabled={page <= 1}
                                 >
-                                    <Ionicons name="chevron-back" size={20} color={page <= 1 ? '#D1D5DB' : '#10B981'} />
-                                    <Text style={[styles.pageButtonText, page <= 1 && styles.pageButtonTextDisabled]}>
+                                    <Ionicons name="chevron-back" size={20} color={page <= 1 ? (isDark ? '#1e293b' : '#D1D5DB') : (isDark ? '#14b8a6' : '#10B981')} />
+                                    <Text style={[styles.pageButtonText, isDark && { color: '#14b8a6' }, page <= 1 && (isDark ? { color: '#1e293b' } : styles.pageButtonTextDisabled)]}>
                                         Previous
                                     </Text>
                                 </TouchableOpacity>
 
-                                <Text style={styles.pageInfo}>
+                                <Text style={[styles.pageInfo, isDark && { color: '#94A3B8' }]}>
                                     Page {page} of {totalPages}
                                 </Text>
 
                                 <TouchableOpacity
-                                    style={[styles.pageButton, page >= totalPages && styles.pageButtonDisabled]}
+                                    style={[styles.pageButton, isDark && { borderColor: '#14b8a6' }, page >= totalPages && (isDark ? { borderColor: '#1e293b' } : styles.pageButtonDisabled)]}
                                     onPress={() => setPage(p => Math.min(totalPages, p + 1))}
                                     disabled={page >= totalPages}
                                 >
-                                    <Text style={[styles.pageButtonText, page >= totalPages && styles.pageButtonTextDisabled]}>
+                                    <Text style={[styles.pageButtonText, isDark && { color: '#14b8a6' }, page >= totalPages && (isDark ? { color: '#1e293b' } : styles.pageButtonTextDisabled)]}>
                                         Next
                                     </Text>
-                                    <Ionicons name="chevron-forward" size={20} color={page >= totalPages ? '#D1D5DB' : '#10B981'} />
+                                    <Ionicons name="chevron-forward" size={20} color={page >= totalPages ? (isDark ? '#1e293b' : '#D1D5DB') : (isDark ? '#14b8a6' : '#10B981')} />
                                 </TouchableOpacity>
                             </View>
                         ) : null
@@ -377,6 +381,12 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#F9FAFB',
     },
+    containerDark: {
+        backgroundColor: '#0f172a',
+    },
+    textLight: {
+        color: '#F8FAFC',
+    },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -386,6 +396,10 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         borderBottomWidth: 1,
         borderBottomColor: '#E5E7EB',
+    },
+    headerDark: {
+        backgroundColor: '#1e293b',
+        borderBottomColor: '#334155',
     },
     headerTitle: {
         fontSize: 18,
@@ -468,6 +482,10 @@ const styles = StyleSheet.create({
         borderColor: '#E5E7EB',
         borderLeftWidth: 4,
         borderLeftColor: '#10B981',
+    },
+    projectCardDark: {
+        backgroundColor: '#1e293b',
+        borderColor: '#334155',
     },
     cardHeader: {
         flexDirection: 'row',
@@ -651,6 +669,11 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         fontSize: 15,
         color: '#1F2937',
+    },
+    filterInputDark: {
+        backgroundColor: '#0f172a',
+        borderColor: '#334155',
+        color: '#F8FAFC',
     },
     pickerContainer: {
         flexDirection: 'row',

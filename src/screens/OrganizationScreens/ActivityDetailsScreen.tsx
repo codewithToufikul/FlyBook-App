@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../contexts/ThemeContext';
 import { getActivityDetails } from '../../services/orgService';
 
 const { width } = Dimensions.get('window');
@@ -19,6 +20,7 @@ const { width } = Dimensions.get('window');
 const ActivityDetails = ({ route, navigation }: any) => {
     const { activityId } = route.params;
     const insets = useSafeAreaInsets();
+    const { isDark } = useTheme();
     const [activity, setActivity] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
@@ -40,17 +42,17 @@ const ActivityDetails = ({ route, navigation }: any) => {
 
     if (loading) {
         return (
-            <View style={styles.centerLoader}>
-                <ActivityIndicator size="large" color="#6366F1" />
+            <View style={[styles.centerLoader, isDark && { backgroundColor: '#0f172a' }]}>
+                <ActivityIndicator size="large" color={isDark ? "#14b8a6" : "#6366F1"} />
             </View>
         );
     }
 
     if (!activity) {
         return (
-            <View style={styles.centerLoader}>
-                <Text style={styles.errorText}>Activity details not found.</Text>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <View style={[styles.centerLoader, isDark && { backgroundColor: '#0f172a' }]}>
+                <Text style={[styles.errorText, isDark && { color: '#94a3b8' }]}>Activity details not found.</Text>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.backBtn, isDark && { backgroundColor: '#14b8a6' }]}>
                     <Text style={styles.backBtnText}>Go Back</Text>
                 </TouchableOpacity>
             </View>
@@ -58,7 +60,7 @@ const ActivityDetails = ({ route, navigation }: any) => {
     }
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, isDark && { backgroundColor: '#0f172a' }]}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             <ScrollView showsVerticalScrollIndicator={false}>
@@ -83,13 +85,13 @@ const ActivityDetails = ({ route, navigation }: any) => {
                 </View>
 
                 {/* Content */}
-                <View style={styles.content}>
-                    <Text style={styles.title}>{activity.title}</Text>
+                <View style={[styles.content, isDark && { backgroundColor: '#0f172a' }]}>
+                    <Text style={[styles.title, isDark && { color: '#f8fafc' }]}>{activity.title}</Text>
 
                     <View style={styles.metaRow}>
                         <View style={styles.metaItem}>
-                            <Ionicons name="calendar-outline" size={18} color="#6366F1" />
-                            <Text style={styles.metaText}>
+                            <Ionicons name="calendar-outline" size={18} color={isDark ? "#14b8a6" : "#6366F1"} />
+                            <Text style={[styles.metaText, isDark && { color: '#94a3b8' }]}>
                                 {new Date(activity.date).toLocaleDateString('en-US', {
                                     weekday: 'long',
                                     year: 'numeric',
@@ -100,25 +102,25 @@ const ActivityDetails = ({ route, navigation }: any) => {
                         </View>
                         <View style={styles.metaItem}>
                             <Ionicons name="location-outline" size={18} color="#EF4444" />
-                            <Text style={styles.metaText}>{activity.place || 'TBD'}</Text>
+                            <Text style={[styles.metaText, isDark && { color: '#94a3b8' }]}>{activity.place || 'TBD'}</Text>
                         </View>
                     </View>
 
-                    <View style={styles.divider} />
+                    <View style={[styles.divider, isDark && { backgroundColor: '#1e293b' }]} />
 
-                    <Text style={styles.sectionHeader}>About this Activity</Text>
-                    <Text style={styles.detailsText}>{activity.details}</Text>
+                    <Text style={[styles.sectionHeader, isDark && { color: '#f8fafc' }]}>About this Activity</Text>
+                    <Text style={[styles.detailsText, isDark && { color: '#94a3b8' }]}>{activity.details}</Text>
 
                     {/* Organization Banner */}
                     <TouchableOpacity
-                        style={styles.orgCard}
+                        style={[styles.orgCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}
                         onPress={() => navigation.navigate('OrganizationDetails', { orgId: activity.organizationId })}
                     >
                         <View style={styles.orgInfo}>
-                            <Text style={styles.organizedBy}>ORGANIZED BY</Text>
-                            <Text style={styles.orgName}>View organization profile</Text>
+                            <Text style={[styles.organizedBy, isDark && { color: '#64748b' }]}>ORGANIZED BY</Text>
+                            <Text style={[styles.orgName, isDark && { color: '#f8fafc' }]}>View organization profile</Text>
                         </View>
-                        <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+                        <Ionicons name="chevron-forward" size={20} color={isDark ? "#475569" : "#9CA3AF"} />
                     </TouchableOpacity>
                 </View>
             </ScrollView>

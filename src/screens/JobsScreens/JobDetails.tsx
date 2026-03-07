@@ -12,8 +12,12 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { getJobDetails, Job, applyToJob, getEmployerStatus } from '../../services/jobService';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const JobDetails = ({ route, navigation }: any) => {
+    const insets = useSafeAreaInsets();
+    const { isDark } = useTheme();
     const { jobId } = route.params;
     const [job, setJob] = useState<Job | null>(null);
     const [loading, setLoading] = useState(true);
@@ -53,7 +57,7 @@ const JobDetails = ({ route, navigation }: any) => {
                 });
             }
         } catch (error) {
-            console.log('Not an employer or error fetching status');
+
         }
     };
 
@@ -94,19 +98,19 @@ const JobDetails = ({ route, navigation }: any) => {
 
     if (loading) {
         return (
-            <View style={styles.centerLoader}>
-                <ActivityIndicator size="large" color="#3B82F6" />
+            <View style={[styles.centerLoader, isDark && { backgroundColor: '#0f172a' }]}>
+                <ActivityIndicator size="large" color={isDark ? "#14b8a6" : "#3B82F6"} />
             </View>
         );
     }
 
     if (!job) {
         return (
-            <View style={styles.centerLoader}>
+            <View style={[styles.centerLoader, isDark && { backgroundColor: '#0f172a' }]}>
                 <Ionicons name="alert-circle-outline" size={64} color="#EF4444" />
-                <Text style={styles.errorText}>Job not found</Text>
+                <Text style={[styles.errorText, isDark && { color: '#ef4444' }]}>Job not found</Text>
                 <TouchableOpacity
-                    style={styles.backToListButton}
+                    style={[styles.backToListButton, isDark && { backgroundColor: '#14b8a6' }]}
                     onPress={() => navigation.goBack()}
                 >
                     <Text style={styles.backToListText}>Back to Job Board</Text>
@@ -116,55 +120,58 @@ const JobDetails = ({ route, navigation }: any) => {
     }
 
     return (
-        <View style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+        <View style={[styles.container, isDark && { backgroundColor: '#0f172a' }, { paddingTop: insets.top }]}>
+            <StatusBar
+                barStyle={isDark ? "light-content" : "dark-content"}
+                backgroundColor={isDark ? "#0f172a" : "#fff"}
+            />
 
             {/* Header */}
-            <View style={styles.header}>
+            <View style={[styles.header, isDark && { backgroundColor: '#0f172a', borderBottomColor: '#1e293b' }]}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#1F2937" />
+                    <Ionicons name="arrow-back" size={24} color={isDark ? "#f8fafc" : "#1F2937"} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Job Details</Text>
+                <Text style={[styles.headerTitle, isDark && { color: '#f8fafc' }]}>Job Details</Text>
                 <View style={{ width: 24 }} />
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 {/* Job Information Card */}
-                <View style={styles.jobInfoCard}>
+                <View style={[styles.jobInfoCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
                     <View style={styles.jobHeaderRow}>
-                        <Text style={styles.jobTitle}>{job.title}</Text>
-                        <View style={styles.jobTypeBadge}>
-                            <Text style={styles.jobTypeText}>{job.jobType}</Text>
+                        <Text style={[styles.jobTitle, isDark && { color: '#f8fafc' }]}>{job.title}</Text>
+                        <View style={[styles.jobTypeBadge, isDark && { backgroundColor: 'rgba(20, 184, 166, 0.1)' }]}>
+                            <Text style={[styles.jobTypeText, isDark && { color: '#14b8a6' }]}>{job.jobType}</Text>
                         </View>
                     </View>
 
                     <View style={styles.metaRow}>
                         {job.location && (
                             <View style={styles.metaItem}>
-                                <Ionicons name="location-outline" size={14} color="#6B7280" />
-                                <Text style={styles.metaText}>{job.location}</Text>
+                                <Ionicons name="location-outline" size={14} color={isDark ? "#94a3b8" : "#6B7280"} />
+                                <Text style={[styles.metaText, isDark && { color: '#94a3b8' }]}>{job.location}</Text>
                             </View>
                         )}
                         {job.experienceLevel && (
                             <View style={styles.metaItem}>
-                                <Ionicons name="briefcase-outline" size={14} color="#6B7280" />
-                                <Text style={styles.metaText}>{job.experienceLevel}</Text>
+                                <Ionicons name="briefcase-outline" size={14} color={isDark ? "#94a3b8" : "#6B7280"} />
+                                <Text style={[styles.metaText, isDark && { color: '#94a3b8' }]}>{job.experienceLevel}</Text>
                             </View>
                         )}
                     </View>
 
-                    <View style={styles.descriptionSection}>
-                        <Text style={styles.descriptionText}>{job.description}</Text>
+                    <View style={[styles.descriptionSection, isDark && { borderTopColor: '#334155' }]}>
+                        <Text style={[styles.descriptionText, isDark && { color: '#94a3b8' }]}>{job.description}</Text>
                     </View>
 
                     {/* Additional Info */}
                     {(job.salaryMin || job.salaryMax || job.category || job.deadline) && (
-                        <View style={styles.additionalInfo}>
+                        <View style={[styles.additionalInfo, isDark && { borderTopColor: '#334155' }]}>
                             {(job.salaryMin || job.salaryMax) && (
                                 <View style={styles.infoRow}>
-                                    <Ionicons name="cash-outline" size={16} color="#10B981" />
-                                    <Text style={styles.infoLabel}>Salary:</Text>
-                                    <Text style={styles.infoValue}>
+                                    <Ionicons name="cash-outline" size={16} color={isDark ? "#14b8a6" : "#10B981"} />
+                                    <Text style={[styles.infoLabel, isDark && { color: '#94a3b8' }]}>Salary:</Text>
+                                    <Text style={[styles.infoValue, isDark && { color: '#f8fafc' }]}>
                                         {job.salaryMin && job.salaryMax
                                             ? `৳${job.salaryMin.toLocaleString()} - ৳${job.salaryMax.toLocaleString()}`
                                             : job.salaryMin
@@ -176,16 +183,16 @@ const JobDetails = ({ route, navigation }: any) => {
                             )}
                             {job.category && (
                                 <View style={styles.infoRow}>
-                                    <Ionicons name="folder-outline" size={16} color="#3B82F6" />
-                                    <Text style={styles.infoLabel}>Category:</Text>
-                                    <Text style={styles.infoValue}>{job.category}</Text>
+                                    <Ionicons name="folder-outline" size={16} color={isDark ? "#14b8a6" : "#3B82F6"} />
+                                    <Text style={[styles.infoLabel, isDark && { color: '#94a3b8' }]}>Category:</Text>
+                                    <Text style={[styles.infoValue, isDark && { color: '#f8fafc' }]}>{job.category}</Text>
                                 </View>
                             )}
                             {job.deadline && (
                                 <View style={styles.infoRow}>
                                     <Ionicons name="calendar-outline" size={16} color="#EF4444" />
-                                    <Text style={styles.infoLabel}>Deadline:</Text>
-                                    <Text style={styles.infoValue}>
+                                    <Text style={[styles.infoLabel, isDark && { color: '#94a3b8' }]}>Deadline:</Text>
+                                    <Text style={[styles.infoValue, isDark && { color: '#f8fafc' }]}>
                                         {new Date(job.deadline).toLocaleDateString()}
                                     </Text>
                                 </View>
@@ -195,12 +202,12 @@ const JobDetails = ({ route, navigation }: any) => {
 
                     {/* Skills */}
                     {job.skills && job.skills.length > 0 && (
-                        <View style={styles.skillsSection}>
-                            <Text style={styles.skillsTitle}>Required Skills</Text>
+                        <View style={[styles.skillsSection, isDark && { borderTopColor: '#334155' }]}>
+                            <Text style={[styles.skillsTitle, isDark && { color: '#f8fafc' }]}>Required Skills</Text>
                             <View style={styles.skillsContainer}>
                                 {job.skills.map((skill, index) => (
-                                    <View key={index} style={styles.skillChip}>
-                                        <Text style={styles.skillText}>{skill}</Text>
+                                    <View key={index} style={[styles.skillChip, isDark && { backgroundColor: '#0f172a' }]}>
+                                        <Text style={[styles.skillText, isDark && { color: '#14b8a6' }]}>{skill}</Text>
                                     </View>
                                 ))}
                             </View>
@@ -210,16 +217,16 @@ const JobDetails = ({ route, navigation }: any) => {
 
                 {/* Employer View or Application Form */}
                 {employerInfo.approved ? (
-                    <View style={styles.employerViewCard}>
-                        <View style={styles.employerIconContainer}>
-                            <Ionicons name="business" size={32} color="#10B981" />
+                    <View style={[styles.employerViewCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
+                        <View style={[styles.employerIconContainer, isDark && { backgroundColor: 'rgba(20, 184, 166, 0.1)' }]}>
+                            <Ionicons name="business" size={32} color={isDark ? "#14b8a6" : "#10B981"} />
                         </View>
-                        <Text style={styles.employerViewTitle}>Employer View</Text>
-                        <Text style={styles.employerViewText}>
+                        <Text style={[styles.employerViewTitle, isDark && { color: '#f8fafc' }]}>Employer View</Text>
+                        <Text style={[styles.employerViewText, isDark && { color: '#94a3b8' }]}>
                             As an employer, you cannot apply to jobs. Manage your posted jobs and view applications from your dashboard.
                         </Text>
                         <TouchableOpacity
-                            style={styles.dashboardButton}
+                            style={[styles.dashboardButton, isDark && { backgroundColor: '#14b8a6' }]}
                             onPress={() => navigation.navigate('EmployerDashboard')}
                         >
                             <Ionicons name="briefcase-outline" size={18} color="#fff" />
@@ -227,15 +234,15 @@ const JobDetails = ({ route, navigation }: any) => {
                         </TouchableOpacity>
                     </View>
                 ) : (
-                    <View style={styles.applicationCard}>
-                        <Text style={styles.applicationTitle}>Apply Now</Text>
+                    <View style={[styles.applicationCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
+                        <Text style={[styles.applicationTitle, isDark && { color: '#f8fafc' }]}>Apply Now</Text>
 
                         <View style={styles.formGroup}>
-                            <Text style={styles.formLabel}>CV URL (Drive/Cloud link) *</Text>
+                            <Text style={[styles.formLabel, isDark && { color: '#f8fafc' }]}>CV URL (Drive/Cloud link) *</Text>
                             <TextInput
-                                style={styles.input}
+                                style={[styles.input, isDark && { backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc' }]}
                                 placeholder="https://drive.google.com/..."
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={isDark ? "#64748b" : "#9CA3AF"}
                                 value={cvUrl}
                                 onChangeText={setCvUrl}
                                 autoCapitalize="none"
@@ -244,11 +251,11 @@ const JobDetails = ({ route, navigation }: any) => {
                         </View>
 
                         <View style={styles.formGroup}>
-                            <Text style={styles.formLabel}>Cover Letter *</Text>
+                            <Text style={[styles.formLabel, isDark && { color: '#f8fafc' }]}>Cover Letter *</Text>
                             <TextInput
-                                style={[styles.input, styles.textArea]}
+                                style={[styles.input, styles.textArea, isDark && { backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc' }]}
                                 placeholder="Explain why you're the best fit for this position..."
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={isDark ? "#64748b" : "#9CA3AF"}
                                 value={coverLetter}
                                 onChangeText={setCoverLetter}
                                 multiline
@@ -258,7 +265,7 @@ const JobDetails = ({ route, navigation }: any) => {
                         </View>
 
                         <TouchableOpacity
-                            style={[styles.applyButton, applying && styles.applyButtonDisabled]}
+                            style={[styles.applyButton, applying && styles.applyButtonDisabled, isDark && { backgroundColor: '#14b8a6' }]}
                             onPress={handleApply}
                             disabled={applying}
                         >
@@ -275,16 +282,16 @@ const JobDetails = ({ route, navigation }: any) => {
                         {message && (
                             <View style={[
                                 styles.messageContainer,
-                                message.includes('success') ? styles.messageSuccess : styles.messageError
+                                message.includes('success') ? (isDark ? { backgroundColor: 'rgba(16, 185, 129, 0.1)', borderColor: '#10B981' } : styles.messageSuccess) : (isDark ? { backgroundColor: 'rgba(239, 68, 68, 0.1)', borderColor: '#EF4444' } : styles.messageError)
                             ]}>
                                 <Ionicons
                                     name={message.includes('success') ? 'checkmark-circle' : 'alert-circle'}
                                     size={16}
-                                    color={message.includes('success') ? '#10B981' : '#EF4444'}
+                                    color={message.includes('success') ? (isDark ? '#14b8a6' : '#10B981') : '#EF4444'}
                                 />
                                 <Text style={[
                                     styles.messageText,
-                                    message.includes('success') ? styles.messageTextSuccess : styles.messageTextError
+                                    message.includes('success') ? (isDark ? { color: '#14b8a6' } : styles.messageTextSuccess) : (isDark ? { color: '#ef4444' } : styles.messageTextError)
                                 ]}>
                                     {message}
                                 </Text>

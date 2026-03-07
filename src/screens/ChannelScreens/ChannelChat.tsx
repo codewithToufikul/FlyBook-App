@@ -17,7 +17,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { get, post } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -39,6 +41,7 @@ const fetchMessages = async (channelId: string): Promise<Message[]> => {
 const ChannelChat = ({ route, navigation }: any) => {
     const { channelId, channelName } = route.params;
     const { user } = useAuth();
+    const { isDark } = useTheme();
     const insets = useSafeAreaInsets();
     const [messageText, setMessageText] = useState('');
     const flatListRef = useRef<FlatList>(null);
@@ -78,16 +81,19 @@ const ChannelChat = ({ route, navigation }: any) => {
         return (
             <View style={[styles.messageContainer, isMe ? styles.myMessage : styles.otherMessage]}>
                 {!isMe && (
-                    <View style={styles.senderAvatar}>
+                    <View style={[styles.senderAvatar, isDark && { backgroundColor: '#1e3a8a' }]}>
                         <Text style={styles.avatarText}>{item.senderName?.[0]?.toUpperCase() || '?'}</Text>
                     </View>
                 )}
-                <View style={[styles.messageBubble, isMe ? styles.myBubble : styles.otherBubble]}>
-                    {!isMe && <Text style={styles.senderName}>{item.senderName}</Text>}
-                    <Text style={[styles.messageText, isMe ? styles.myMessageText : styles.otherMessageText]}>
+                <View style={[
+                    styles.messageBubble,
+                    isMe ? styles.myBubble : (isDark ? styles.otherBubbleDark : styles.otherBubble)
+                ]}>
+                    {!isMe && <Text style={[styles.senderName, isDark && { color: '#60A5FA' }]}>{item.senderName}</Text>}
+                    <Text style={[styles.messageText, isMe ? styles.myMessageText : (isDark ? styles.otherMessageTextDark : styles.otherMessageText)]}>
                         {item.text}
                     </Text>
-                    <Text style={styles.timestamp}>
+                    <Text style={[styles.timestamp, isDark && { color: 'rgba(255,255,255,0.3)' }]}>
                         {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </Text>
                 </View>
@@ -97,27 +103,35 @@ const ChannelChat = ({ route, navigation }: any) => {
 
     return (
         <KeyboardAvoidingView
-            style={styles.container}
+            style={[styles.container, isDark && { backgroundColor: '#0f172a' }]}
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
+            <StatusBar
+                barStyle={isDark ? "light-content" : "dark-content"}
+                backgroundColor={isDark ? "#1e293b" : "#FFFFFF"}
+            />
             {/* Custom Header */}
-            <View style={[styles.header, { paddingTop: insets.top }]}>
+            <View style={[
+                styles.header,
+                { paddingTop: insets.top },
+                isDark && { backgroundColor: '#1e293b', borderBottomColor: '#334155' }
+            ]}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="chevron-back" size={28} color="#1F2937" />
+                    <Ionicons name="chevron-back" size={28} color={isDark ? "#F8FAFC" : "#1F2937"} />
                 </TouchableOpacity>
                 <View style={styles.headerInfo}>
-                    <Text style={styles.headerTitle} numberOfLines={1}>{channelName}</Text>
-                    <Text style={styles.onlineStatus}>Active in community</Text>
+                    <Text style={[styles.headerTitle, isDark && { color: '#F8FAFC' }]} numberOfLines={1}>{channelName}</Text>
+                    <Text style={[styles.onlineStatus, isDark && { color: '#14b8a6' }]}>Active in community</Text>
                 </View>
                 <TouchableOpacity style={styles.headerAction}>
-                    <Ionicons name="ellipsis-vertical" size={20} color="#6B7280" />
+                    <Ionicons name="ellipsis-vertical" size={20} color={isDark ? "#94A3B8" : "#6B7280"} />
                 </TouchableOpacity>
             </View>
 
             {isLoading ? (
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#3B82F6" />
+                <View style={[styles.loadingContainer, isDark && { backgroundColor: '#0f172a' }]}>
+                    <ActivityIndicator size="large" color={isDark ? "#14b8a6" : "#3B82F6"} />
                 </View>
             ) : (
                 <FlatList
@@ -132,21 +146,29 @@ const ChannelChat = ({ route, navigation }: any) => {
             )}
 
             {/* Input Bar */}
-            <View style={[styles.inputBar, { paddingBottom: Math.max(insets.bottom, 15) }]}>
+            <View style={[
+                styles.inputBar,
+                { paddingBottom: Math.max(insets.bottom, 15) },
+                isDark && { backgroundColor: '#1e293b', borderTopColor: '#334155' }
+            ]}>
                 <TouchableOpacity style={styles.attachButton}>
-                    <Ionicons name="add-circle-outline" size={28} color="#6B7280" />
+                    <Ionicons name="add-circle-outline" size={28} color={isDark ? "#94A3B8" : "#6B7280"} />
                 </TouchableOpacity>
-                <View style={styles.inputContainer}>
+                <View style={[styles.inputContainer, isDark && { backgroundColor: '#0f172a' }]}>
                     <TextInput
-                        style={styles.input}
+                        style={[styles.input, isDark && { color: '#F8FAFC' }]}
                         placeholder="Type a message..."
+                        placeholderTextColor={isDark ? "#4B5563" : "#9CA3AF"}
                         value={messageText}
                         onChangeText={setMessageText}
                         multiline
                     />
                 </View>
                 <TouchableOpacity
-                    style={[styles.sendButton, !messageText.trim() && styles.disabledSend]}
+                    style={[
+                        styles.sendButton,
+                        !messageText.trim() && (isDark ? { backgroundColor: '#334155' } : styles.disabledSend)
+                    ]}
                     onPress={handleSendMessage}
                     disabled={!messageText.trim() || mutation.isPending}
                 >
@@ -239,6 +261,10 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         borderBottomLeftRadius: 4,
     },
+    otherBubbleDark: {
+        backgroundColor: '#1e293b',
+        borderBottomLeftRadius: 4,
+    },
     senderName: {
         fontSize: 12,
         fontWeight: '700',
@@ -254,6 +280,9 @@ const styles = StyleSheet.create({
     },
     otherMessageText: {
         color: '#1F2937',
+    },
+    otherMessageTextDark: {
+        color: '#F8FAFC',
     },
     timestamp: {
         fontSize: 10,

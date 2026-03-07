@@ -178,13 +178,6 @@ export const handlePdfUpload = async (
       throw new Error('No PDF file selected');
     }
 
-    // Show file info (optional)
-    console.log('Selected PDF:', {
-      name: selectedPdf.name,
-      size: `${((selectedPdf.size || 0) / 1024 / 1024).toFixed(2)} MB`,
-      type: selectedPdf.type,
-    });
-
     // Upload to Cloudinary
     const uploadResult = await uploadPdfToCloudinary(selectedPdf, onProgress);
 
@@ -207,11 +200,6 @@ export const handlePdfUpload = async (
 export const deletePdfFromCloudinary = async (
   publicId: string,
 ): Promise<boolean> => {
-  console.warn(
-    'PDF deletion should be handled via backend API for security reasons',
-  );
-  console.log('Public ID to delete:', publicId);
-
   // TODO: Implement backend API call
   // Example: await api.delete(`/pdf/delete/${publicId}`);
 

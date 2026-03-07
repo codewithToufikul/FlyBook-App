@@ -33,12 +33,32 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>FlyBook needs your location to show nearby books and services</string>
+	<key>NSCameraUsageDescription</key>
+	<string>FlyBook needs access to your camera for photos and video calls</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>FlyBook needs your location to provide personalized nearby content</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>FlyBook needs your location to show nearby books and services</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>FlyBook needs your microphone for audio and video calls</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>FlyBook needs access to save photos to your library</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>FlyBook needs access to your photo library to select profile and cover photos</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Ionicons.ttf</string>
+		<string>MaterialIcons.ttf</string>
+		<string>MaterialCommunityIcons.ttf</string>
+		<string>FontAwesome.ttf</string>
+		<string>FontAwesome5_Solid.ttf</string>
+		<string>FontAwesome5_Regular.ttf</string>
+		<string>FontAwesome5_Brands.ttf</string>
+		<string>Feather.ttf</string>
+		<string>AntDesign.ttf</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIRequiredDeviceCapabilities</key>
@@ -53,25 +73,12 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
-	<key>UIAppFonts</key>
+	<key>UIBackgroundModes</key>
 	<array>
-		<string>Ionicons.ttf</string>
-		<string>MaterialIcons.ttf</string>
-		<string>MaterialCommunityIcons.ttf</string>
-		<string>FontAwesome.ttf</string>
-		<string>FontAwesome5_Solid.ttf</string>
-		<string>FontAwesome5_Regular.ttf</string>
-		<string>FontAwesome5_Brands.ttf</string>
-		<string>Feather.ttf</string>
-		<string>AntDesign.ttf</string>
+		<string>voip</string>
+		<string>audio</string>
+		<string>fetch</string>
+		<string>remote-notification</string>
 	</array>
-	<key>NSCameraUsageDescription</key>
-	<string>FlyBook needs access to your camera to take profile and cover photos</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>FlyBook needs access to your photo library to select profile and cover photos</string>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>FlyBook needs access to save photos to your library</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>FlyBook needs your microphone for listening exam recordings.</string>
 </dict>
 </plist>

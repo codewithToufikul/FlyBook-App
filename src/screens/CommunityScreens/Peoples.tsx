@@ -15,7 +15,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { get, post } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
-import TobNav from '../../components/TobNav';
+import { useTheme } from '../../contexts/ThemeContext';
+import CustomHeader from '../../components/common/CustomHeader';
+import { StatusBar } from 'react-native';
 
 interface User {
     _id: string;
@@ -29,6 +31,7 @@ type TabType = 'home' | 'friendRequests' | 'sentRequests' | 'allFriends';
 const Peoples = ({ navigation }: any) => {
     const { user, refreshUser } = useAuth();
     const queryClient = useQueryClient();
+    const { isDark } = useTheme();
     const [activeTab, setActiveTab] = useState<TabType>('home');
     const [refreshing, setRefreshing] = useState(false);
     const [processingId, setProcessingId] = useState<string | null>(null);
@@ -80,7 +83,7 @@ const Peoples = ({ navigation }: any) => {
             refetchPeoples();
             refetchSent();
         },
-        onError: (err) => console.log('Error sending request', err),
+        onError: (err) => { },
         onSettled: () => setProcessingId(null),
     });
 
@@ -91,7 +94,7 @@ const Peoples = ({ navigation }: any) => {
             refetchReq();
             refetchFriends();
         },
-        onError: (err) => console.log('Error accepting request', err),
+        onError: (err) => { },
         onSettled: () => setProcessingId(null),
     });
 
@@ -101,7 +104,7 @@ const Peoples = ({ navigation }: any) => {
             refreshUser();
             refetchReq();
         },
-        onError: (err) => console.log('Error rejecting request', err),
+        onError: (err) => { },
         onSettled: () => setProcessingId(null),
     });
 
@@ -112,7 +115,7 @@ const Peoples = ({ navigation }: any) => {
             refetchSent();
             refetchPeoples();
         },
-        onError: (err) => console.log('Error cancelling request', err),
+        onError: (err) => { },
         onSettled: () => setProcessingId(null),
     });
 
@@ -123,7 +126,7 @@ const Peoples = ({ navigation }: any) => {
             refetchFriends();
             refetchPeoples();
         },
-        onError: (err) => console.log('Error unfriending', err),
+        onError: (err) => { },
         onSettled: () => setProcessingId(null),
     });
 
@@ -158,18 +161,18 @@ const Peoples = ({ navigation }: any) => {
 
             if (isFriend) {
                 actionButtons = (
-                    <TouchableOpacity style={styles.btnGray} disabled>
-                        <Text style={styles.btnTextGray}>Friend</Text>
+                    <TouchableOpacity style={[styles.btnGray, isDark && { backgroundColor: '#334155' }]} disabled>
+                        <Text style={[styles.btnTextGray, isDark && { color: '#94a3b8' }]}>Friend</Text>
                     </TouchableOpacity>
                 );
             } else if (isSent) {
                 actionButtons = (
                     <TouchableOpacity
-                        style={[styles.btnYellow, isProcessing && { opacity: 0.6 }]}
+                        style={[styles.btnYellow, isDark && { backgroundColor: 'rgba(245, 158, 11, 0.1)' }, isProcessing && { opacity: 0.6 }]}
                         onPress={() => handleAction(() => cancelRequestMutation.mutate(item._id), item._id)}
                         disabled={isProcessing}
                     >
-                        <Text style={styles.btnTextYellow}>
+                        <Text style={[styles.btnTextYellow, isDark && { color: '#FBBF24' }]}>
                             {isProcessing ? 'Processing...' : 'Cancel Request'}
                         </Text>
                     </TouchableOpacity>
@@ -178,20 +181,20 @@ const Peoples = ({ navigation }: any) => {
                 actionButtons = (
                     <View style={styles.row}>
                         <TouchableOpacity
-                            style={[styles.btnBlue, { flex: 1, marginRight: 5 }, isProcessing && { opacity: 0.6 }]}
+                            style={[styles.btnBlue, isDark && { backgroundColor: 'rgba(59, 130, 246, 0.1)' }, { flex: 1, marginRight: 5 }, isProcessing && { opacity: 0.6 }]}
                             onPress={() => handleAction(() => acceptRequestMutation.mutate(item._id), item._id)}
                             disabled={isProcessing}
                         >
-                            <Text style={styles.btnTextBlue}>
+                            <Text style={[styles.btnTextBlue, isDark && { color: '#60A5FA' }]}>
                                 {isProcessing ? '...' : 'Accept'}
                             </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
-                            style={[styles.btnRed, { flex: 1, marginLeft: 5 }, isProcessing && { opacity: 0.6 }]}
+                            style={[styles.btnRed, isDark && { backgroundColor: 'rgba(239, 68, 68, 0.1)' }, { flex: 1, marginLeft: 5 }, isProcessing && { opacity: 0.6 }]}
                             onPress={() => handleAction(() => rejectRequestMutation.mutate(item._id), item._id)}
                             disabled={isProcessing}
                         >
-                            <Text style={styles.btnTextRed}>
+                            <Text style={[styles.btnTextRed, isDark && { color: '#F87171' }]}>
                                 {isProcessing ? '...' : 'Remove'}
                             </Text>
                         </TouchableOpacity>
@@ -200,11 +203,11 @@ const Peoples = ({ navigation }: any) => {
             } else {
                 actionButtons = (
                     <TouchableOpacity
-                        style={[styles.btnGreen, isProcessing && { opacity: 0.6 }]}
+                        style={[styles.btnGreen, isDark && { backgroundColor: 'rgba(20, 184, 166, 0.1)' }, isProcessing && { opacity: 0.6 }]}
                         onPress={() => handleAction(() => sendRequestMutation.mutate(item._id), item._id)}
                         disabled={isProcessing}
                     >
-                        <Text style={styles.btnTextGreen}>
+                        <Text style={[styles.btnTextGreen, isDark && { color: '#14b8a6' }]}>
                             {isProcessing ? 'Sending...' : 'Add Friend'}
                         </Text>
                     </TouchableOpacity>
@@ -214,20 +217,20 @@ const Peoples = ({ navigation }: any) => {
             actionButtons = (
                 <View style={styles.row}>
                     <TouchableOpacity
-                        style={[styles.btnBlue, { flex: 1, marginRight: 5 }, isProcessing && { opacity: 0.6 }]}
+                        style={[styles.btnBlue, isDark && { backgroundColor: 'rgba(59, 130, 246, 0.1)' }, { flex: 1, marginRight: 5 }, isProcessing && { opacity: 0.6 }]}
                         onPress={() => handleAction(() => acceptRequestMutation.mutate(item._id), item._id)}
                         disabled={isProcessing}
                     >
-                        <Text style={styles.btnTextBlue}>
+                        <Text style={[styles.btnTextBlue, isDark && { color: '#60A5FA' }]}>
                             {isProcessing ? '...' : 'Accept'}
                         </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                        style={[styles.btnRed, { flex: 1, marginLeft: 5 }, isProcessing && { opacity: 0.6 }]}
+                        style={[styles.btnRed, isDark && { backgroundColor: 'rgba(239, 68, 68, 0.1)' }, { flex: 1, marginLeft: 5 }, isProcessing && { opacity: 0.6 }]}
                         onPress={() => handleAction(() => rejectRequestMutation.mutate(item._id), item._id)}
                         disabled={isProcessing}
                     >
-                        <Text style={styles.btnTextRed}>
+                        <Text style={[styles.btnTextRed, isDark && { color: '#F87171' }]}>
                             {isProcessing ? '...' : 'Remove'}
                         </Text>
                     </TouchableOpacity>
@@ -236,11 +239,11 @@ const Peoples = ({ navigation }: any) => {
         } else if (activeTab === 'sentRequests') {
             actionButtons = (
                 <TouchableOpacity
-                    style={[styles.btnYellow, isProcessing && { opacity: 0.6 }]}
+                    style={[styles.btnYellow, isDark && { backgroundColor: 'rgba(245, 158, 11, 0.1)' }, isProcessing && { opacity: 0.6 }]}
                     onPress={() => handleAction(() => cancelRequestMutation.mutate(item._id), item._id)}
                     disabled={isProcessing}
                 >
-                    <Text style={styles.btnTextYellow}>
+                    <Text style={[styles.btnTextYellow, isDark && { color: '#FBBF24' }]}>
                         {isProcessing ? 'Processing...' : 'Cancel Request'}
                     </Text>
                 </TouchableOpacity>
@@ -248,11 +251,11 @@ const Peoples = ({ navigation }: any) => {
         } else if (activeTab === 'allFriends') {
             actionButtons = (
                 <TouchableOpacity
-                    style={[styles.btnRedLight, isProcessing && { opacity: 0.6 }]}
+                    style={[styles.btnRedLight, isDark && { backgroundColor: 'rgba(239, 68, 68, 0.1)' }, isProcessing && { opacity: 0.6 }]}
                     onPress={() => handleUnfriend(item._id, item.name)}
                     disabled={isProcessing}
                 >
-                    <Text style={styles.btnTextRedLight}>
+                    <Text style={[styles.btnTextRedLight, isDark && { color: '#F87171' }]}>
                         {isProcessing ? 'Processing...' : 'Unfriend'}
                     </Text>
                 </TouchableOpacity>
@@ -260,71 +263,95 @@ const Peoples = ({ navigation }: any) => {
         }
 
         return (
-            <View style={styles.card}>
+            <TouchableOpacity
+                style={[styles.card, isDark && { backgroundColor: '#1e293b', shadowColor: '#000' }]}
+                onPress={() => navigation.navigate('UserProfile', { userId: item._id })}
+                activeOpacity={0.7}
+            >
                 <View>
                     <Image
                         source={{ uri: item.profileImage || 'https://via.placeholder.com/150' }}
-                        style={styles.avatar}
+                        style={[styles.avatar, isDark && { backgroundColor: '#0f172a' }]}
                     />
-                    {item.isOnline && <View style={styles.onlineDot} />}
+                    {item.isOnline && <View style={[styles.onlineDot, isDark && { borderColor: '#1e293b' }]} />}
                 </View>
                 <View style={styles.info}>
-                    <Text style={styles.name}>{item.name}</Text>
+                    <Text style={[styles.name, isDark && { color: '#F8FAFC' }]}>{item.name}</Text>
                     <View style={styles.actions}>
                         {actionButtons}
                     </View>
                 </View>
-            </View>
+            </TouchableOpacity>
         );
     };
 
     const isLoading = loadingPeoples || loadingReq || loadingSent || loadingFriends;
 
     return (
-        <View style={styles.container}>
-            <TobNav navigation={navigation} />
+        <View style={[styles.container, isDark && { backgroundColor: '#0f172a' }]}>
+            <StatusBar
+                barStyle={isDark ? "light-content" : "dark-content"}
+                backgroundColor={isDark ? "#0f172a" : "#FFFFFF"}
+            />
+            <CustomHeader title="Peoples" />
 
             {/* Tabs */}
-            <View style={styles.tabsContainer}>
+            <View style={[styles.tabsContainer, isDark && { backgroundColor: '#0f172a', borderBottomColor: '#1e293b' }]}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsContent}>
                     <TouchableOpacity
-                        style={[styles.tab, activeTab === 'home' && styles.activeTab]}
+                        style={[
+                            styles.tab,
+                            isDark && { backgroundColor: '#1e293b' },
+                            activeTab === 'home' && (isDark ? styles.activeTabDark : styles.activeTab)
+                        ]}
                         onPress={() => setActiveTab('home')}
                     >
-                        <Ionicons name="people" size={20} color={activeTab === 'home' ? '#fff' : '#666'} />
-                        <Text style={[styles.tabText, activeTab === 'home' && styles.activeTabText]}>Suggestions</Text>
+                        <Ionicons name="people" size={20} color={activeTab === 'home' ? '#fff' : (isDark ? '#94A3B8' : '#666')} />
+                        <Text style={[styles.tabText, isDark && { color: '#94A3B8' }, activeTab === 'home' && styles.activeTabText]}>Suggestions</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        style={[styles.tab, activeTab === 'friendRequests' && styles.activeTab]}
+                        style={[
+                            styles.tab,
+                            isDark && { backgroundColor: '#1e293b' },
+                            activeTab === 'friendRequests' && (isDark ? styles.activeTabDark : styles.activeTab)
+                        ]}
                         onPress={() => setActiveTab('friendRequests')}
                     >
-                        <Ionicons name="person-add" size={20} color={activeTab === 'friendRequests' ? '#fff' : '#666'} />
-                        <Text style={[styles.tabText, activeTab === 'friendRequests' && styles.activeTabText]}>Requests</Text>
+                        <Ionicons name="person-add" size={20} color={activeTab === 'friendRequests' ? '#fff' : (isDark ? '#94A3B8' : '#666')} />
+                        <Text style={[styles.tabText, isDark && { color: '#94A3B8' }, activeTab === 'friendRequests' && styles.activeTabText]}>Requests</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        style={[styles.tab, activeTab === 'sentRequests' && styles.activeTab]}
+                        style={[
+                            styles.tab,
+                            isDark && { backgroundColor: '#1e293b' },
+                            activeTab === 'sentRequests' && (isDark ? styles.activeTabDark : styles.activeTab)
+                        ]}
                         onPress={() => setActiveTab('sentRequests')}
                     >
-                        <Ionicons name="paper-plane" size={20} color={activeTab === 'sentRequests' ? '#fff' : '#666'} />
-                        <Text style={[styles.tabText, activeTab === 'sentRequests' && styles.activeTabText]}>Sent</Text>
+                        <Ionicons name="paper-plane" size={20} color={activeTab === 'sentRequests' ? '#fff' : (isDark ? '#94A3B8' : '#666')} />
+                        <Text style={[styles.tabText, isDark && { color: '#94A3B8' }, activeTab === 'sentRequests' && styles.activeTabText]}>Sent</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        style={[styles.tab, activeTab === 'allFriends' && styles.activeTab]}
+                        style={[
+                            styles.tab,
+                            isDark && { backgroundColor: '#1e293b' },
+                            activeTab === 'allFriends' && (isDark ? styles.activeTabDark : styles.activeTab)
+                        ]}
                         onPress={() => setActiveTab('allFriends')}
                     >
-                        <Ionicons name="heart" size={20} color={activeTab === 'allFriends' ? '#fff' : '#666'} />
-                        <Text style={[styles.tabText, activeTab === 'allFriends' && styles.activeTabText]}>Friends</Text>
+                        <Ionicons name="heart" size={20} color={activeTab === 'allFriends' ? '#fff' : (isDark ? '#94A3B8' : '#666')} />
+                        <Text style={[styles.tabText, isDark && { color: '#94A3B8' }, activeTab === 'allFriends' && styles.activeTabText]}>Friends</Text>
                     </TouchableOpacity>
                 </ScrollView>
             </View>
 
             {/* Content */}
             {isLoading && !refreshing ? (
-                <View style={styles.center}>
-                    <ActivityIndicator size="large" color="#0D9488" />
+                <View style={[styles.center, isDark && { backgroundColor: '#0f172a' }]}>
+                    <ActivityIndicator size="large" color={isDark ? "#14b8a6" : "#0D9488"} />
                 </View>
             ) : (
                 <FlatList
@@ -337,10 +364,17 @@ const Peoples = ({ navigation }: any) => {
                     renderItem={renderUserItem}
                     keyExtractor={(item) => item._id}
                     contentContainerStyle={styles.list}
-                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            colors={[isDark ? "#14b8a6" : '#0D9488']}
+                            tintColor={isDark ? "#14b8a6" : '#0D9488'}
+                        />
+                    }
                     ListEmptyComponent={
                         <View style={styles.center}>
-                            <Text style={styles.emptyText}>No users found.</Text>
+                            <Text style={[styles.emptyText, isDark && { color: '#64748B' }]}>No users found.</Text>
                         </View>
                     }
                 />
@@ -374,6 +408,9 @@ const styles = StyleSheet.create({
     },
     activeTab: {
         backgroundColor: '#0D9488',
+    },
+    activeTabDark: {
+        backgroundColor: '#14b8a6',
     },
     tabText: {
         marginLeft: 6,
@@ -424,7 +461,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
         color: '#1F2937',
-        marginBottom: 8,
+        marginBottom: 4,
     },
     actions: {
         flexDirection: 'row',

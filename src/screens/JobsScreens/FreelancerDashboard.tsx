@@ -12,6 +12,7 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { getMyProposals } from '../../services/jobService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface ProposalWithProject {
     _id: string;
@@ -34,11 +35,22 @@ interface ProposalWithProject {
 
 const FreelancerDashboard = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { isDark } = useTheme();
     const [proposals, setProposals] = useState<ProposalWithProject[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [filter, setFilter] = useState<'all' | 'pending' | 'accepted' | 'rejected'>('all');
     const [expandedId, setExpandedId] = useState<string | null>(null);
+
+    const bg = isDark ? '#0f172a' : '#F9FAFB';
+    const cardBg = isDark ? '#1e293b' : '#fff';
+    const headerBg = isDark ? '#0f172a' : '#fff';
+    const filterBg = isDark ? '#0f172a' : '#fff';
+    const border = isDark ? '#334155' : '#E5E7EB';
+    const titleColor = isDark ? '#f8fafc' : '#111827';
+    const subtitleColor = isDark ? '#64748b' : '#6B7280';
+    const metaColor = isDark ? '#475569' : '#6B7280';
+    const infoValueColor = isDark ? '#e2e8f0' : '#1F2937';
 
     const fetchProposals = useCallback(async () => {
         try {
@@ -104,7 +116,7 @@ const FreelancerDashboard = ({ navigation }: any) => {
         const isExpanded = expandedId === item._id;
 
         return (
-            <View style={styles.proposalCard}>
+            <View style={[styles.proposalCard, { backgroundColor: cardBg, borderColor: border }]}>
                 <TouchableOpacity
                     onPress={() => navigation.navigate('ProjectDetails', { projectId: project._id })}
                     activeOpacity={0.9}
@@ -149,29 +161,29 @@ const FreelancerDashboard = ({ navigation }: any) => {
                         {item.proposedPrice && (
                             <View style={styles.infoRow}>
                                 <Ionicons name="cash-outline" size={16} color="#10B981" />
-                                <Text style={styles.infoLabel}>Your Bid:</Text>
-                                <Text style={styles.infoValue}>৳{item.proposedPrice.toLocaleString()}</Text>
+                                <Text style={[styles.infoLabel, { color: metaColor }]}>Your Bid:</Text>
+                                <Text style={[styles.infoValue, { color: infoValueColor }]}>৳{item.proposedPrice.toLocaleString()}</Text>
                             </View>
                         )}
                         {item.hourlyRate && (
                             <View style={styles.infoRow}>
                                 <Ionicons name="cash-outline" size={16} color="#10B981" />
-                                <Text style={styles.infoLabel}>Your Rate:</Text>
-                                <Text style={styles.infoValue}>৳{item.hourlyRate.toLocaleString()}/hr</Text>
+                                <Text style={[styles.infoLabel, { color: metaColor }]}>Your Rate:</Text>
+                                <Text style={[styles.infoValue, { color: infoValueColor }]}>৳{item.hourlyRate.toLocaleString()}/hr</Text>
                             </View>
                         )}
                         {item.deliveryTime && (
                             <View style={styles.infoRow}>
                                 <Ionicons name="time-outline" size={16} color="#3B82F6" />
-                                <Text style={styles.infoLabel}>Delivery:</Text>
-                                <Text style={styles.infoValue}>{item.deliveryTime}</Text>
+                                <Text style={[styles.infoLabel, { color: metaColor }]}>Delivery:</Text>
+                                <Text style={[styles.infoValue, { color: infoValueColor }]}>{item.deliveryTime}</Text>
                             </View>
                         )}
                     </View>
 
                     <View style={styles.submittedDateRow}>
-                        <Ionicons name="calendar-outline" size={14} color="#9CA3AF" />
-                        <Text style={styles.submittedDateText}>
+                        <Ionicons name="calendar-outline" size={14} color={isDark ? '#475569' : '#9CA3AF'} />
+                        <Text style={[styles.submittedDateText, { color: isDark ? '#475569' : '#9CA3AF' }]}>
                             Submitted: {new Date(item.createdAt).toLocaleDateString('en-US', {
                                 year: 'numeric',
                                 month: 'short',
@@ -188,16 +200,12 @@ const FreelancerDashboard = ({ navigation }: any) => {
                             style={styles.coverLetterHeader}
                             onPress={() => toggleExpand(item._id)}
                         >
-                            <Text style={styles.coverLetterTitle}>Your Cover Letter</Text>
-                            <Ionicons
-                                name={isExpanded ? 'chevron-up' : 'chevron-down'}
-                                size={20}
-                                color="#6B7280"
-                            />
+                            <Text style={[styles.coverLetterTitle, { color: isDark ? '#94a3b8' : '#374151' }]}>Your Cover Letter</Text>
+                            <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={20} color={metaColor} />
                         </TouchableOpacity>
 
                         {isExpanded && (
-                            <Text style={styles.coverLetterText}>{item.coverLetter}</Text>
+                            <Text style={[styles.coverLetterText, { color: isDark ? '#94a3b8' : '#4B5563', borderTopColor: isDark ? '#334155' : '#F3F4F6' }]}>{item.coverLetter}</Text>
                         )}
                     </View>
                 )}
@@ -214,7 +222,7 @@ const FreelancerDashboard = ({ navigation }: any) => {
 
                     {item.status === 'accepted' && project.status === 'in_progress' && (
                         <TouchableOpacity
-                            style={styles.chatButton}
+                            style={[styles.chatButton, { backgroundColor: isDark ? '#1e293b' : '#fff', borderColor: '#10B981' }]}
                             onPress={() => navigation.navigate('Chat', { userId: project._id })}
                         >
                             <Ionicons name="chatbubbles-outline" size={16} color="#10B981" />
@@ -227,54 +235,51 @@ const FreelancerDashboard = ({ navigation }: any) => {
     };
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-            <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+        <View style={[styles.container, { paddingTop: insets.top, backgroundColor: bg }]}>
+            <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={headerBg} />
 
             {/* Header */}
-            <View style={styles.header}>
+            <View style={[styles.header, { backgroundColor: headerBg, borderBottomColor: border }]}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#1F2937" />
+                    <Ionicons name="arrow-back" size={24} color={isDark ? '#f8fafc' : '#1F2937'} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>My Proposals</Text>
-                <TouchableOpacity
-                    onPress={() => navigation.navigate('FreelanceMarketplace')}
-                    style={styles.browseButton}
-                >
+                <Text style={[styles.headerTitle, { color: titleColor }]}>My Proposals</Text>
+                <TouchableOpacity onPress={() => navigation.navigate('FreelanceMarketplace')} style={styles.browseButton}>
                     <Ionicons name="search-outline" size={20} color="#10B981" />
                 </TouchableOpacity>
             </View>
 
             {/* Filter Tabs */}
-            <View style={styles.filterContainer}>
+            <View style={[styles.filterContainer, { backgroundColor: filterBg, borderBottomColor: border }]}>
                 <TouchableOpacity
-                    style={[styles.filterTab, filter === 'all' && styles.filterTabActive]}
+                    style={[styles.filterTab, { backgroundColor: isDark ? '#1e293b' : '#F9FAFB' }, filter === 'all' && styles.filterTabActive]}
                     onPress={() => setFilter('all')}
                 >
-                    <Text style={[styles.filterTabText, filter === 'all' && styles.filterTabTextActive]}>
+                    <Text style={[styles.filterTabText, { color: isDark ? '#94a3b8' : '#6B7280' }, filter === 'all' && styles.filterTabTextActive]}>
                         All ({proposals.length})
                     </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.filterTab, filter === 'pending' && styles.filterTabActive]}
+                    style={[styles.filterTab, { backgroundColor: isDark ? '#1e293b' : '#F9FAFB' }, filter === 'pending' && styles.filterTabActive]}
                     onPress={() => setFilter('pending')}
                 >
-                    <Text style={[styles.filterTabText, filter === 'pending' && styles.filterTabTextActive]}>
+                    <Text style={[styles.filterTabText, { color: isDark ? '#94a3b8' : '#6B7280' }, filter === 'pending' && styles.filterTabTextActive]}>
                         Pending ({proposals.filter(p => p.status === 'pending').length})
                     </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.filterTab, filter === 'accepted' && styles.filterTabActive]}
+                    style={[styles.filterTab, { backgroundColor: isDark ? '#1e293b' : '#F9FAFB' }, filter === 'accepted' && styles.filterTabActive]}
                     onPress={() => setFilter('accepted')}
                 >
-                    <Text style={[styles.filterTabText, filter === 'accepted' && styles.filterTabTextActive]}>
+                    <Text style={[styles.filterTabText, { color: isDark ? '#94a3b8' : '#6B7280' }, filter === 'accepted' && styles.filterTabTextActive]}>
                         Accepted ({proposals.filter(p => p.status === 'accepted').length})
                     </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.filterTab, filter === 'rejected' && styles.filterTabActive]}
+                    style={[styles.filterTab, { backgroundColor: isDark ? '#1e293b' : '#F9FAFB' }, filter === 'rejected' && styles.filterTabActive]}
                     onPress={() => setFilter('rejected')}
                 >
-                    <Text style={[styles.filterTabText, filter === 'rejected' && styles.filterTabTextActive]}>
+                    <Text style={[styles.filterTabText, { color: isDark ? '#94a3b8' : '#6B7280' }, filter === 'rejected' && styles.filterTabTextActive]}>
                         Rejected ({proposals.filter(p => p.status === 'rejected').length})
                     </Text>
                 </TouchableOpacity>
@@ -296,11 +301,11 @@ const FreelancerDashboard = ({ navigation }: any) => {
                     }
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
-                            <View style={styles.emptyIconContainer}>
-                                <Ionicons name="document-text-outline" size={64} color="#D1D5DB" />
+                            <View style={[styles.emptyIconContainer, { backgroundColor: isDark ? '#1e293b' : '#F3F4F6' }]}>
+                                <Ionicons name="document-text-outline" size={64} color={isDark ? '#334155' : '#D1D5DB'} />
                             </View>
-                            <Text style={styles.emptyTitle}>No Proposals Yet</Text>
-                            <Text style={styles.emptyText}>
+                            <Text style={[styles.emptyTitle, { color: titleColor }]}>No Proposals Yet</Text>
+                            <Text style={[styles.emptyText, { color: subtitleColor }]}>
                                 You haven't submitted any proposals yet.{'\n'}
                                 Browse projects and submit your first proposal!
                             </Text>

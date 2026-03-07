@@ -11,6 +11,7 @@ import {
     Image,
     Dimensions,
 } from 'react-native';
+import { useTheme } from '../../contexts/ThemeContext';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getOrganizationsByUser, Organization } from '../../services/orgService';
@@ -20,6 +21,7 @@ const { width } = Dimensions.get('window');
 
 const MyOrganizations = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { isDark } = useTheme();
     const [organizations, setOrganizations] = useState<Organization[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -52,13 +54,13 @@ const MyOrganizations = ({ navigation }: any) => {
         switch (status?.toLowerCase()) {
             case 'aprooved':
             case 'approved':
-                return { bg: '#ECFDF5', text: '#10B981', label: 'Approved' };
+                return { bg: isDark ? 'rgba(16, 185, 129, 0.1)' : '#ECFDF5', text: '#10B981', label: 'Approved' };
             case 'pending':
-                return { bg: '#FFF7ED', text: '#F97316', label: 'Pending' };
+                return { bg: isDark ? 'rgba(249, 115, 22, 0.1)' : '#FFF7ED', text: '#F97316', label: 'Pending' };
             case 'rejected':
-                return { bg: '#FEF2F2', text: '#EF4444', label: 'Rejected' };
+                return { bg: isDark ? 'rgba(239, 68, 68, 0.1)' : '#FEF2F2', text: '#EF4444', label: 'Rejected' };
             default:
-                return { bg: '#F3F4F6', text: '#6B7280', label: status || 'Unknown' };
+                return { bg: isDark ? '#1e293b' : '#F3F4F6', text: isDark ? '#94a3b8' : '#6B7280', label: status || 'Unknown' };
         }
     };
 
@@ -67,13 +69,13 @@ const MyOrganizations = ({ navigation }: any) => {
 
         return (
             <TouchableOpacity
-                style={styles.card}
+                style={[styles.card, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}
                 onPress={() => navigation.navigate('OrganizationDetails', { orgId: item._id })}
             >
                 <Image source={{ uri: item.profileImage }} style={styles.cardImage} />
                 <View style={styles.cardContent}>
                     <View style={styles.cardHeader}>
-                        <Text style={styles.orgName} numberOfLines={1}>{item.orgName}</Text>
+                        <Text style={[styles.orgName, isDark && { color: '#f8fafc' }]} numberOfLines={1}>{item.orgName}</Text>
                         <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
                             <Text style={[styles.statusText, { color: statusStyle.text }]}>
                                 {statusStyle.label}
@@ -81,29 +83,29 @@ const MyOrganizations = ({ navigation }: any) => {
                         </View>
                     </View>
 
-                    <Text style={styles.orgDesc} numberOfLines={2}>{item.description}</Text>
+                    <Text style={[styles.orgDesc, isDark && { color: '#94a3b8' }]} numberOfLines={2}>{item.description}</Text>
 
-                    <View style={styles.cardFooter}>
+                    <View style={[styles.cardFooter, isDark && { borderTopColor: '#334155' }]}>
                         <View style={styles.statsRow}>
                             <View style={styles.statItem}>
-                                <Ionicons name="people-outline" size={14} color="#6B7280" />
-                                <Text style={styles.statText}>23 Members</Text>
+                                <Ionicons name="people-outline" size={14} color={isDark ? "#64748b" : "#6B7280"} />
+                                <Text style={[styles.statText, isDark && { color: '#64748b' }]}>23 Members</Text>
                             </View>
-                            <View style={styles.statDivider} />
+                            <View style={[styles.statDivider, isDark && { backgroundColor: '#334155' }]} />
                             <View style={styles.statItem}>
-                                <Ionicons name="calendar-outline" size={14} color="#6B7280" />
-                                <Text style={styles.statText}>
+                                <Ionicons name="calendar-outline" size={14} color={isDark ? "#64748b" : "#6B7280"} />
+                                <Text style={[styles.statText, isDark && { color: '#64748b' }]}>
                                     {new Date(item.createdAt).toLocaleDateString()}
                                 </Text>
                             </View>
                         </View>
 
                         <TouchableOpacity
-                            style={styles.manageBtn}
+                            style={[styles.manageBtn, isDark && { backgroundColor: 'rgba(20, 184, 166, 0.1)' }]}
                             onPress={() => navigation.navigate('OrganizationDetails', { orgId: item._id })}
                         >
-                            <Text style={styles.manageBtnText}>Manage</Text>
-                            <Ionicons name="settings-outline" size={14} color="#6366F1" />
+                            <Text style={[styles.manageBtnText, isDark && { color: '#14b8a6' }]}>Manage</Text>
+                            <Ionicons name="settings-outline" size={14} color={isDark ? "#14b8a6" : "#6366F1"} />
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -112,25 +114,25 @@ const MyOrganizations = ({ navigation }: any) => {
     };
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-            <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+        <View style={[styles.container, isDark && { backgroundColor: '#0f172a' }, { paddingTop: insets.top }]}>
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={isDark ? "#0f172a" : "#FFFFFF"} />
 
-            <View style={styles.header}>
+            <View style={[styles.header, isDark && { backgroundColor: '#0f172a', borderBottomColor: '#1e293b' }]}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#1F2937" />
+                    <Ionicons name="arrow-back" size={24} color={isDark ? "#f8fafc" : "#1F2937"} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>My Organizations</Text>
+                <Text style={[styles.headerTitle, isDark && { color: '#f8fafc' }]}>My Organizations</Text>
                 <TouchableOpacity
                     onPress={() => navigation.navigate('AddOrganization')}
-                    style={styles.addButton}
+                    style={[styles.addButton, isDark && { backgroundColor: '#14b8a6' }]}
                 >
                     <Ionicons name="add" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
             </View>
 
             {loading && !refreshing ? (
-                <View style={styles.loaderContainer}>
-                    <ActivityIndicator size="large" color="#6366F1" />
+                <View style={[styles.loaderContainer, isDark && { backgroundColor: '#0f172a' }]}>
+                    <ActivityIndicator size="large" color={isDark ? "#14b8a6" : "#6366F1"} />
                 </View>
             ) : (
                 <FlatList
@@ -140,19 +142,24 @@ const MyOrganizations = ({ navigation }: any) => {
                     contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
                     refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            colors={[isDark ? '#14b8a6' : '#6366F1']}
+                            tintColor={isDark ? '#14b8a6' : '#6366F1'}
+                        />
                     }
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
-                            <View style={styles.emptyIconContainer}>
-                                <Ionicons name="business" size={64} color="#D1D5DB" />
+                            <View style={[styles.emptyIconContainer, isDark && { backgroundColor: '#1e293b' }]}>
+                                <Ionicons name="business" size={64} color={isDark ? "#334155" : "#D1D5DB"} />
                             </View>
-                            <Text style={styles.emptyTitle}>No Organizations Yet</Text>
-                            <Text style={styles.emptySubtitle}>
+                            <Text style={[styles.emptyTitle, isDark && { color: '#f8fafc' }]}>No Organizations Yet</Text>
+                            <Text style={[styles.emptySubtitle, isDark && { color: '#64748b' }]}>
                                 You haven't created any organizations. Start by adding one today!
                             </Text>
                             <TouchableOpacity
-                                style={styles.createBtn}
+                                style={[styles.createBtn, isDark && { backgroundColor: '#14b8a6', shadowColor: '#14b8a6' }]}
                                 onPress={() => navigation.navigate('AddOrganization')}
                             >
                                 <Text style={styles.createBtnText}>Create Organization</Text>

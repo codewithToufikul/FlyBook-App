@@ -14,6 +14,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { get } from '../../services/api';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
@@ -50,6 +51,7 @@ const fetchCourseDetails = async (courseId: string): Promise<Course> => {
 
 const CourseDetails = ({ route, navigation }: any) => {
     const { courseId } = route.params;
+    const { isDark } = useTheme();
     const [activeTab, setActiveTab] = useState('overview');
 
     const { data: course, isLoading, error } = useQuery({
@@ -68,18 +70,18 @@ const CourseDetails = ({ route, navigation }: any) => {
 
     if (isLoading) {
         return (
-            <View style={styles.loadingContainer}>
+            <View style={[styles.loadingContainer, isDark && styles.containerDark]}>
                 <ActivityIndicator size="large" color="#3B82F6" />
-                <Text style={styles.loadingText}>Fetching course details...</Text>
+                <Text style={[styles.loadingText, isDark && { color: '#94A3B8' }]}>Fetching course details...</Text>
             </View>
         );
     }
 
     if (error || !course) {
         return (
-            <View style={styles.errorContainer}>
+            <View style={[styles.errorContainer, isDark && styles.containerDark]}>
                 <Ionicons name="alert-circle-outline" size={64} color="#EF4444" />
-                <Text style={styles.errorText}>Failed to load course details</Text>
+                <Text style={[styles.errorText, isDark && { color: '#F87171' }]}>Failed to load course details</Text>
                 <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
                     <Text style={styles.backBtnText}>Go Back</Text>
                 </TouchableOpacity>
@@ -88,8 +90,8 @@ const CourseDetails = ({ route, navigation }: any) => {
     }
 
     return (
-        <View style={styles.container}>
-            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+        <View style={[styles.container, isDark && styles.containerDark]}>
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} translucent backgroundColor="transparent" />
 
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Hero / Thumbnail */}
@@ -112,100 +114,100 @@ const CourseDetails = ({ route, navigation }: any) => {
                     </View>
                 </View>
 
-                <View style={styles.content}>
+                <View style={[styles.content, isDark && styles.containerDark]}>
                     <View style={styles.mainInfo}>
                         <View style={styles.categoryRow}>
-                            <View style={styles.categoryBadge}>
-                                <Text style={styles.categoryText}>{course.categories}</Text>
+                            <View style={[styles.categoryBadge, isDark && { backgroundColor: '#2E1065' }]}>
+                                <Text style={[styles.categoryText, isDark && { color: '#A78BFA' }]}>{course.categories}</Text>
                             </View>
-                            <View style={[styles.levelBadge, { backgroundColor: getLevelColor(course.level) + '20' }]}>
+                            <View style={[styles.levelBadge, { backgroundColor: getLevelColor(course.level) + (isDark ? '30' : '20') }]}>
                                 <Text style={[styles.levelText, { color: getLevelColor(course.level) }]}>{course.level}</Text>
                             </View>
                         </View>
-                        <Text style={styles.title}>{course.title}</Text>
+                        <Text style={[styles.title, isDark && styles.textLight]}>{course.title}</Text>
 
                         <View style={styles.quickStats}>
                             <View style={styles.stat}>
                                 <Ionicons name="star" size={16} color="#FBBF24" />
-                                <Text style={styles.statValue}>{course.rating || '4.8'}</Text>
+                                <Text style={[styles.statValue, isDark && { color: '#94A3B8' }]}>{course.rating || '4.8'}</Text>
                             </View>
                             <View style={styles.stat}>
                                 <Ionicons name="people" size={16} color="#3B82F6" />
-                                <Text style={styles.statValue}>{(course.totalStudents || 1200).toLocaleString()} students</Text>
+                                <Text style={[styles.statValue, isDark && { color: '#94A3B8' }]}>{(course.totalStudents || 1200).toLocaleString()} students</Text>
                             </View>
                             <View style={styles.stat}>
                                 <Ionicons name="videocam" size={16} color="#8B5CF6" />
-                                <Text style={styles.statValue}>{course.videos?.length || 0} lessons</Text>
+                                <Text style={[styles.statValue, isDark && { color: '#94A3B8' }]}>{course.videos?.length || 0} lessons</Text>
                             </View>
                         </View>
                     </View>
 
                     {/* Tabs */}
-                    <View style={styles.tabContainer}>
+                    <View style={[styles.tabContainer, isDark && { borderBottomColor: '#334155' }]}>
                         <TouchableOpacity
                             style={[styles.tab, activeTab === 'overview' && styles.activeTab]}
                             onPress={() => setActiveTab('overview')}
                         >
-                            <Text style={[styles.tabText, activeTab === 'overview' && styles.activeTabText]}>Overview</Text>
+                            <Text style={[styles.tabText, isDark && { color: '#94A3B8' }, activeTab === 'overview' && styles.activeTabText]}>Overview</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={[styles.tab, activeTab === 'curriculum' && styles.activeTab]}
                             onPress={() => setActiveTab('curriculum')}
                         >
-                            <Text style={[styles.tabText, activeTab === 'curriculum' && styles.activeTabText]}>Curriculum</Text>
+                            <Text style={[styles.tabText, isDark && { color: '#94A3B8' }, activeTab === 'curriculum' && styles.activeTabText]}>Curriculum</Text>
                         </TouchableOpacity>
                     </View>
 
                     {activeTab === 'overview' ? (
                         <View style={styles.overviewSection}>
-                            <Text style={styles.sectionTitle}>About this course</Text>
-                            <Text style={styles.description}>{course.description}</Text>
+                            <Text style={[styles.sectionTitle, isDark && styles.textLight]}>About this course</Text>
+                            <Text style={[styles.description, isDark && { color: '#94A3B8' }]}>{course.description}</Text>
 
-                            <Text style={styles.sectionTitle}>Instructor</Text>
-                            <View style={styles.instructorCard}>
+                            <Text style={[styles.sectionTitle, isDark && styles.textLight]}>Instructor</Text>
+                            <View style={[styles.instructorCard, isDark && styles.instructorCardDark]}>
                                 <View style={styles.instructorHeader}>
                                     <View style={styles.instructorAvatar}>
                                         <Text style={styles.avatarText}>{course.instructorName[0]}</Text>
                                     </View>
                                     <View>
-                                        <Text style={styles.instructorName}>{course.instructorName}</Text>
-                                        <Text style={styles.instructorEmail}>{course.instructorEmail}</Text>
+                                        <Text style={[styles.instructorName, isDark && styles.textLight]}>{course.instructorName}</Text>
+                                        <Text style={[styles.instructorEmail, isDark && { color: '#64748B' }]}>{course.instructorEmail}</Text>
                                     </View>
                                 </View>
                                 {course.instructorBio && (
-                                    <Text style={styles.instructorBio}>{course.instructorBio}</Text>
+                                    <Text style={[styles.instructorBio, isDark && { color: '#94A3B8' }]}>{course.instructorBio}</Text>
                                 )}
                             </View>
 
                             <View style={styles.metaInfo}>
-                                <View style={styles.metaRow}>
-                                    <Text style={styles.metaLabel}>Last Updated</Text>
-                                    <Text style={styles.metaValue}>{course.lastUpdated || 'Recently'}</Text>
+                                <View style={[styles.metaRow, isDark && { borderBottomColor: '#334155' }]}>
+                                    <Text style={[styles.metaLabel, isDark && { color: '#64748B' }]}>Last Updated</Text>
+                                    <Text style={[styles.metaValue, isDark && styles.textLight]}>{course.lastUpdated || 'Recently'}</Text>
                                 </View>
-                                <View style={styles.metaRow}>
-                                    <Text style={styles.metaLabel}>Price</Text>
-                                    <Text style={styles.metaValue}>{course.isFree ? 'Free' : `$${course.price}`}</Text>
+                                <View style={[styles.metaRow, isDark && { borderBottomColor: '#334155' }]}>
+                                    <Text style={[styles.metaLabel, isDark && { color: '#64748B' }]}>Price</Text>
+                                    <Text style={[styles.metaValue, isDark && styles.textLight]}>{course.isFree ? 'Free' : `$${course.price}`}</Text>
                                 </View>
                             </View>
                         </View>
                     ) : (
                         <View style={styles.curriculumSection}>
                             <View style={styles.curriculumHeader}>
-                                <Text style={styles.sectionTitle}>Course Content</Text>
-                                <Text style={styles.curriculumStats}>{course.videos?.length || 0} lessons</Text>
+                                <Text style={[styles.sectionTitle, isDark && styles.textLight]}>Course Content</Text>
+                                <Text style={[styles.curriculumStats, isDark && { color: '#64748B' }]}>{course.videos?.length || 0} lessons</Text>
                             </View>
                             {course.videos?.map((video, index) => (
                                 <TouchableOpacity
                                     key={index}
-                                    style={styles.lessonItem}
+                                    style={[styles.lessonItem, isDark && styles.lessonItemDark]}
                                     onPress={() => navigation.navigate('CoursePlayer', { courseId: course._id, initialIndex: index })}
                                 >
-                                    <View style={styles.lessonIndex}>
-                                        <Text style={styles.lessonIndexText}>{index + 1}</Text>
+                                    <View style={[styles.lessonIndex, isDark && { backgroundColor: '#1E293B' }]}>
+                                        <Text style={[styles.lessonIndexText, isDark && { color: '#94A3B8' }]}>{index + 1}</Text>
                                     </View>
                                     <View style={styles.lessonInfo}>
-                                        <Text style={styles.lessonTitle} numberOfLines={1}>{video.videoTitle}</Text>
-                                        <Text style={styles.lessonDuration}>{video.videoDuration}</Text>
+                                        <Text style={[styles.lessonTitle, isDark && styles.textLight]} numberOfLines={1}>{video.videoTitle}</Text>
+                                        <Text style={[styles.lessonDuration, isDark && { color: '#64748B' }]}>{video.videoDuration}</Text>
                                     </View>
                                     <Ionicons name="play-circle" size={24} color="#3B82F6" />
                                 </TouchableOpacity>
@@ -216,10 +218,10 @@ const CourseDetails = ({ route, navigation }: any) => {
             </ScrollView>
 
             {/* Bottom CTA */}
-            <View style={styles.bottomBar}>
+            <View style={[styles.bottomBar, isDark && styles.bottomBarDark]}>
                 <View style={styles.priceContainer}>
-                    <Text style={styles.priceLabel}>Price</Text>
-                    <Text style={styles.priceValue}>{course.isFree ? 'Free' : `$${course.price}`}</Text>
+                    <Text style={[styles.priceLabel, isDark && { color: '#64748B' }]}>Price</Text>
+                    <Text style={[styles.priceValue, isDark && styles.textLight]}>{course.isFree ? 'Free' : `$${course.price}`}</Text>
                 </View>
                 <TouchableOpacity
                     style={styles.enrollBtn}
@@ -236,6 +238,12 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#FFFFFF',
+    },
+    containerDark: {
+        backgroundColor: '#0f172a',
+    },
+    textLight: {
+        color: '#F8FAFC',
     },
     heroSection: {
         width: '100%',
@@ -377,6 +385,10 @@ const styles = StyleSheet.create({
         borderColor: '#E5E7EB',
         marginBottom: 20,
     },
+    instructorCardDark: {
+        backgroundColor: '#1e293b',
+        borderColor: '#334155',
+    },
     instructorHeader: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -452,6 +464,10 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#F3F4F6',
     },
+    lessonItemDark: {
+        backgroundColor: '#1e293b',
+        borderColor: '#334155',
+    },
     lessonIndex: {
         width: 32,
         height: 32,
@@ -488,6 +504,10 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         borderTopWidth: 1,
         borderTopColor: '#E5E7EB',
+    },
+    bottomBarDark: {
+        backgroundColor: '#1e293b',
+        borderTopColor: '#334155',
     },
     priceContainer: {
         marginRight: 25,

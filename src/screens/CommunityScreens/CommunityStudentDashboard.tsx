@@ -13,6 +13,8 @@ import { useQuery } from '@tanstack/react-query';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { get } from '../../services/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../contexts/ThemeContext';
+import { StatusBar } from 'react-native';
 
 const fetchStudentDashboard = async (courseId: string) => {
     // This calls the existing endpoint: /courses/:courseId/student-dashboard
@@ -23,6 +25,7 @@ const fetchStudentDashboard = async (courseId: string) => {
 
 const CommunityStudentDashboard = ({ route, navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { isDark } = useTheme();
     const { courseId } = route.params;
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -33,20 +36,20 @@ const CommunityStudentDashboard = ({ route, navigation }: any) => {
 
     if (isLoading) {
         return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#4F46E5" />
-                <Text style={styles.loadingText}>Loading Dashboard...</Text>
+            <View style={[styles.loadingContainer, isDark && { backgroundColor: '#0f172a' }]}>
+                <ActivityIndicator size="large" color={isDark ? "#14b8a6" : "#4F46E5"} />
+                <Text style={[styles.loadingText, isDark && { color: '#94a3b8' }]}>Loading Dashboard...</Text>
             </View>
         );
     }
 
     if (error || !dashboardData) {
         return (
-            <View style={styles.errorContainer}>
+            <View style={[styles.errorContainer, isDark && { backgroundColor: '#0f172a' }]}>
                 <Ionicons name="alert-circle-outline" size={50} color="#EF4444" />
-                <Text style={styles.errorText}>Failed to load dashboard data.</Text>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.retryBtn}>
-                    <Text style={styles.retryText}>Go Back</Text>
+                <Text style={[styles.errorText, isDark && { color: '#f87171' }]}>Failed to load dashboard data.</Text>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.retryBtn, isDark && { backgroundColor: '#1e293b', borderColor: '#334155', borderWidth: 1 }]}>
+                    <Text style={[styles.retryText, isDark && { color: '#f8fafc' }]}>Go Back</Text>
                 </TouchableOpacity>
             </View>
         );
@@ -61,18 +64,19 @@ const CommunityStudentDashboard = ({ route, navigation }: any) => {
     );
 
     return (
-        <View style={{ flex: 1, backgroundColor: '#FFFFFF', paddingTop: insets.top }}>
-            <View style={styles.header}>
+        <View style={{ flex: 1, backgroundColor: isDark ? '#0f172a' : '#FFFFFF', paddingTop: insets.top }}>
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={isDark ? "#0f172a" : "#FFFFFF"} />
+            <View style={[styles.header, isDark && { backgroundColor: '#0f172a', borderBottomColor: '#1e293b' }]}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                    <Ionicons name="arrow-back" size={24} color="#1F2937" />
+                    <Ionicons name="arrow-back" size={24} color={isDark ? "#f8fafc" : "#1F2937"} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Student Dashboard</Text>
+                <Text style={[styles.headerTitle, isDark && { color: '#f8fafc' }]}>Student Dashboard</Text>
                 <View style={{ width: 40 }} />
             </View>
-            <ScrollView style={[styles.container, { paddingBottom: insets.bottom + 16 }]}>
+            <ScrollView style={[styles.container, isDark && { backgroundColor: '#0f172a' }, { paddingBottom: insets.bottom + 16 }]} showsVerticalScrollIndicator={false}>
                 {/* Header Stats */}
-                <View style={styles.statsContainer}>
-                    <Text style={styles.sectionTitle}>Course Overview</Text>
+                <View style={[styles.statsContainer, isDark && { backgroundColor: '#0f172a' }]}>
+                    <Text style={[styles.sectionTitle, isDark && { color: '#f8fafc' }]}>Course Overview</Text>
                     <View style={styles.statsGrid}>
                         <StatCard
                             title="Total Students"
@@ -102,8 +106,8 @@ const CommunityStudentDashboard = ({ route, navigation }: any) => {
                 </View>
 
                 {/* Student List */}
-                <View style={styles.studentListContainer}>
-                    <Text style={styles.sectionTitle}>Enrolled Students ({filteredStudents.length})</Text>
+                <View style={[styles.studentListContainer, isDark && { backgroundColor: '#0f172a' }]}>
+                    <Text style={[styles.sectionTitle, isDark && { color: '#f8fafc' }]}>Enrolled Students ({filteredStudents.length})</Text>
 
                     {filteredStudents.map((studentItem: any, index: number) => (
                         <StudentCard key={index} studentData={studentItem} navigation={navigation} />
@@ -118,36 +122,40 @@ const CommunityStudentDashboard = ({ route, navigation }: any) => {
     );
 };
 
-const StatCard = ({ title, value, icon, color }: any) => (
-    <View style={styles.statCard}>
-        <View style={[styles.iconBox, { backgroundColor: `${color}20` }]}>
-            <Ionicons name={icon} size={20} color={color} />
+const StatCard = ({ title, value, icon, color }: any) => {
+    const { isDark } = useTheme();
+    return (
+        <View style={[styles.statCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
+            <View style={[styles.iconBox, { backgroundColor: isDark ? `${color}40` : `${color}20` }]}>
+                <Ionicons name={icon} size={20} color={color} />
+            </View>
+            <Text style={[styles.statValue, isDark && { color: '#f8fafc' }]}>{value}</Text>
+            <Text style={[styles.statTitle, isDark && { color: '#94a3b8' }]}>{title}</Text>
         </View>
-        <Text style={styles.statValue}>{value}</Text>
-        <Text style={styles.statTitle}>{title}</Text>
-    </View>
-);
+    );
+};
 
 const StudentCard = ({ studentData, navigation }: any) => {
     const { student, statistics } = studentData;
     const [expanded, setExpanded] = useState(false);
+    const { isDark } = useTheme();
 
     return (
-        <View style={styles.studentCard}>
+        <View style={[styles.studentCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
             <TouchableOpacity
                 style={styles.studentHeader}
                 onPress={() => setExpanded(!expanded)}
             >
                 <Image
                     source={{ uri: student.profileImage || 'https://via.placeholder.com/50' }}
-                    style={styles.avatar}
+                    style={[styles.avatar, isDark && { backgroundColor: '#0f172a' }]}
                 />
                 <View style={styles.studentInfo}>
-                    <Text style={styles.studentName}>{student.name}</Text>
-                    <Text style={styles.studentNumber}>{student.number}</Text>
+                    <Text style={[styles.studentName, isDark && { color: '#f8fafc' }]}>{student.name}</Text>
+                    <Text style={[styles.studentNumber, isDark && { color: '#64748b' }]}>{student.number}</Text>
                 </View>
-                <View style={styles.progressBadge}>
-                    <Text style={styles.progressText}>
+                <View style={[styles.progressBadge, isDark && { backgroundColor: 'rgba(20, 184, 166, 0.1)' }]}>
+                    <Text style={[styles.progressText, isDark && { color: '#14b8a6' }]}>
                         {statistics.passedAttempts}/{statistics.totalAttempts} Passed
                     </Text>
                 </View>
@@ -155,17 +163,17 @@ const StudentCard = ({ studentData, navigation }: any) => {
             </TouchableOpacity>
 
             {expanded && (
-                <View style={styles.expandedDetails}>
+                <View style={[styles.expandedDetails, isDark && { backgroundColor: '#111827', borderTopColor: '#334155' }]}>
                     <View style={styles.detailRow}>
-                        <Text style={styles.detailLabel}>Average Score:</Text>
-                        <Text style={styles.detailValue}>{statistics.averageScore?.toFixed(1)}%</Text>
+                        <Text style={[styles.detailLabel, isDark && { color: '#94a3b8' }]}>Average Score:</Text>
+                        <Text style={[styles.detailValue, isDark && { color: '#f8fafc' }]}>{statistics.averageScore?.toFixed(1)}%</Text>
                     </View>
                     <View style={styles.detailRow}>
-                        <Text style={styles.detailLabel}>Lessons Completed:</Text>
-                        <Text style={styles.detailValue}>{statistics.completedLessons}</Text>
+                        <Text style={[styles.detailLabel, isDark && { color: '#94a3b8' }]}>Lessons Completed:</Text>
+                        <Text style={[styles.detailValue, isDark && { color: '#f8fafc' }]}>{statistics.completedLessons}</Text>
                     </View>
                     <View style={styles.detailRow}>
-                        <Text style={styles.detailLabel}>Certificate:</Text>
+                        <Text style={[styles.detailLabel, isDark && { color: '#94a3b8' }]}>Certificate:</Text>
                         <Text style={[styles.detailValue, { color: statistics.hasCertificate ? '#10B981' : '#EF4444' }]}>
                             {statistics.hasCertificate ? 'Issued' : 'Not yet'}
                         </Text>
@@ -173,21 +181,21 @@ const StudentCard = ({ studentData, navigation }: any) => {
 
                     {/* Exam Results List could be added here for deeper drill-down */}
                     {studentData.examResults?.length > 0 && (
-                        <View style={styles.examList}>
-                            <Text style={styles.subHeader}>Recent Exams</Text>
+                        <View style={[styles.examList, isDark && { borderTopColor: '#334155' }]}>
+                            <Text style={[styles.subHeader, isDark && { color: '#f8fafc' }]}>Recent Exams</Text>
                             {studentData.examResults.slice(0, 3).map((exam: any, idx: number) => (
                                 <View key={idx} style={styles.examItem}>
                                     <View style={{ flex: 1 }}>
-                                        <Text style={styles.examName} numberOfLines={1}>{exam.chapterTitle}</Text>
+                                        <Text style={[styles.examName, isDark && { color: '#94a3b8' }]} numberOfLines={1}>{exam.chapterTitle}</Text>
                                         {exam.latestAttempt && exam.latestAttempt.graded === false && (
                                             <TouchableOpacity
-                                                style={styles.gradeBadge}
+                                                style={[styles.gradeBadge, isDark && { backgroundColor: 'rgba(59, 130, 246, 0.1)', borderColor: '#3b82f6' }]}
                                                 onPress={() => navigation.navigate('CommunityExamGrading', {
                                                     attempt: exam.latestAttempt,
                                                     studentName: student.name
                                                 })}
                                             >
-                                                <Text style={styles.gradeBadgeText}>Grade Now</Text>
+                                                <Text style={[styles.gradeBadgeText, isDark && { color: '#3b82f6' }]}>Grade Now</Text>
                                             </TouchableOpacity>
                                         )}
                                     </View>

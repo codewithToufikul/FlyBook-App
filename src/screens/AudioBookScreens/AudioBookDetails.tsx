@@ -6,14 +6,17 @@ import {
     Image,
     TouchableOpacity,
     ScrollView,
-    ActivityIndicator
+    ActivityIndicator,
+    StatusBar
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getAudioBookDetails, AudioBook, Chapter } from '../../services/audioBookService';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const AudioBookDetails = ({ route, navigation }: any) => {
     const { bookId } = route.params;
+    const { isDark } = useTheme();
     const insets = useSafeAreaInsets();
     const [book, setBook] = useState<AudioBook | null>(null);
     const [loading, setLoading] = useState(true);
@@ -41,8 +44,8 @@ const AudioBookDetails = ({ route, navigation }: any) => {
 
     if (loading) {
         return (
-            <View style={styles.center}>
-                <ActivityIndicator size="large" color="#0D9488" />
+            <View style={[styles.center, isDark && { backgroundColor: '#0f172a' }]}>
+                <ActivityIndicator size="large" color={isDark ? "#14b8a6" : "#0D9488"} />
             </View>
         );
     }
@@ -56,7 +59,12 @@ const AudioBookDetails = ({ route, navigation }: any) => {
     }
 
     return (
-        <ScrollView style={[styles.container]} contentContainerStyle={{ paddingBottom: 40 }}>
+        <ScrollView style={[styles.container, isDark && { backgroundColor: '#0f172a' }]} contentContainerStyle={{ paddingBottom: 40 }}>
+            <StatusBar
+                barStyle="light-content"
+                backgroundColor="transparent"
+                translucent
+            />
             {/* Header Image Background */}
             <View style={styles.headerImageContainer}>
                 <Image source={{ uri: book.coverImage }} style={styles.headerImage} blurRadius={3} />
@@ -68,24 +76,24 @@ const AudioBookDetails = ({ route, navigation }: any) => {
             </View>
 
             {/* Book Info Content */}
-            <View style={styles.contentContainer}>
+            <View style={[styles.contentContainer, isDark && { backgroundColor: '#0f172a' }]}>
                 <View style={styles.bookMetaContainer}>
                     <Image source={{ uri: book.coverImage }} style={styles.mainCover} />
                     <View style={styles.bookTextInfo}>
-                        <Text style={styles.title}>{book.title}</Text>
-                        <Text style={styles.author}>by {book.author}</Text>
+                        <Text style={[styles.title, isDark && { color: '#f8fafc' }]}>{book.title}</Text>
+                        <Text style={[styles.author, isDark && { color: '#94a3b8' }]}>by {book.author}</Text>
                         <View style={styles.ratingRow}>
                             <Ionicons name="star" size={16} color="#F59E0B" />
-                            <Text style={styles.rating}>{book.rating}</Text>
+                            <Text style={[styles.rating, isDark && { color: '#f8fafc' }]}>{book.rating}</Text>
                             <Text style={styles.dot}>•</Text>
-                            <Text style={styles.category}>{book.category}</Text>
+                            <Text style={[styles.category, isDark && { color: '#14b8a6' }]}>{book.category}</Text>
                         </View>
                     </View>
                 </View>
 
                 {/* Play Button */}
                 <TouchableOpacity
-                    style={styles.playButton}
+                    style={[styles.playButton, isDark && { backgroundColor: '#14b8a6', shadowColor: '#14b8a6' }]}
                     onPress={() => playChapter(book.chapters[0])}
                 >
                     <Ionicons name="play" size={24} color="#fff" />
@@ -94,27 +102,27 @@ const AudioBookDetails = ({ route, navigation }: any) => {
 
                 {/* Description */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>About this book</Text>
-                    <Text style={styles.description}>{book.description}</Text>
+                    <Text style={[styles.sectionTitle, isDark && { color: '#f8fafc' }]}>About this book</Text>
+                    <Text style={[styles.description, isDark && { color: '#94a3b8' }]}>{book.description}</Text>
                 </View>
 
                 {/* Chapters */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Chapters ({book.chapters.length})</Text>
+                    <Text style={[styles.sectionTitle, isDark && { color: '#f8fafc' }]}>Chapters ({book.chapters.length})</Text>
                     {book.chapters.map((chapter, index) => (
                         <TouchableOpacity
                             key={chapter.id}
-                            style={styles.chapterItem}
+                            style={[styles.chapterItem, isDark && { borderBottomColor: '#1e293b' }]}
                             onPress={() => playChapter(chapter)}
                         >
-                            <View style={styles.chapterIndex}>
-                                <Text style={styles.chapterIndexText}>{index + 1}</Text>
+                            <View style={[styles.chapterIndex, isDark && { backgroundColor: 'rgba(20, 184, 166, 0.1)' }]}>
+                                <Text style={[styles.chapterIndexText, isDark && { color: '#14b8a6' }]}>{index + 1}</Text>
                             </View>
                             <View style={styles.chapterInfo}>
-                                <Text style={styles.chapterTitle}>{chapter.title}</Text>
-                                <Text style={styles.chapterDuration}>{chapter.duration}</Text>
+                                <Text style={[styles.chapterTitle, isDark && { color: '#f8fafc' }]}>{chapter.title}</Text>
+                                <Text style={[styles.chapterDuration, isDark && { color: '#64748b' }]}>{chapter.duration}</Text>
                             </View>
-                            <Ionicons name="play-circle-outline" size={28} color="#0D9488" />
+                            <Ionicons name="play-circle-outline" size={28} color={isDark ? "#14b8a6" : "#0D9488"} />
                         </TouchableOpacity>
                     ))}
                 </View>

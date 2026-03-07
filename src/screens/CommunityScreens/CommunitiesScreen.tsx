@@ -14,9 +14,11 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCommunities, getMyCommunities, Community } from '../../services/communityService';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const CommunitiesScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { isDark } = useTheme();
     const [publicCommunities, setPublicCommunities] = useState<Community[]>([]);
     const [myCommunities, setMyCommunities] = useState<Community[]>([]);
     const [filteredCommunities, setFilteredCommunities] = useState<Community[]>([]);
@@ -70,88 +72,97 @@ const CommunitiesScreen = ({ navigation }: any) => {
 
     const renderCommunityItem = ({ item }: { item: Community }) => (
         <TouchableOpacity
-            style={styles.card}
+            style={[styles.card, isDark && { backgroundColor: '#1e293b', shadowColor: '#000' }]}
             onPress={() => navigation.navigate('CommunityDetails', { communityId: item._id })}
         >
             <Image
                 source={{ uri: item.logo || 'https://via.placeholder.com/150' }}
-                style={styles.logo}
+                style={[styles.logo, isDark && { backgroundColor: '#0f172a' }]}
             />
             <View style={styles.cardInfo}>
                 <View style={styles.cardHeader}>
-                    <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
+                    <Text style={[styles.name, isDark && { color: '#f8fafc' }]} numberOfLines={1}>{item.name}</Text>
                     {item.isVerified && (
-                        <Ionicons name="checkmark-circle" size={16} color="#0D9488" style={styles.verifiedIcon} />
+                        <Ionicons name="checkmark-circle" size={16} color={isDark ? "#14b8a6" : "#0D9488"} style={styles.verifiedIcon} />
                     )}
                 </View>
-                <Text style={styles.category}>{item.category}</Text>
+                <Text style={[styles.category, isDark && { color: '#94a3b8' }]}>{item.category}</Text>
                 <View style={styles.stats}>
-                    <Ionicons name="people-outline" size={14} color="#6B7280" />
-                    <Text style={styles.statsText}>{item.membersCount} members</Text>
+                    <Ionicons name="people-outline" size={14} color={isDark ? "#64748b" : "#6B7280"} />
+                    <Text style={[styles.statsText, isDark && { color: '#64748b' }]}>{item.membersCount} members</Text>
                 </View>
             </View>
             <TouchableOpacity
-                style={styles.joinBtn}
+                style={[styles.joinBtn, isDark && { backgroundColor: 'rgba(20, 184, 166, 0.1)', borderColor: '#14b8a6' }]}
                 onPress={() => navigation.navigate('CommunityDetails', { communityId: item._id })}
             >
-                <Text style={styles.joinBtnText}>View</Text>
+                <Text style={[styles.joinBtnText, isDark && { color: '#14b8a6' }]}>View</Text>
             </TouchableOpacity>
         </TouchableOpacity>
     );
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-            <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+        <View style={[styles.container, isDark && { backgroundColor: '#0f172a' }, { paddingTop: insets.top }]}>
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={isDark ? "#0f172a" : "#FFFFFF"} />
 
-            <View style={styles.header}>
+            <View style={[styles.header, isDark && { backgroundColor: '#0f172a' }]}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#1F2937" />
+                    <Ionicons name="arrow-back" size={24} color={isDark ? "#f8fafc" : "#1F2937"} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Communities</Text>
-                <TouchableOpacity
-                    style={styles.createBtn}
-                    onPress={() => navigation.navigate('CreateCommunity')}
-                >
-                    <Ionicons name="add" size={24} color="#FFFFFF" />
-                </TouchableOpacity>
+                <Text style={[styles.headerTitle, isDark && { color: '#f8fafc' }]}>Communities</Text>
+                <View style={styles.headerRight}>
+                    <TouchableOpacity
+                        style={[styles.createBtn, { backgroundColor: '#4F46E5', marginRight: 8 }]}
+                        onPress={() => navigation.navigate('SocialResponse')}
+                    >
+                        <Ionicons name="shield-checkmark" size={22} color="#FFFFFF" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.createBtn, isDark && { backgroundColor: '#14b8a6', shadowColor: '#14b8a6' }]}
+                        onPress={() => navigation.navigate('CreateCommunity')}
+                    >
+                        <Ionicons name="add" size={24} color="#FFFFFF" />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             {/* Tab System */}
-            <View style={styles.tabContainer}>
+            <View style={[styles.tabContainer, isDark && { backgroundColor: '#0f172a', borderBottomColor: '#1e293b' }]}>
                 <TouchableOpacity
-                    style={[styles.tab, activeTab === 'public' && styles.activeTab]}
+                    style={[styles.tab, activeTab === 'public' && [styles.activeTab, isDark && { borderBottomColor: '#14b8a6' }]]}
                     onPress={() => setActiveTab('public')}
                 >
-                    <Text style={[styles.tabText, activeTab === 'public' && styles.activeTabText]}>Public Community</Text>
+                    <Text style={[styles.tabText, isDark && { color: '#64748b' }, activeTab === 'public' && [styles.activeTabText, isDark && { color: '#14b8a6' }]]}>Public Community</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.tab, activeTab === 'my' && styles.activeTab]}
+                    style={[styles.tab, activeTab === 'my' && [styles.activeTab, isDark && { borderBottomColor: '#14b8a6' }]]}
                     onPress={() => setActiveTab('my')}
                 >
-                    <Text style={[styles.tabText, activeTab === 'my' && styles.activeTabText]}>My Community</Text>
+                    <Text style={[styles.tabText, isDark && { color: '#64748b' }, activeTab === 'my' && [styles.activeTabText, isDark && { color: '#14b8a6' }]]}>My Community</Text>
                 </TouchableOpacity>
             </View>
 
-            <View style={styles.searchContainer}>
-                <View style={styles.searchBar}>
-                    <Ionicons name="search-outline" size={20} color="#9CA3AF" />
+            <View style={[styles.searchContainer, isDark && { backgroundColor: '#0f172a' }]}>
+                <View style={[styles.searchBar, isDark && { backgroundColor: '#1e293b' }]}>
+                    <Ionicons name="search-outline" size={20} color={isDark ? "#94a3b8" : "#9CA3AF"} />
                     <TextInput
-                        style={styles.searchInput}
+                        style={[styles.searchInput, isDark && { color: '#f8fafc' }]}
                         placeholder="Search communities..."
+                        placeholderTextColor={isDark ? "#64748b" : "#9CA3AF"}
                         value={searchQuery}
                         onChangeText={setSearchQuery}
                     />
                     {searchQuery.length > 0 && (
                         <TouchableOpacity onPress={() => setSearchQuery('')}>
-                            <Ionicons name="close-circle" size={20} color="#9CA3AF" />
+                            <Ionicons name="close-circle" size={20} color={isDark ? "#94a3b8" : "#9CA3AF"} />
                         </TouchableOpacity>
                     )}
                 </View>
             </View>
 
             {loading && !refreshing ? (
-                <View style={styles.centerLoader}>
-                    <ActivityIndicator size="large" color="#0D9488" />
+                <View style={[styles.centerLoader, isDark && { backgroundColor: '#0f172a' }]}>
+                    <ActivityIndicator size="large" color={isDark ? "#14b8a6" : "#0D9488"} />
                 </View>
             ) : (
                 <FlatList
@@ -164,18 +175,18 @@ const CommunitiesScreen = ({ navigation }: any) => {
                     }
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
-                            <Ionicons name="people-outline" size={80} color="#D1D5DB" />
-                            <Text style={styles.emptyTitle}>
+                            <Ionicons name="people-outline" size={80} color={isDark ? "#1e293b" : "#D1D5DB"} />
+                            <Text style={[styles.emptyTitle, isDark && { color: '#f8fafc' }]}>
                                 {activeTab === 'public' ? 'No Communities Found' : 'No Created Communities'}
                             </Text>
-                            <Text style={styles.emptySubtitle}>
+                            <Text style={[styles.emptySubtitle, isDark && { color: '#94a3b8' }]}>
                                 {activeTab === 'public'
                                     ? 'Try searching for something else or create your own community.'
                                     : 'You haven\'t created any communities yet. Start one today!'}
                             </Text>
                             {activeTab === 'my' && (
                                 <TouchableOpacity
-                                    style={styles.startBtn}
+                                    style={[styles.startBtn, isDark && { backgroundColor: '#14b8a6' }]}
                                     onPress={() => navigation.navigate('CreateCommunity')}
                                 >
                                     <Text style={styles.startBtnText}>Start Community</Text>
@@ -211,6 +222,10 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: '800',
         color: '#1F2937',
+    },
+    headerRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     createBtn: {
         width: 40,

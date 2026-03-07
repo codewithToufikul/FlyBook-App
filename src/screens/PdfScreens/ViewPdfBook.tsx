@@ -15,7 +15,8 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { get } from '../../services/api';
-import TobNav from '../../components/TobNav';
+import { useTheme } from '../../contexts/ThemeContext';
+import CustomHeader from '../../components/common/CustomHeader';
 
 const { width } = Dimensions.get('window');
 
@@ -27,6 +28,7 @@ interface PdfBook {
     description: string;
     coverUrl?: string;
     pdfUrl?: string;
+    uploadMethod?: string;
     pageCount?: number;
     fileSize?: number;
     timestamp?: string;
@@ -44,6 +46,7 @@ const fetchPdfBooks = async (): Promise<PdfBook[]> => {
 
 const ViewPdfBook = ({ route, navigation }: any) => {
     const { bookId } = route.params;
+    const { isDark } = useTheme();
     const [isExpanded, setIsExpanded] = useState(false);
 
     const { data: pdfBooks = [], isLoading } = useQuery({
@@ -61,19 +64,26 @@ const ViewPdfBook = ({ route, navigation }: any) => {
             .slice(0, 5);
     }, [pdfBooks, bookId]);
 
-    const handleDownload = () => {
-        if (book?.pdfUrl) {
+    const handleOpenBook = () => {
+        if (!book?.pdfUrl) return;
+
+        if (book.uploadMethod === 'Direct Upload') {
+            navigation.navigate('PdfViewer', {
+                pdfUrl: book.pdfUrl,
+                title: book.bookName
+            });
+        } else {
             Linking.openURL(book.pdfUrl);
         }
     };
 
     if (isLoading || !book) {
         return (
-            <View style={styles.loadingContainer}>
-                <TobNav navigation={navigation} />
+            <View style={[styles.loadingContainer, isDark && styles.containerDark]}>
+                <CustomHeader title="Book Details" showMenuIcon={false} showBackButton={true} />
                 <View style={styles.loader}>
                     <ActivityIndicator size="large" color="#3B82F6" />
-                    <Text style={styles.loadingText}>Loading Book Details...</Text>
+                    <Text style={[styles.loadingText, isDark && { color: '#94A3B8' }]}>Loading Book Details...</Text>
                 </View>
             </View>
         );
@@ -83,13 +93,13 @@ const ViewPdfBook = ({ route, navigation }: any) => {
     const formattedDate = book.timestamp ? new Date(book.timestamp).toLocaleDateString() : 'N/A';
 
     return (
-        <View style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-            <TobNav navigation={navigation} />
+        <View style={[styles.container, isDark && styles.containerDark]}>
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={isDark ? "#0f172a" : "#FFFFFF"} />
+            <CustomHeader title="Book Details" showMenuIcon={false} showBackButton={true} />
 
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Book Header Section */}
-                <View style={styles.headerCard}>
+                <View style={[styles.headerCard, isDark && styles.containerDark, isDark && { borderBottomColor: '#334155' }]}>
                     <View style={styles.coverSection}>
                         <Image
                             source={{ uri: book.coverUrl || 'https://via.placeholder.com/320x400' }}
@@ -104,15 +114,21 @@ const ViewPdfBook = ({ route, navigation }: any) => {
                             <Ionicons name="star-half" size={20} color="#F59E0B" />
                         </View>
 
-                        <TouchableOpacity style={styles.downloadButton} onPress={handleDownload}>
-                            <Ionicons name="download" size={20} color="#FFFFFF" />
-                            <Text style={styles.downloadText}>Download PDF</Text>
+                        <TouchableOpacity style={styles.downloadButton} onPress={handleOpenBook}>
+                            <Ionicons
+                                name={book.uploadMethod === 'Direct Upload' ? "book-outline" : "share-outline"}
+                                size={20}
+                                color="#FFFFFF"
+                            />
+                            <Text style={styles.downloadText}>
+                                {book.uploadMethod === 'Direct Upload' ? 'Read In-App' : 'View in Browser'}
+                            </Text>
                         </TouchableOpacity>
                     </View>
 
                     <View style={styles.metaSection}>
-                        <Text style={styles.title}>{book.bookName}</Text>
-                        <Text style={styles.writer}>By <Text style={styles.writerHighlight}>{book.writerName}</Text></Text>
+                        <Text style={[styles.title, isDark && styles.textLight]}>{book.bookName}</Text>
+                        <Text style={[styles.writer, isDark && { color: '#94A3B8' }]}>By <Text style={styles.writerHighlight}>{book.writerName}</Text></Text>
 
                         <View style={styles.tagContainer}>
                             <View style={[styles.tag, { backgroundColor: '#DEF7EC' }]}>
@@ -126,16 +142,16 @@ const ViewPdfBook = ({ route, navigation }: any) => {
                             </View>
                         </View>
 
-                        <View style={styles.detailsBox}>
-                            <Text style={styles.detailsTitle}>Book Details</Text>
+                        <View style={[styles.detailsBox, isDark && styles.detailsBoxDark]}>
+                            <Text style={[styles.detailsTitle, isDark && styles.textLight, isDark && { borderBottomColor: '#334155' }]}>Book Details</Text>
                             <View style={styles.detailRow}>
                                 <View style={styles.detailItem}>
-                                    <Text style={styles.detailLabel}>ADDED ON</Text>
-                                    <Text style={styles.detailValue}>{formattedDate}</Text>
+                                    <Text style={[styles.detailLabel, isDark && { color: '#64748B' }]}>ADDED ON</Text>
+                                    <Text style={[styles.detailValue, isDark && styles.textLight]}>{formattedDate}</Text>
                                 </View>
                                 <View style={styles.detailItem}>
-                                    <Text style={styles.detailLabel}>WRITER</Text>
-                                    <Text style={styles.detailValue}>{book.writerName}</Text>
+                                    <Text style={[styles.detailLabel, isDark && { color: '#64748B' }]}>WRITER</Text>
+                                    <Text style={[styles.detailValue, isDark && styles.textLight]}>{book.writerName}</Text>
                                 </View>
                             </View>
                         </View>
@@ -143,9 +159,9 @@ const ViewPdfBook = ({ route, navigation }: any) => {
                 </View>
 
                 {/* Description Section */}
-                <View style={styles.descriptionSection}>
-                    <Text style={styles.sectionTitle}>Description</Text>
-                    <Text style={styles.descriptionText} numberOfLines={isExpanded ? undefined : 6}>
+                <View style={[styles.descriptionSection, isDark && styles.containerDark, isDark && { borderBottomColor: '#334155' }]}>
+                    <Text style={[styles.sectionTitle, isDark && styles.textLight]}>Description</Text>
+                    <Text style={[styles.descriptionText, isDark && { color: '#94A3B8' }]} numberOfLines={isExpanded ? undefined : 6}>
                         {book.description || "No description available for this book."}
                     </Text>
                     {book.description && book.description.length > 200 && (
@@ -157,7 +173,7 @@ const ViewPdfBook = ({ route, navigation }: any) => {
 
                 {/* Recommendation Carousel */}
                 <View style={styles.recommendSection}>
-                    <Text style={styles.sectionTitle}>Latest Books</Text>
+                    <Text style={[styles.sectionTitle, isDark && styles.textLight]}>Latest Books</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.recommendList}>
                         {latestBooks.map((item) => (
                             <TouchableOpacity
@@ -166,8 +182,8 @@ const ViewPdfBook = ({ route, navigation }: any) => {
                                 onPress={() => navigation.push('ViewPdfBook', { bookId: item._id })}
                             >
                                 <Image source={{ uri: item.coverUrl }} style={styles.recommendImage} />
-                                <Text style={styles.recommendName} numberOfLines={2}>{item.bookName}</Text>
-                                <Text style={styles.recommendDate}>{new Date(item.timestamp || 0).toLocaleDateString()}</Text>
+                                <Text style={[styles.recommendName, isDark && styles.textLight]} numberOfLines={2}>{item.bookName}</Text>
+                                <Text style={[styles.recommendDate, isDark && { color: '#64748B' }]}>{new Date(item.timestamp || 0).toLocaleDateString()}</Text>
                             </TouchableOpacity>
                         ))}
                     </ScrollView>
@@ -183,6 +199,12 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#F9FAFB',
+    },
+    containerDark: {
+        backgroundColor: '#0f172a',
+    },
+    textLight: {
+        color: '#F8FAFC',
     },
     loadingContainer: {
         flex: 1,
@@ -280,6 +302,10 @@ const styles = StyleSheet.create({
         marginTop: 24,
         borderWidth: 1,
         borderColor: '#F3F4F6',
+    },
+    detailsBoxDark: {
+        backgroundColor: '#1e293b',
+        borderColor: '#334155',
     },
     detailsTitle: {
         fontSize: 18,

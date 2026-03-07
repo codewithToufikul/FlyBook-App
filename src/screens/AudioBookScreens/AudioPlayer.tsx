@@ -7,16 +7,19 @@ import {
     TouchableOpacity,
     Animated,
     Dimensions,
-    ActivityIndicator
+    ActivityIndicator,
+    StatusBar
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Video from 'react-native-video';
 import { AudioBook, Chapter } from '../../services/audioBookService';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
 const AudioPlayer = ({ route, navigation }: any) => {
     const { book, chapterId } = route.params as { book: AudioBook, chapterId: string };
+    const { isDark } = useTheme();
 
     // State
     const [currentChapterIndex, setCurrentChapterIndex] = useState(
@@ -79,15 +82,17 @@ const AudioPlayer = ({ route, navigation }: any) => {
     const progressPercentage = duration > 0 ? (currentTime / duration) * 100 : 0;
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, isDark && { backgroundColor: '#0f172a' }]}>
+            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton}>
-                    <Ionicons name="chevron-down" size={32} color="#fff" />
+                    <Ionicons name="chevron-down" size={32} color={isDark ? "#f8fafc" : "#fff"} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Now Playing</Text>
+                <Text style={[styles.headerTitle, isDark && { color: '#f8fafc' }]}>Now Playing</Text>
                 <TouchableOpacity style={styles.iconButton}>
-                    <Ionicons name="ellipsis-horizontal" size={24} color="#fff" />
+                    <Ionicons name="ellipsis-horizontal" size={24} color={isDark ? "#f8fafc" : "#fff"} />
                 </TouchableOpacity>
             </View>
 
@@ -96,38 +101,38 @@ const AudioPlayer = ({ route, navigation }: any) => {
                 <Image source={{ uri: book.coverImage }} style={styles.coverImage} />
 
                 <View style={styles.trackInfo}>
-                    <Text style={styles.trackTitle}>{currentChapter.title}</Text>
-                    <Text style={styles.trackArtist}>{book.author}</Text>
+                    <Text style={[styles.trackTitle, isDark && { color: '#f8fafc' }]}>{currentChapter.title}</Text>
+                    <Text style={[styles.trackArtist, isDark && { color: '#94a3b8' }]}>{book.author}</Text>
                 </View>
 
                 {/* Custom Progress Bar (Slider Replacement) */}
                 <View style={styles.progressContainer}>
-                    <View style={styles.progressBarBackground}>
-                        <View style={[styles.progressBarFill, { width: `${progressPercentage}%` }]} />
-                        <View style={[styles.progressBarThumb, { left: `${progressPercentage}%` }]} />
+                    <View style={[styles.progressBarBackground, isDark && { backgroundColor: '#1e293b' }]}>
+                        <View style={[styles.progressBarFill, isDark && { backgroundColor: '#14b8a6' }, { width: `${progressPercentage}%` }]} />
+                        <View style={[styles.progressBarThumb, isDark && { backgroundColor: '#f8fafc' }, { left: `${progressPercentage}%` }]} />
                     </View>
                     <View style={styles.timeRow}>
-                        <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
-                        <Text style={styles.timeText}>{formatTime(duration)}</Text>
+                        <Text style={[styles.timeText, isDark && { color: '#64748b' }]}>{formatTime(currentTime)}</Text>
+                        <Text style={[styles.timeText, isDark && { color: '#64748b' }]}>{formatTime(duration)}</Text>
                     </View>
                 </View>
 
                 {/* Controls */}
                 <View style={styles.controls}>
                     <TouchableOpacity onPress={handlePrev} disabled={currentChapterIndex === 0} style={styles.controlButton}>
-                        <Ionicons name="play-skip-back" size={32} color={currentChapterIndex === 0 ? '#6B7280' : '#fff'} />
+                        <Ionicons name="play-skip-back" size={32} color={currentChapterIndex === 0 ? (isDark ? '#334155' : '#6B7280') : (isDark ? '#F8FAFC' : '#fff')} />
                     </TouchableOpacity>
 
-                    <TouchableOpacity onPress={handlePlayPause} style={styles.playPauseButton}>
+                    <TouchableOpacity style={[styles.playPauseButton, isDark && { backgroundColor: '#14b8a6', shadowColor: '#14b8a6' }]} onPress={handlePlayPause}>
                         {isLoading ? (
-                            <ActivityIndicator color="#0D9488" />
+                            <ActivityIndicator color="#fff" />
                         ) : (
-                            <Ionicons name={isPlaying ? "pause" : "play"} size={40} color="#0D9488" style={{ marginLeft: isPlaying ? 0 : 4 }} />
+                            <Ionicons name={isPlaying ? "pause" : "play"} size={40} color="#fff" style={{ marginLeft: isPlaying ? 0 : 4 }} />
                         )}
                     </TouchableOpacity>
 
                     <TouchableOpacity onPress={handleNext} disabled={currentChapterIndex === book.chapters.length - 1} style={styles.controlButton}>
-                        <Ionicons name="play-skip-forward" size={32} color={currentChapterIndex === book.chapters.length - 1 ? '#6B7280' : '#fff'} />
+                        <Ionicons name="play-skip-forward" size={32} color={currentChapterIndex === book.chapters.length - 1 ? (isDark ? '#334155' : '#6B7280') : (isDark ? '#F8FAFC' : '#fff')} />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -145,7 +150,7 @@ const AudioPlayer = ({ route, navigation }: any) => {
                 onProgress={onProgress}
                 onLoad={onLoad}
                 onEnd={onEnd}
-                onError={(e) => console.log('Audio Error:', e)}
+                onError={(e) => { }}
                 style={{ width: 0, height: 0 }} // Invisible
                 playInBackground={true} // Enable background audio (iOS requires specific capability settings)
                 playWhenInactive={true}

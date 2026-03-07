@@ -9,8 +9,10 @@ import {
     ActivityIndicator,
     Alert,
     KeyboardAvoidingView,
-    Platform
+    Platform,
+    StatusBar
 } from 'react-native';
+import { useTheme } from '../../contexts/ThemeContext';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSound } from 'react-native-nitro-sound';
@@ -19,6 +21,7 @@ import { post } from '../../services/api';
 const CommunityExamGrading = ({ route, navigation }: any) => {
     const { attempt, studentName } = route.params;
     const insets = useSafeAreaInsets();
+    const { isDark } = useTheme();
 
     const [score, setScore] = useState(attempt.score?.toString() || '');
     const [feedback, setFeedback] = useState(attempt.feedback || '');
@@ -82,13 +85,14 @@ const CommunityExamGrading = ({ route, navigation }: any) => {
     };
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={[styles.container, isDark && { backgroundColor: '#0f172a' }, { paddingTop: insets.top }]}>
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={isDark ? "#0f172a" : "#FFFFFF"} />
             {/* Header */}
-            <View style={styles.header}>
+            <View style={[styles.header, isDark && { backgroundColor: '#0f172a', borderBottomColor: '#1e293b' }]}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                    <Ionicons name="arrow-back" size={24} color="#1F2937" />
+                    <Ionicons name="arrow-back" size={24} color={isDark ? "#f8fafc" : "#1F2937"} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Grade Exam</Text>
+                <Text style={[styles.headerTitle, isDark && { color: '#f8fafc' }]}>Grade Exam</Text>
                 <View style={{ width: 40 }} />
             </View>
 
@@ -96,19 +100,19 @@ const CommunityExamGrading = ({ route, navigation }: any) => {
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 style={{ flex: 1 }}
             >
-                <ScrollView contentContainerStyle={styles.scrollContent}>
-                    <View style={styles.studentInfoCard}>
-                        <Text style={styles.label}>Student</Text>
-                        <Text style={styles.studentName}>{studentName}</Text>
-                        <View style={styles.divider} />
-                        <Text style={styles.label}>Exam Type</Text>
-                        <Text style={styles.examType}>{attempt.type?.toUpperCase()}</Text>
+                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                    <View style={[styles.studentInfoCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
+                        <Text style={[styles.label, isDark && { color: '#64748b' }]}>Student</Text>
+                        <Text style={[styles.studentName, isDark && { color: '#f8fafc' }]}>{studentName}</Text>
+                        <View style={[styles.divider, isDark && { backgroundColor: '#334155' }]} />
+                        <Text style={[styles.label, isDark && { color: '#64748b' }]}>Exam Type</Text>
+                        <Text style={[styles.examType, isDark && { color: '#14b8a6' }]}>{attempt.type?.toUpperCase()}</Text>
                     </View>
 
                     {attempt.audioUrl && (
-                        <View style={styles.audioCard}>
-                            <Text style={styles.cardTitle}>Audio Response</Text>
-                            <TouchableOpacity style={styles.playBtn} onPress={handlePlayAudio}>
+                        <View style={[styles.audioCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
+                            <Text style={[styles.cardTitle, isDark && { color: '#f8fafc' }]}>Audio Response</Text>
+                            <TouchableOpacity style={[styles.playBtn, isDark && { backgroundColor: '#14b8a6' }]} onPress={handlePlayAudio}>
                                 <Ionicons name={isPlaying ? "pause" : "play"} size={32} color="#FFFFFF" />
                                 <Text style={styles.playBtnText}>{isPlaying ? "Stop" : "Play Recording"}</Text>
                             </TouchableOpacity>
@@ -116,31 +120,33 @@ const CommunityExamGrading = ({ route, navigation }: any) => {
                     )}
 
                     {attempt.answers && attempt.answers.length > 0 && (
-                        <View style={styles.answersCard}>
-                            <Text style={styles.cardTitle}>Additional Answers</Text>
+                        <View style={[styles.answersCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
+                            <Text style={[styles.cardTitle, isDark && { color: '#f8fafc' }]}>Additional Answers</Text>
                             {attempt.answers.map((ans: any, idx: number) => (
                                 <View key={idx} style={styles.answerItem}>
-                                    <Text style={styles.questionNum}>Question {ans.questionIndex + 1}</Text>
-                                    <Text style={styles.answerText}>{ans.answer || '(No answer provided)'}</Text>
+                                    <Text style={[styles.questionNum, isDark && { color: '#94a3b8' }]}>Question {ans.questionIndex + 1}</Text>
+                                    <Text style={[styles.answerText, isDark && { color: '#64748b' }]}>{ans.answer || '(No answer provided)'}</Text>
                                 </View>
                             ))}
                         </View>
                     )}
 
-                    <View style={styles.gradingForm}>
-                        <Text style={styles.formLabel}>Score (0-100)</Text>
+                    <View style={[styles.gradingForm, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
+                        <Text style={[styles.formLabel, isDark && { color: '#f8fafc' }]}>Score (0-100)</Text>
                         <TextInput
-                            style={styles.scoreInput}
+                            style={[styles.scoreInput, isDark && { backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc' }]}
                             placeholder="75"
+                            placeholderTextColor={isDark ? "#475569" : "#9CA3AF"}
                             keyboardType="numeric"
                             value={score}
                             onChangeText={setScore}
                         />
 
-                        <Text style={styles.formLabel}>Feedback (Optional)</Text>
+                        <Text style={[styles.formLabel, isDark && { color: '#f8fafc' }]}>Feedback (Optional)</Text>
                         <TextInput
-                            style={styles.feedbackInput}
+                            style={[styles.feedbackInput, isDark && { backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc' }]}
                             placeholder="Great job! Your pronunciation is improving."
+                            placeholderTextColor={isDark ? "#475569" : "#9CA3AF"}
                             multiline
                             numberOfLines={4}
                             value={feedback}
@@ -149,9 +155,9 @@ const CommunityExamGrading = ({ route, navigation }: any) => {
                     </View>
                 </ScrollView>
 
-                <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
+                <View style={[styles.footer, isDark && { backgroundColor: '#0f172a', borderTopColor: '#1e293b' }, { paddingBottom: insets.bottom + 16 }]}>
                     <TouchableOpacity
-                        style={[styles.submitBtn, submitting && styles.disabledBtn]}
+                        style={[styles.submitBtn, isDark && { backgroundColor: '#14b8a6' }, submitting && styles.disabledBtn, submitting && isDark && { backgroundColor: '#1e293b' }]}
                         onPress={handleSubmitGrade}
                         disabled={submitting}
                     >

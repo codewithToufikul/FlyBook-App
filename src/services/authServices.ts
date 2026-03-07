@@ -33,14 +33,10 @@ export interface AuthResponse {
  * This ensures consistent field mapping regardless of backend response format
  */
 const mapUserData = (userData: any): User => {
-  console.log('🔄 Mapping user data:', JSON.stringify(userData, null, 2));
-
   // Try multiple possible field names for ID (Backend registration uses _id, login uses id)
   const userId = userData._id || userData.id || userData.userId || userData.ID;
 
   if (!userId) {
-    console.error('❌ No user ID found in data!');
-    console.error('Available fields:', Object.keys(userData));
     // Check if we can extract it from nested objects if applicable
     throw new Error('User ID not found in user data');
   }
@@ -71,12 +67,6 @@ const mapUserData = (userData: any): User => {
     referrerName: userData.referrerName || userData.referrer_name || null,
   };
 
-  console.log('✅ Mapped user:', {
-    _id: mappedUser._id,
-    name: mappedUser.name,
-    email: mappedUser.email,
-  });
-
   return mappedUser;
 };
 
@@ -103,6 +93,8 @@ export interface User {
   friends?: string[];
   referrerId?: string | null;
   referrerName?: string | null;
+  lastNameChange?: string;
+  accountStatus?: 'active' | 'deactivated' | 'deleted';
 }
 
 /**
@@ -160,7 +152,6 @@ export const register = async (data: RegisterData): Promise<AuthResponse> => {
         );
         // If profile fetch fails, use data from registration response as fallback
         if (response.user) {
-          console.log('📝 Using registration response user data as fallback');
           const mappedUser = mapUserData(response.user);
           await saveUser(mappedUser);
         }
@@ -202,13 +193,6 @@ export const getProfile = async (): Promise<User> => {
     // Backend returns user data directly (not wrapped in {user: ...})
     const userData = await get<any>('/profile');
 
-    // Debug: Log the raw backend response
-    console.log(
-      '🔍 Backend /profile response:',
-      JSON.stringify(userData, null, 2),
-    );
-    console.log('🔍 Available fields:', Object.keys(userData));
-
     // Map backend response to User interface
     // Try multiple possible field names for ID
     const userId =
@@ -248,13 +232,6 @@ export const getProfile = async (): Promise<User> => {
       referrerId: userData.referrerId || userData.referrer_id || null,
       referrerName: userData.referrerName || userData.referrer_name || null,
     };
-
-    console.log('✅ Mapped user object:', {
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      userName: user.userName,
-    });
 
     // Update local user data
     await saveUser(user);

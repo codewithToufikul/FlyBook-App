@@ -14,9 +14,11 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getAudioBooks, AudioBook } from '../../services/audioBookService';
 import CustomHeader from '../../components/common/CustomHeader';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const AudioBookHome = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { isDark } = useTheme();
     const [books, setBooks] = useState<AudioBook[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -42,48 +44,49 @@ const AudioBookHome = ({ navigation }: any) => {
 
     const renderBookItem = ({ item }: { item: AudioBook }) => (
         <TouchableOpacity
-            style={styles.bookCard}
+            style={[styles.bookCard, isDark && { backgroundColor: '#1e293b', shadowOpacity: 0 }]}
             onPress={() => navigation.navigate('AudioBookDetails', { bookId: item.id })}
             activeOpacity={0.8}
         >
             <Image source={{ uri: item.coverImage }} style={styles.bookCover} />
             <View style={styles.bookInfo}>
-                <Text style={styles.bookTitle} numberOfLines={1}>{item.title}</Text>
-                <Text style={styles.bookAuthor}>{item.author}</Text>
+                <Text style={[styles.bookTitle, isDark && { color: '#f8fafc' }]} numberOfLines={1}>{item.title}</Text>
+                <Text style={[styles.bookAuthor, isDark && { color: '#94a3b8' }]}>{item.author}</Text>
                 <View style={styles.metaRow}>
-                    <View style={styles.ratingContainer}>
+                    <View style={[styles.ratingContainer, isDark && { backgroundColor: 'rgba(245, 158, 11, 0.1)' }]}>
                         <Ionicons name="star" size={12} color="#F59E0B" />
                         <Text style={styles.ratingText}>{item.rating}</Text>
                     </View>
-                    <Text style={styles.durationText}>{item.totalDuration}</Text>
+                    <Text style={[styles.durationText, isDark && { color: '#64748b' }]}>{item.totalDuration}</Text>
                 </View>
             </View>
         </TouchableOpacity>
     );
 
     return (
-        <View style={[styles.container]}>
-            <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-
-            <CustomHeader
-                title="Audio Books"
+        <View style={[styles.container, isDark && { backgroundColor: '#0f172a' }]}>
+            <StatusBar
+                barStyle={isDark ? "light-content" : "dark-content"}
+                backgroundColor={isDark ? "#0f172a" : "#FFFFFF"}
             />
 
+            <CustomHeader title="Audio Books" />
+
             {/* Search Bar */}
-            <View style={styles.searchContainer}>
-                <Ionicons name="search" size={20} color="#9CA3AF" style={styles.searchIcon} />
+            <View style={[styles.searchContainer, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
+                <Ionicons name="search" size={20} color={isDark ? "#94a3b8" : "#9CA3AF"} style={styles.searchIcon} />
                 <TextInput
-                    style={styles.searchInput}
+                    style={[styles.searchInput, isDark && { color: '#f8fafc' }]}
                     placeholder="Search books, authors..."
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={isDark ? "#64748b" : "#9CA3AF"}
                     value={searchQuery}
                     onChangeText={setSearchQuery}
                 />
             </View>
 
             {loading ? (
-                <View style={styles.loaderContainer}>
-                    <ActivityIndicator size="large" color="#0D9488" />
+                <View style={[styles.loaderContainer, isDark && { backgroundColor: '#0f172a' }]}>
+                    <ActivityIndicator size="large" color={isDark ? "#14b8a6" : "#0D9488"} />
                 </View>
             ) : (
                 <FlatList
@@ -96,7 +99,8 @@ const AudioBookHome = ({ navigation }: any) => {
                     showsVerticalScrollIndicator={false}
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
-                            <Text style={styles.emptyText}>No audiobooks found.</Text>
+                            <Ionicons name="musical-notes-outline" size={64} color={isDark ? "#334155" : "#D1D5DB"} style={{ marginBottom: 16 }} />
+                            <Text style={[styles.emptyText, isDark && { color: '#4B5563' }]}>No audiobooks found.</Text>
                         </View>
                     }
                 />

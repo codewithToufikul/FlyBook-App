@@ -17,6 +17,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { get } from '../../services/api';
 import TobNav from '../../components/TobNav';
 import CustomHeader from '../../components/common/CustomHeader';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
@@ -79,6 +80,7 @@ const fetchCourses = async (): Promise<Course[]> => {
 };
 
 const ELearning = ({ navigation }: any) => {
+    const { isDark } = useTheme();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [selectedLevel, setSelectedLevel] = useState('All');
@@ -120,7 +122,7 @@ const ELearning = ({ navigation }: any) => {
 
     const renderCourseItem = ({ item }: { item: Course }) => (
         <TouchableOpacity
-            style={styles.courseCard}
+            style={[styles.courseCard, isDark && styles.courseCardDark]}
             onPress={() => navigation.navigate('CourseDetails', { courseId: item._id })}
             activeOpacity={0.9}
         >
@@ -128,7 +130,7 @@ const ELearning = ({ navigation }: any) => {
                 {item.thumbnail ? (
                     <Image source={{ uri: item.thumbnail }} style={styles.thumbnail} />
                 ) : (
-                    <View style={[styles.thumbnail, styles.fallbackThumbnail]}>
+                    <View style={[styles.thumbnail, styles.fallbackThumbnail, isDark && { backgroundColor: '#1E40AF' }]}>
                         <Text style={styles.fallbackTitle}>{item.title}</Text>
                     </View>
                 )}
@@ -136,29 +138,29 @@ const ELearning = ({ navigation }: any) => {
                     <View style={[styles.badge, item.isFree ? styles.freeBadge : styles.paidBadge]}>
                         <Text style={styles.badgeText}>{item.isFree ? 'Free' : `$${item.price}`}</Text>
                     </View>
-                    <View style={styles.levelBadge}>
-                        <Text style={styles.levelBadgeText}>{item.level}</Text>
+                    <View style={[styles.levelBadge, isDark && { backgroundColor: '#1E293B' }]}>
+                        <Text style={[styles.levelBadgeText, isDark && { color: '#F8FAFC' }]}>{item.level}</Text>
                     </View>
                 </View>
             </View>
             <View style={styles.courseInfo}>
-                <View style={styles.categoryBadge}>
+                <View style={[styles.categoryBadge, isDark && { backgroundColor: '#2E1065' }]}>
                     <Ionicons name="tag" size={10} color="#8B5CF6" />
-                    <Text style={styles.categoryBadgeText}>{item.categories}</Text>
+                    <Text style={[styles.categoryBadgeText, isDark && { color: '#A78BFA' }]}>{item.categories}</Text>
                 </View>
-                <Text style={styles.courseTitle} numberOfLines={2}>{item.title}</Text>
+                <Text style={[styles.courseTitle, isDark && styles.textLight]} numberOfLines={2}>{item.title}</Text>
                 <View style={styles.instructorRow}>
-                    <Ionicons name="person-outline" size={12} color="#6B7280" />
-                    <Text style={styles.instructorName} numberOfLines={1}>{item.instructorName}</Text>
+                    <Ionicons name="person-outline" size={12} color={isDark ? "#94A3B8" : "#6B7280"} />
+                    <Text style={[styles.instructorName, isDark && { color: '#94A3B8' }]} numberOfLines={1}>{item.instructorName}</Text>
                 </View>
-                <View style={styles.statsRow}>
+                <View style={[styles.statsRow, isDark && { borderTopColor: '#334155' }]}>
                     <View style={styles.statItem}>
-                        <Ionicons name="time-outline" size={12} color="#6B7280" />
-                        <Text style={styles.statText}>{formatDuration(item.videos)}</Text>
+                        <Ionicons name="time-outline" size={12} color={isDark ? "#94A3B8" : "#6B7280"} />
+                        <Text style={[styles.statText, isDark && { color: '#94A3B8' }]}>{formatDuration(item.videos)}</Text>
                     </View>
                     <View style={styles.statItem}>
-                        <Ionicons name="play-circle-outline" size={12} color="#6B7280" />
-                        <Text style={styles.statText}>{item.videos?.length || 0} lessons</Text>
+                        <Ionicons name="play-circle-outline" size={12} color={isDark ? "#94A3B8" : "#6B7280"} />
+                        <Text style={[styles.statText, isDark && { color: '#94A3B8' }]}>{item.videos?.length || 0} lessons</Text>
                     </View>
                 </View>
             </View>
@@ -167,46 +169,46 @@ const ELearning = ({ navigation }: any) => {
 
     const CategoryChip = ({ title, selected, onSelect }: any) => (
         <TouchableOpacity
-            style={[styles.chip, selected && styles.chipSelected]}
+            style={[styles.chip, isDark && styles.chipDark, selected && styles.chipSelected]}
             onPress={onSelect}
         >
-            <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{title}</Text>
+            <Text style={[styles.chipText, isDark && { color: '#94A3B8' }, selected && styles.chipTextSelected]}>{title}</Text>
         </TouchableOpacity>
     );
 
     return (
-        <View style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+        <View style={[styles.container, isDark && styles.containerDark]}>
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={isDark ? "#0f172a" : "#FFFFFF"} />
             {/* <TobNav navigation={navigation} /> */}
 
             <CustomHeader
                 title="E-Learning"
             />
             <ScrollView stickyHeaderIndices={[2]} showsVerticalScrollIndicator={false}>
-                <View style={styles.heroSection}>
-                    <Text style={styles.heroTitle}>
+                <View style={[styles.heroSection, isDark && styles.heroSectionDark]}>
+                    <Text style={[styles.heroTitle, isDark && styles.textLight]}>
                         Transform Your Future with{'\n'}
                         <Text style={styles.heroAccent}>E-Learning</Text>
                     </Text>
-                    <Text style={styles.heroSubtitle}>
+                    <Text style={[styles.heroSubtitle, isDark && { color: '#94A3B8' }]}>
                         Discover world-class courses from expert instructors and boost your skills
                     </Text>
                 </View>
 
-                <View style={styles.searchSection}>
-                    <View style={styles.searchBar}>
-                        <Ionicons name="search-outline" size={20} color="#9CA3AF" />
+                <View style={[styles.searchSection, isDark && styles.heroSectionDark]}>
+                    <View style={[styles.searchBar, isDark && styles.searchBarDark]}>
+                        <Ionicons name="search-outline" size={20} color={isDark ? "#64748B" : "#9CA3AF"} />
                         <TextInput
-                            style={styles.searchInput}
+                            style={[styles.searchInput, isDark && styles.textLight]}
                             placeholder="Search courses, instructors..."
                             value={searchQuery}
                             onChangeText={setSearchQuery}
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={isDark ? "#64748B" : "#9CA3AF"}
                         />
                     </View>
                 </View>
 
-                <View style={styles.filterSection}>
+                <View style={[styles.filterSection, isDark && styles.filterSectionDark]}>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
                         <CategoryChip
                             title="All"
@@ -215,7 +217,7 @@ const ELearning = ({ navigation }: any) => {
                         />
                         {NAV_ITEMS.map(group => (
                             <View key={group.id} style={styles.filterGroup}>
-                                <Text style={styles.filterGroupTitle}>{group.title}</Text>
+                                <Text style={[styles.filterGroupTitle, isDark && { color: '#475569' }]}>{group.title}</Text>
                                 {group.items.map(item => (
                                     <CategoryChip
                                         key={item}
@@ -230,14 +232,14 @@ const ELearning = ({ navigation }: any) => {
                 </View>
 
                 {isLoading ? (
-                    <View style={styles.loadingContainer}>
+                    <View style={[styles.loadingContainer, isDark && styles.containerDark]}>
                         <ActivityIndicator size="large" color="#3B82F6" />
-                        <Text style={styles.loadingText}>Loading amazing courses...</Text>
+                        <Text style={[styles.loadingText, isDark && { color: '#94A3B8' }]}>Loading amazing courses...</Text>
                     </View>
                 ) : (
                     <View style={styles.gridContainer}>
                         <View style={styles.resultsHeader}>
-                            <Text style={styles.resultsCount}>{filteredCourses.length} courses found</Text>
+                            <Text style={[styles.resultsCount, isDark && { color: '#64748B' }]}>{filteredCourses.length} courses found</Text>
                         </View>
 
                         <FlatList
@@ -248,8 +250,8 @@ const ELearning = ({ navigation }: any) => {
                             scrollEnabled={false}
                             ListEmptyComponent={
                                 <View style={styles.emptyContainer}>
-                                    <Ionicons name="school-outline" size={64} color="#D1D5DB" />
-                                    <Text style={styles.emptyText}>No courses found</Text>
+                                    <Ionicons name="school-outline" size={64} color={isDark ? "#334155" : "#D1D5DB"} />
+                                    <Text style={[styles.emptyText, isDark && { color: '#64748B' }]}>No courses found</Text>
                                     <TouchableOpacity
                                         style={styles.clearBtn}
                                         onPress={() => {
@@ -274,10 +276,19 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#F9FAFB',
     },
+    containerDark: {
+        backgroundColor: '#0f172a',
+    },
+    textLight: {
+        color: '#F8FAFC',
+    },
     heroSection: {
         padding: 20,
         backgroundColor: '#FFFFFF',
         alignItems: 'center',
+    },
+    heroSectionDark: {
+        backgroundColor: '#1e293b',
     },
     heroTitle: {
         fontSize: 24,
@@ -311,6 +322,10 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#E5E7EB',
     },
+    searchBarDark: {
+        backgroundColor: '#0f172a',
+        borderColor: '#334155',
+    },
     searchInput: {
         flex: 1,
         marginLeft: 10,
@@ -322,6 +337,10 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: '#E5E7EB',
         paddingVertical: 10,
+    },
+    filterSectionDark: {
+        backgroundColor: '#1e293b',
+        borderBottomColor: '#334155',
     },
     filterScroll: {
         paddingHorizontal: 15,
@@ -350,6 +369,10 @@ const styles = StyleSheet.create({
     chipSelected: {
         backgroundColor: '#3B82F6',
         borderColor: '#3B82F6',
+    },
+    chipDark: {
+        backgroundColor: '#0f172a',
+        borderColor: '#334155',
     },
     chipText: {
         fontSize: 13,
@@ -383,6 +406,10 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 4,
+    },
+    courseCardDark: {
+        backgroundColor: '#1e293b',
+        borderColor: '#334155',
     },
     thumbnailContainer: {
         width: '100%',

@@ -1,0 +1,26 @@
+<network-security-config>
+
+    <!-- Production: block HTTP -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- Allow HTTP only for localhost (Metro) -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">10.0.2.2</domain> <!-- Android emulator -->
+        <domain includeSubdomains="true">192.168.8.191</domain> <!-- Current LAN IP -->
+        <domain includeSubdomains="true">192.168.1.189</domain> <!-- Old LAN IP -->
+    </domain-config>
+
+    <!-- Debug certificates -->
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </debug-overrides>
+
+</network-security-config>

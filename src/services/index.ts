@@ -38,6 +38,19 @@ export {
   deleteAccount,
 } from './authServices';
 
+// Library services
+export {
+  fetchAllBooks,
+  addBook,
+  deleteBook,
+  requestBook,
+  cancelBookRequest,
+  acceptBookRequest,
+  transferBook,
+  returnBook,
+  fetchTransferHistory,
+} from './libraryService';
+
 // Types
 export type {
   LoginCredentials,
@@ -45,3 +58,9 @@ export type {
   AuthResponse,
   User,
 } from './authServices';
+
+export type {
+  Book,
+  TransferRecord,
+  AddBookData,
+} from './libraryService';

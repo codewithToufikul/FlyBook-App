@@ -3,6 +3,10 @@ import MainTabs from './MainTabs';
 import Profile from '../screens/HomeScreens/Profile';
 import CustomDrawer from '../components/CustomDrawer';
 
+import SettingsStack from './stacks/SettingsStack';
+import EditOpinion from '../screens/OpinionScreens/EditOpinion';
+
+
 const Drawer = createDrawerNavigator();
 
 export default function DrawerNavigator() {
@@ -28,6 +32,17 @@ export default function DrawerNavigator() {
         component={Profile}
         options={{ title: 'Profile' }}
       />
+      <Drawer.Screen
+        name="Settings"
+        component={SettingsStack}
+        options={{ title: 'Settings' }}
+      />
+      <Drawer.Screen
+        name="EditOpinion"
+        component={EditOpinion}
+        options={{ drawerItemStyle: { display: 'none' } }}
+      />
     </Drawer.Navigator>
+
   );
 }

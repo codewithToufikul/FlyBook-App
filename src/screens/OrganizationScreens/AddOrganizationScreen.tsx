@@ -15,11 +15,13 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../contexts/ThemeContext';
 import { handleImageUpload } from '../../utils/imageUpload';
 import { addOrganization } from '../../services/orgService';
 
 const AddOrganization = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { isDark } = useTheme();
     const [loading, setLoading] = useState(false);
     const [uploadingImage, setUploadingImage] = useState(false);
 
@@ -89,15 +91,15 @@ const AddOrganization = ({ navigation }: any) => {
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={[styles.container, { paddingTop: insets.top }]}
+            style={[styles.container, isDark && { backgroundColor: '#0f172a' }, { paddingTop: insets.top }]}
         >
-            <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={isDark ? "#0f172a" : "#FFFFFF"} />
 
-            <View style={styles.header}>
+            <View style={[styles.header, isDark && { backgroundColor: '#0f172a', borderBottomColor: '#1e293b' }]}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#1F2937" />
+                    <Ionicons name="arrow-back" size={24} color={isDark ? "#f8fafc" : "#1F2937"} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Add Organization</Text>
+                <Text style={[styles.headerTitle, isDark && { color: '#f8fafc' }]}>Add Organization</Text>
                 <View style={{ width: 40 }} />
             </View>
 
@@ -106,13 +108,13 @@ const AddOrganization = ({ navigation }: any) => {
                 showsVerticalScrollIndicator={false}
             >
                 <View style={styles.formContainer}>
-                    <Text style={styles.formSubtitle}>TELL US ABOUT YOUR ORGANIZATION</Text>
+                    <Text style={[styles.formSubtitle, isDark && { color: '#64748b' }]}>TELL US ABOUT YOUR ORGANIZATION</Text>
 
                     {/* Image Picker */}
                     <View style={styles.imageSelectorContainer}>
-                        <Text style={styles.fieldLabel}>Profile Image *</Text>
+                        <Text style={[styles.fieldLabel, isDark && { color: '#94a3b8' }]}>Profile Image *</Text>
                         <TouchableOpacity
-                            style={styles.imagePlaceholder}
+                            style={[styles.imagePlaceholder, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}
                             onPress={handlePickImage}
                             disabled={uploadingImage}
                         >
@@ -121,11 +123,11 @@ const AddOrganization = ({ navigation }: any) => {
                             ) : (
                                 <View style={styles.placeholderContent}>
                                     {uploadingImage ? (
-                                        <ActivityIndicator color="#6366F1" />
+                                        <ActivityIndicator color={isDark ? "#14b8a6" : "#6366F1"} />
                                     ) : (
                                         <>
-                                            <Ionicons name="camera" size={32} color="#9CA3AF" />
-                                            <Text style={styles.placeholderText}>Select Logo / Image</Text>
+                                            <Ionicons name="camera" size={32} color={isDark ? "#334155" : "#9CA3AF"} />
+                                            <Text style={[styles.placeholderText, isDark && { color: '#475569' }]}>Select Logo / Image</Text>
                                         </>
                                     )}
                                 </View>
@@ -140,20 +142,22 @@ const AddOrganization = ({ navigation }: any) => {
 
                     {/* Inputs */}
                     <View style={styles.inputGroup}>
-                        <Text style={styles.fieldLabel}>Organization Name *</Text>
+                        <Text style={[styles.fieldLabel, isDark && { color: '#94a3b8' }]}>Organization Name *</Text>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, isDark && { backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc' }]}
                             placeholder="e.g. Save The Future"
+                            placeholderTextColor={isDark ? "#475569" : "#9CA3AF"}
                             value={formData.orgName}
                             onChangeText={text => setFormData({ ...formData, orgName: text })}
                         />
                     </View>
 
                     <View style={styles.inputGroup}>
-                        <Text style={styles.fieldLabel}>Email Address *</Text>
+                        <Text style={[styles.fieldLabel, isDark && { color: '#94a3b8' }]}>Email Address *</Text>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, isDark && { backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc' }]}
                             placeholder="org@example.com"
+                            placeholderTextColor={isDark ? "#475569" : "#9CA3AF"}
                             keyboardType="email-address"
                             autoCapitalize="none"
                             value={formData.email}
@@ -162,10 +166,11 @@ const AddOrganization = ({ navigation }: any) => {
                     </View>
 
                     <View style={styles.inputGroup}>
-                        <Text style={styles.fieldLabel}>Phone Number *</Text>
+                        <Text style={[styles.fieldLabel, isDark && { color: '#94a3b8' }]}>Phone Number *</Text>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, isDark && { backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc' }]}
                             placeholder="+880 1XXX-XXXXXX"
+                            placeholderTextColor={isDark ? "#475569" : "#9CA3AF"}
                             keyboardType="phone-pad"
                             value={formData.phone}
                             onChangeText={text => setFormData({ ...formData, phone: text })}
@@ -173,10 +178,11 @@ const AddOrganization = ({ navigation }: any) => {
                     </View>
 
                     <View style={styles.inputGroup}>
-                        <Text style={styles.fieldLabel}>Website (Optional)</Text>
+                        <Text style={[styles.fieldLabel, isDark && { color: '#94a3b8' }]}>Website (Optional)</Text>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, isDark && { backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc' }]}
                             placeholder="https://www.example.org"
+                            placeholderTextColor={isDark ? "#475569" : "#9CA3AF"}
                             autoCapitalize="none"
                             value={formData.website}
                             onChangeText={text => setFormData({ ...formData, website: text })}
@@ -184,10 +190,11 @@ const AddOrganization = ({ navigation }: any) => {
                     </View>
 
                     <View style={styles.inputGroup}>
-                        <Text style={styles.fieldLabel}>Full Address *</Text>
+                        <Text style={[styles.fieldLabel, isDark && { color: '#94a3b8' }]}>Full Address *</Text>
                         <TextInput
-                            style={[styles.input, styles.textArea]}
+                            style={[styles.input, styles.textArea, isDark && { backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc' }]}
                             placeholder="Street, City, Country"
+                            placeholderTextColor={isDark ? "#475569" : "#9CA3AF"}
                             multiline
                             numberOfLines={3}
                             value={formData.address}
@@ -196,10 +203,11 @@ const AddOrganization = ({ navigation }: any) => {
                     </View>
 
                     <View style={styles.inputGroup}>
-                        <Text style={styles.fieldLabel}>Description *</Text>
+                        <Text style={[styles.fieldLabel, isDark && { color: '#94a3b8' }]}>Description *</Text>
                         <TextInput
-                            style={[styles.input, styles.textArea]}
+                            style={[styles.input, styles.textArea, isDark && { backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc' }]}
                             placeholder="Describe what your organization does..."
+                            placeholderTextColor={isDark ? "#475569" : "#9CA3AF"}
                             multiline
                             numberOfLines={5}
                             value={formData.description}
@@ -208,7 +216,7 @@ const AddOrganization = ({ navigation }: any) => {
                     </View>
 
                     <TouchableOpacity
-                        style={[styles.submitBtn, loading && styles.submitBtnDisabled]}
+                        style={[styles.submitBtn, isDark && { backgroundColor: '#14b8a6', shadowColor: '#14b8a6' }, loading && styles.submitBtnDisabled]}
                         onPress={handleSubmit}
                         disabled={loading}
                     >

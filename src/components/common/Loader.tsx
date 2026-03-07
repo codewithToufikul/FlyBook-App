@@ -98,22 +98,6 @@ const Loader: React.FC<LoaderProps> = ({
           </Animated.View>
         )}
 
-        <View style={styles.spinnerContainer}>
-          <Animated.View style={animatedSpinnerStyle}>
-            <View
-              style={[
-                styles.spinner,
-                {
-                  width: spinnerSize * 2,
-                  height: spinnerSize * 2,
-                  borderTopColor: color,
-                  borderRightColor: color,
-                },
-              ]}
-            />
-          </Animated.View>
-        </View>
-
         {message && (
           <Text
             style={[

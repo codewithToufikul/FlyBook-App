@@ -17,6 +17,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { get } from '../../services/api';
 import TobNav from '../../components/TobNav';
 import CustomHeader from '../../components/common/CustomHeader';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const { width } = Dimensions.get('window');
 const COLUMN_COUNT = 2;
@@ -58,6 +59,7 @@ const fetchPdfBooks = async (): Promise<PdfBook[]> => {
 };
 
 const PdfHome = ({ navigation }: any) => {
+    const { isDark } = useTheme();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [uploadFilter, setUploadFilter] = useState('All'); // 'All', 'Direct', 'Web'
@@ -83,7 +85,7 @@ const PdfHome = ({ navigation }: any) => {
 
     const renderBookItem = ({ item }: { item: PdfBook }) => (
         <TouchableOpacity
-            style={styles.bookCard}
+            style={[styles.bookCard, isDark && styles.bookCardDark]}
             onPress={() => navigation.navigate('ViewPdfBook', { bookId: item._id })}
             activeOpacity={0.8}
         >
@@ -100,8 +102,8 @@ const PdfHome = ({ navigation }: any) => {
                 </View>
             </View>
             <View style={styles.bookInfo}>
-                <Text style={styles.bookName} numberOfLines={2}>{item.bookName}</Text>
-                <Text style={styles.writerName} numberOfLines={1}>{item.writerName}</Text>
+                <Text style={[styles.bookName, isDark && styles.textLight]} numberOfLines={2}>{item.bookName}</Text>
+                <Text style={[styles.writerName, isDark && { color: '#94A3B8' }]} numberOfLines={1}>{item.writerName}</Text>
                 <View style={styles.ratingRow}>
                     <Ionicons name="star" size={12} color="#F59E0B" />
                     <Ionicons name="star" size={12} color="#F59E0B" />
@@ -117,12 +119,14 @@ const PdfHome = ({ navigation }: any) => {
         <TouchableOpacity
             style={[
                 styles.categoryItem,
+                isDark && styles.categoryItemDark,
                 selectedCategory === item && styles.selectedCategoryItem
             ]}
             onPress={() => setSelectedCategory(item)}
         >
             <Text style={[
                 styles.categoryText,
+                isDark && { color: '#94A3B8' },
                 selectedCategory === item && styles.selectedCategoryText
             ]}>
                 {item}
@@ -131,22 +135,22 @@ const PdfHome = ({ navigation }: any) => {
     );
 
     return (
-        <View style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+        <View style={[styles.container, isDark && styles.containerDark]}>
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={isDark ? "#0f172a" : "#FFFFFF"} />
             {/* <TobNav navigation={navigation} /> */}
 
             <CustomHeader
                 title="PDF Books"
             />
-            <View style={styles.searchSection}>
-                <View style={styles.searchBar}>
-                    <Ionicons name="search-outline" size={20} color="#6B7280" />
+            <View style={[styles.searchSection, isDark && styles.sectionDark]}>
+                <View style={[styles.searchBar, isDark && styles.searchBarDark]}>
+                    <Ionicons name="search-outline" size={20} color={isDark ? "#64748B" : "#6B7280"} />
                     <TextInput
-                        style={styles.searchInput}
+                        style={[styles.searchInput, isDark && styles.textLight]}
                         placeholder="Search Book Name or Writer"
                         value={searchQuery}
                         onChangeText={setSearchQuery}
-                        placeholderTextColor="#9CA3AF"
+                        placeholderTextColor={isDark ? "#64748B" : "#9CA3AF"}
                     />
                     {searchQuery.length > 0 && (
                         <TouchableOpacity onPress={() => setSearchQuery('')}>
@@ -156,29 +160,29 @@ const PdfHome = ({ navigation }: any) => {
                 </View>
             </View>
 
-            <View style={styles.filterSection}>
-                <Text style={styles.filterLabel}>Source:</Text>
+            <View style={[styles.filterSection, isDark && styles.sectionDark]}>
+                <Text style={[styles.filterLabel, isDark && { color: '#475569' }]}>Source:</Text>
                 <TouchableOpacity
-                    style={[styles.filterChip, uploadFilter === 'All' && styles.activeFilterChip]}
+                    style={[styles.filterChip, isDark && styles.filterChipDark, uploadFilter === 'All' && styles.activeFilterChip]}
                     onPress={() => setUploadFilter('All')}
                 >
-                    <Text style={[styles.filterChipText, uploadFilter === 'All' && styles.activeFilterChipText]}>All</Text>
+                    <Text style={[styles.filterChipText, isDark && { color: '#94A3B8' }, uploadFilter === 'All' && styles.activeFilterChipText]}>All</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.filterChip, uploadFilter === 'Direct' && styles.activeFilterChip]}
+                    style={[styles.filterChip, isDark && styles.filterChipDark, uploadFilter === 'Direct' && styles.activeFilterChip]}
                     onPress={() => setUploadFilter('Direct')}
                 >
-                    <Text style={[styles.filterChipText, uploadFilter === 'Direct' && styles.activeFilterChipText]}>Direct</Text>
+                    <Text style={[styles.filterChipText, isDark && { color: '#94A3B8' }, uploadFilter === 'Direct' && styles.activeFilterChipText]}>Direct</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.filterChip, uploadFilter === 'Web' && styles.activeFilterChip]}
+                    style={[styles.filterChip, isDark && styles.filterChipDark, uploadFilter === 'Web' && styles.activeFilterChip]}
                     onPress={() => setUploadFilter('Web')}
                 >
-                    <Text style={[styles.filterChipText, uploadFilter === 'Web' && styles.activeFilterChipText]}>Web Link</Text>
+                    <Text style={[styles.filterChipText, isDark && { color: '#94A3B8' }, uploadFilter === 'Web' && styles.activeFilterChipText]}>Web Link</Text>
                 </TouchableOpacity>
             </View>
 
-            <View style={styles.categorySection}>
+            <View style={[styles.categorySection, isDark && styles.sectionDark, isDark && { borderBottomColor: '#334155' }]}>
                 <FlatList
                     data={CATEGORIES}
                     renderItem={renderCategoryItem}
@@ -190,9 +194,9 @@ const PdfHome = ({ navigation }: any) => {
             </View>
 
             {isLoading ? (
-                <View style={styles.loadingContainer}>
+                <View style={[styles.loadingContainer, isDark && styles.containerDark]}>
                     <ActivityIndicator size="large" color="#3B82F6" />
-                    <Text style={styles.loadingText}>Fetching PDF Books...</Text>
+                    <Text style={[styles.loadingText, isDark && { color: '#94A3B8' }]}>Fetching PDF Books...</Text>
                 </View>
             ) : (
                 <FlatList
@@ -204,9 +208,9 @@ const PdfHome = ({ navigation }: any) => {
                     columnWrapperStyle={styles.columnWrapper}
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
-                            <Ionicons name="book-outline" size={60} color="#D1D5DB" />
-                            <Text style={styles.emptyTitle}>No books found</Text>
-                            <Text style={styles.emptySubtitle}>Try adjusting your search or category</Text>
+                            <Ionicons name="book-outline" size={60} color={isDark ? "#334155" : "#D1D5DB"} />
+                            <Text style={[styles.emptyTitle, isDark && styles.textLight]}>No books found</Text>
+                            <Text style={[styles.emptySubtitle, isDark && { color: '#64748B' }]}>Try adjusting your search or category</Text>
                         </View>
                     }
                     onRefresh={refetch}
@@ -222,6 +226,15 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#F9FAFB',
     },
+    containerDark: {
+        backgroundColor: '#0f172a',
+    },
+    sectionDark: {
+        backgroundColor: '#1e293b',
+    },
+    textLight: {
+        color: '#F8FAFC',
+    },
     searchSection: {
         paddingHorizontal: 16,
         paddingVertical: 12,
@@ -236,6 +249,10 @@ const styles = StyleSheet.create({
         height: 48,
         borderWidth: 1,
         borderColor: '#E5E7EB',
+    },
+    searchBarDark: {
+        backgroundColor: '#0f172a',
+        borderColor: '#334155',
     },
     searchInput: {
         flex: 1,
@@ -269,6 +286,11 @@ const styles = StyleSheet.create({
         backgroundColor: '#F3F4F6',
         marginRight: 6,
     },
+    filterChipDark: {
+        backgroundColor: '#1e293b',
+        borderWidth: 1,
+        borderColor: '#334155',
+    },
     activeFilterChip: {
         backgroundColor: '#D1FAE5',
     },
@@ -292,6 +314,10 @@ const styles = StyleSheet.create({
         marginHorizontal: 4,
         borderWidth: 1,
         borderColor: '#E5E7EB',
+    },
+    categoryItemDark: {
+        backgroundColor: '#0f172a',
+        borderColor: '#334155',
     },
     selectedCategoryItem: {
         backgroundColor: '#3B82F6',
@@ -325,6 +351,10 @@ const styles = StyleSheet.create({
         elevation: 2,
         borderWidth: 1,
         borderColor: '#F3F4F6',
+    },
+    bookCardDark: {
+        backgroundColor: '#1e293b',
+        borderColor: '#334155',
     },
     imageContainer: {
         width: '100%',

@@ -9,8 +9,10 @@ import {
     TextInput,
     Alert,
     KeyboardAvoidingView,
-    Platform
+    Platform,
+    StatusBar
 } from 'react-native';
+import { useTheme } from '../../contexts/ThemeContext';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { get, post } from '../../services/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,6 +23,7 @@ import { PermissionsAndroid } from 'react-native';
 const CommunityExamRunner = ({ route, navigation }: any) => {
     const { courseId, examId, examType } = route.params;
     const insets = useSafeAreaInsets();
+    const { isDark } = useTheme();
 
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
@@ -163,7 +166,6 @@ const CommunityExamRunner = ({ route, navigation }: any) => {
             setUploadingAudio(true);
             const url = await uploadAudioToCloudinary(path);
             setAudioUrl(url);
-            console.log('✅ Cloudinary Audio URL:', url); // Debug log
         } catch (error) {
             Alert.alert('Upload Failed', 'Could not upload your recording. Please try again.');
         } finally {
@@ -303,9 +305,9 @@ const CommunityExamRunner = ({ route, navigation }: any) => {
 
     if (loading) {
         return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#4F46E5" />
-                <Text style={styles.loadingText}>Loading Exam...</Text>
+            <View style={[styles.loadingContainer, isDark && { backgroundColor: '#0f172a' }]}>
+                <ActivityIndicator size="large" color={isDark ? "#14b8a6" : "#4F46E5"} />
+                <Text style={[styles.loadingText, isDark && { color: '#94a3b8' }]}>Loading Exam...</Text>
             </View>
         );
     }
@@ -313,13 +315,14 @@ const CommunityExamRunner = ({ route, navigation }: any) => {
     if (!exam) return null;
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, isDark && { backgroundColor: '#0f172a' }]}>
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={isDark ? "#0f172a" : "#FFFFFF"} />
             {/* Header */}
-            <View style={[styles.header, { paddingTop: insets.top }]}>
+            <View style={[styles.header, isDark && { backgroundColor: '#0f172a', borderBottomColor: '#1e293b' }, { paddingTop: insets.top }]}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                    <Ionicons name="close" size={24} color="#1F2937" />
+                    <Ionicons name="close" size={24} color={isDark ? "#f8fafc" : "#1F2937"} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>
+                <Text style={[styles.headerTitle, isDark && { color: '#f8fafc' }]}>
                     {exam.type === 'quiz' ? 'Quiz' :
                         exam.type === 'written' ? 'Written Exam' :
                             exam.type === 'speaking' ? 'Speaking Exam' :
@@ -332,41 +335,41 @@ const CommunityExamRunner = ({ route, navigation }: any) => {
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 style={{ flex: 1 }}
             >
-                <ScrollView contentContainerStyle={styles.scrollContent}>
-                    <View style={styles.examInfo}>
-                        <Text style={styles.examTitle}>Passing Score: {exam.passingScore}%</Text>
-                        <Text style={styles.questionCount}>{exam.questions?.length || 0} Questions</Text>
+                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                    <View style={[styles.examInfo, isDark && { backgroundColor: '#1e293b' }]}>
+                        <Text style={[styles.examTitle, isDark && { color: '#14b8a6' }]}>Passing Score: {exam.passingScore}%</Text>
+                        <Text style={[styles.questionCount, isDark && { color: '#64748b' }]}>{exam.questions?.length || 0} Questions</Text>
                     </View>
 
                     {(exam.type === 'listening' || exam.type === 'speaking') ? (
                         <View style={styles.listeningContainer}>
-                            <View style={styles.recordingCard}>
-                                <Ionicons name="mic-circle" size={64} color={recording ? "#EF4444" : "#4F46E5"} />
-                                <Text style={styles.recordingTitle}>Listening Response</Text>
+                            <View style={[styles.recordingCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
+                                <Ionicons name="mic-circle" size={64} color={recording ? "#EF4444" : (isDark ? "#14b8a6" : "#4F46E5")} />
+                                <Text style={[styles.recordingTitle, isDark && { color: '#f8fafc' }]}>Listening Response</Text>
 
                                 {audioUrl ? (
-                                    <View style={styles.successBadge}>
+                                    <View style={[styles.successBadge, isDark && { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
                                         <Ionicons name="cloud-done" size={16} color="#10B981" />
-                                        <Text style={styles.successText}>Audio Uploaded</Text>
+                                        <Text style={[styles.successText, isDark && { color: '#10B981' }]}>Audio Uploaded</Text>
                                     </View>
                                 ) : uploadingAudio ? (
-                                    <View style={styles.uploadingBadge}>
-                                        <ActivityIndicator size="small" color="#4F46E5" />
-                                        <Text style={styles.uploadingText}>Uploading...</Text>
+                                    <View style={[styles.uploadingBadge, isDark && { backgroundColor: 'rgba(59, 130, 246, 0.1)' }]}>
+                                        <ActivityIndicator size="small" color={isDark ? "#14b8a6" : "#4F46E5"} />
+                                        <Text style={[styles.uploadingText, isDark && { color: '#14b8a6' }]}>Uploading...</Text>
                                     </View>
                                 ) : (
-                                    <Text style={styles.recordingSubtitle}>
+                                    <Text style={[styles.recordingSubtitle, isDark && { color: '#64748b' }]}>
                                         {recording ? 'Recording in progress...' : 'Press the button below to start'}
                                     </Text>
                                 )}
 
-                                <Text style={styles.timerText}>{formatDuration(recordingDuration)}</Text>
+                                <Text style={[styles.timerText, isDark && { color: '#14b8a6' }]}>{formatDuration(recordingDuration)}</Text>
 
                                 <View style={styles.recordingActions}>
                                     {!audioPath || recording ? (
                                         <View style={styles.recordingControlsRow}>
                                             <TouchableOpacity
-                                                style={[styles.recordBtn, recording && !isPaused ? styles.stopBtnActive : {}]}
+                                                style={[styles.recordBtn, recording && !isPaused ? styles.stopBtnActive : {}, isDark && !recording && { backgroundColor: '#14b8a6' }]}
                                                 onPress={recording ? handleStopRecording : handleStartRecording}
                                             >
                                                 <Ionicons name={recording ? "stop" : "mic"} size={24} color="#FFFFFF" />
@@ -375,10 +378,10 @@ const CommunityExamRunner = ({ route, navigation }: any) => {
 
                                             {recording && (
                                                 <TouchableOpacity
-                                                    style={styles.pauseBtn}
+                                                    style={[styles.pauseBtn, isDark && { backgroundColor: '#0f172a', borderColor: '#14b8a6' }]}
                                                     onPress={isPaused ? handleResumeRecording : handlePauseRecording}
                                                 >
-                                                    <Ionicons name={isPaused ? "play" : "pause"} size={24} color="#4F46E5" />
+                                                    <Ionicons name={isPaused ? "play" : "pause"} size={24} color={isDark ? "#14b8a6" : "#4F46E5"} />
                                                 </TouchableOpacity>
                                             )}
                                         </View>
@@ -387,7 +390,7 @@ const CommunityExamRunner = ({ route, navigation }: any) => {
                                             <TouchableOpacity style={styles.playBtn} onPress={handlePlayAudio}>
                                                 <Ionicons name={isPlaying ? "pause" : "play"} size={24} color="#FFFFFF" />
                                             </TouchableOpacity>
-                                            <TouchableOpacity style={styles.deleteBtn} onPress={handleDeleteAudio}>
+                                            <TouchableOpacity style={[styles.deleteBtn, isDark && { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]} onPress={handleDeleteAudio}>
                                                 <Ionicons name="trash" size={24} color="#EF4444" />
                                             </TouchableOpacity>
                                         </View>
@@ -399,13 +402,14 @@ const CommunityExamRunner = ({ route, navigation }: any) => {
                             {exam.questions?.length > 0 && (
                                 <View style={styles.questionsList}>
                                     {exam.questions.map((q: any, idx: number) => (
-                                        <View key={idx} style={styles.questionCard}>
-                                            <Text style={styles.questionText}>{q.question}</Text>
+                                        <View key={idx} style={[styles.questionCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
+                                            <Text style={[styles.questionText, isDark && { color: '#f8fafc' }]}>{q.question}</Text>
                                             <TextInput
-                                                style={styles.textArea}
+                                                style={[styles.textArea, isDark && { backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc' }]}
                                                 multiline
                                                 numberOfLines={3}
                                                 placeholder="Additional notes (optional)..."
+                                                placeholderTextColor={isDark ? "#475569" : "#9CA3AF"}
                                                 value={answers[idx] || ''}
                                                 onChangeText={(text) => handleTextAnswer(idx, text)}
                                             />
@@ -417,10 +421,10 @@ const CommunityExamRunner = ({ route, navigation }: any) => {
                     ) : (
                         <View style={styles.questionsList}>
                             {exam.questions?.map((q: any, idx: number) => (
-                                <View key={idx} style={styles.questionCard}>
+                                <View key={idx} style={[styles.questionCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
                                     <View style={styles.questionHeader}>
-                                        <Text style={styles.questionNumber}>Q{idx + 1}</Text>
-                                        <Text style={styles.questionText}>{q.question}</Text>
+                                        <Text style={[styles.questionNumber, isDark && { backgroundColor: 'rgba(20, 184, 166, 0.1)', color: '#14b8a6' }]}>Q{idx + 1}</Text>
+                                        <Text style={[styles.questionText, isDark && { color: '#f8fafc' }]}>{q.question}</Text>
                                     </View>
 
                                     {exam.type === 'quiz' ? (
@@ -432,32 +436,38 @@ const CommunityExamRunner = ({ route, navigation }: any) => {
                                                         key={oIdx}
                                                         style={[
                                                             styles.optionBtn,
-                                                            isSelected && styles.optionBtnSelected
+                                                            isDark && { backgroundColor: '#0f172a', borderColor: '#334155' },
+                                                            isSelected && styles.optionBtnSelected,
+                                                            isSelected && isDark && { borderColor: '#14b8a6', backgroundColor: 'rgba(20, 184, 166, 0.05)' }
                                                         ]}
                                                         onPress={() => handleOptionSelect(idx, opt)}
                                                     >
                                                         <View style={[
                                                             styles.radioCircle,
-                                                            isSelected && styles.radioCircleSelected
+                                                            isDark && { borderColor: '#334155' },
+                                                            isSelected && styles.radioCircleSelected,
+                                                            isSelected && isDark && { borderColor: '#14b8a6' }
                                                         ]}>
-                                                            {isSelected && <View style={styles.radioInner} />}
+                                                            {isSelected && <View style={[styles.radioInner, isDark && { backgroundColor: '#14b8a6' }]} />}
                                                         </View>
                                                         <Text style={[
                                                             styles.optionText,
-                                                            isSelected && styles.optionTextSelected
+                                                            isDark && { color: '#94a3b8' },
+                                                            isSelected && styles.optionTextSelected,
+                                                            isSelected && isDark && { color: '#f8fafc' }
                                                         ]}>{opt}</Text>
                                                     </TouchableOpacity>
                                                 );
                                             })}
                                         </View>
                                     ) : (
-                                        <View style={styles.writtenInputContainer}>
+                                        <View style={[styles.writtenInputContainer, isDark && { backgroundColor: '#0f172a', borderColor: '#334155' }]}>
                                             <TextInput
-                                                style={styles.textArea}
+                                                style={[styles.textArea, isDark && { color: '#f8fafc' }]}
                                                 multiline
                                                 numberOfLines={4}
                                                 placeholder="Write your answer here..."
-                                                placeholderTextColor="#9CA3AF"
+                                                placeholderTextColor={isDark ? "#475569" : "#9CA3AF"}
                                                 value={answers[idx] || ''}
                                                 onChangeText={(text) => handleTextAnswer(idx, text)}
                                             />
@@ -470,11 +480,13 @@ const CommunityExamRunner = ({ route, navigation }: any) => {
                 </ScrollView>
 
                 {/* Footer */}
-                <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
+                <View style={[styles.footer, isDark && { backgroundColor: '#0f172a', borderTopColor: '#1e293b' }, { paddingBottom: insets.bottom + 16 }]}>
                     <TouchableOpacity
                         style={[
                             styles.submitBtn,
-                            ((exam.type === 'listening' || exam.type === 'speaking') && (!audioUrl || uploadingAudio)) && styles.submitBtnDisabled
+                            isDark && { backgroundColor: '#14b8a6' },
+                            ((exam.type === 'listening' || exam.type === 'speaking') && (!audioUrl || uploadingAudio)) && styles.submitBtnDisabled,
+                            ((exam.type === 'listening' || exam.type === 'speaking') && (!audioUrl || uploadingAudio)) && isDark && { backgroundColor: '#1e293b', borderColor: '#334155', borderWidth: 1 }
                         ]}
                         onPress={handleSubmit}
                         disabled={submitting || ((exam.type === 'listening' || exam.type === 'speaking') && uploadingAudio)}
@@ -482,7 +494,7 @@ const CommunityExamRunner = ({ route, navigation }: any) => {
                         {submitting ? (
                             <ActivityIndicator color="#FFFFFF" />
                         ) : (
-                            <Text style={styles.submitBtnText}>Submit Exam</Text>
+                            <Text style={[styles.submitBtnText, ((exam.type === 'listening' || exam.type === 'speaking') && (!audioUrl || uploadingAudio)) && isDark && { color: '#475569' }]}>Submit Exam</Text>
                         )}
                     </TouchableOpacity>
                 </View>

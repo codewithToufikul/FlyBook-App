@@ -1,14 +1,26 @@
+
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Image, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
+  StyleSheet,
+  Dimensions,
+} from 'react-native';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTheme } from '../../contexts/ThemeContext';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {
   getSearchHistory,
   deleteSearchItem,
   clearSearchHistory,
-  SearchHistoryItem
+  SearchHistoryItem,
 } from '../../utils/searchHistory';
+
+const { width } = Dimensions.get('window');
 
 const TRENDING_SEARCHES = [
   'Recent Books',
@@ -20,35 +32,34 @@ const TRENDING_SEARCHES = [
 ];
 
 const QUICK_FILTERS = [
-  { label: 'People', color: 'bg-blue-50', textColor: 'text-blue-600', icon: 'people', iconColor: '#2563EB' },
-  { label: 'Opinions', color: 'bg-orange-50', textColor: 'text-orange-600', icon: 'chatbubbles', iconColor: '#EA580C' },
-  { label: 'Books', color: 'bg-green-50', textColor: 'text-green-600', icon: 'book', iconColor: '#16A34A' },
-  { label: 'Pages', color: 'bg-purple-50', textColor: 'text-purple-600', icon: 'flag', iconColor: '#9333EA' },
-  { label: 'Videos', color: 'bg-red-50', textColor: 'text-red-600', icon: 'videocam', iconColor: '#DC2626' },
+  { label: 'People', icon: 'people', lightBg: '#EFF6FF', lightIcon: '#2563EB', lightText: '#1D4ED8', darkBg: '#1e3a5f', darkIcon: '#60a5fa', darkText: '#93c5fd' },
+  { label: 'Opinions', icon: 'chatbubbles', lightBg: '#FFF7ED', lightIcon: '#EA580C', lightText: '#C2410C', darkBg: '#431407', darkIcon: '#fb923c', darkText: '#fdba74' },
+  { label: 'Books', icon: 'book', lightBg: '#F0FDF4', lightIcon: '#16A34A', lightText: '#15803D', darkBg: '#14302b', darkIcon: '#4ade80', darkText: '#86efac' },
+  { label: 'Blogs', icon: 'newspaper', lightBg: '#FAF5FF', lightIcon: '#9333EA', lightText: '#7E22CE', darkBg: '#2e1065', darkIcon: '#c084fc', darkText: '#d8b4fe' },
+  { label: 'Videos', icon: 'videocam', lightBg: '#FFF1F2', lightIcon: '#DC2626', lightText: '#B91C1C', darkBg: '#450a0a', darkIcon: '#f87171', darkText: '#fca5a5' },
 ];
 
 const SearchBar = () => {
+  const { isDark } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
   const isFocused = useIsFocused();
   const [history, setHistory] = useState<SearchHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (isFocused) {
-      loadHistory();
-    }
+    if (isFocused) loadHistory();
   }, [isFocused]);
 
   const loadHistory = async () => {
     setIsLoading(true);
-    const savedHistory = await getSearchHistory();
-    setHistory(savedHistory);
+    const saved = await getSearchHistory();
+    setHistory(saved);
     setIsLoading(false);
   };
 
   const handleDeleteHistory = async (id: string) => {
-    const updatedHistory = await deleteSearchItem(id);
-    setHistory(updatedHistory);
+    const updated = await deleteSearchItem(id);
+    setHistory(updated);
   };
 
   const handleClearAll = async () => {
@@ -60,96 +71,207 @@ const SearchBar = () => {
     navigation.navigate('SearchResult', { query });
   };
 
+  const bg = isDark ? '#0f172a' : '#ffffff';
+  const sectionBg = isDark ? '#1e293b' : '#f8fafc';
+  const textPrimary = isDark ? '#f1f5f9' : '#111827';
+  const textSecondary = isDark ? '#64748b' : '#9ca3af';
+  const borderColor = isDark ? '#1e293b' : '#f3f4f6';
+  const historyItemBg = isDark ? '#1e293b' : '#f1f5f9';
+
+  // 2-column grid: 48% each with 4% total gap
+  const cardW = (width - 32 - 12) / 2; // 16px each side padding, 12px gap
+
   return (
-    <View className="flex-1 bg-white">
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        {/* Recent Searches Header */}
-        <View className="px-4 pt-5 pb-3">
-          <View className="flex-row justify-between items-center">
-            <Text className="text-gray-900 font-bold text-2xl">Recent</Text>
-            {history.length > 0 && (
-              <TouchableOpacity onPress={handleClearAll}>
-                <Text className="text-blue-600 font-semibold text-base">Clear All</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+    <View style={[styles.container, { backgroundColor: bg }]}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+
+        {/* Recent Header */}
+        <View style={styles.recentHeader}>
+          <Text style={[styles.sectionTitle, { color: textPrimary }]}>Recent</Text>
+          {history.length > 0 && (
+            <TouchableOpacity onPress={handleClearAll} activeOpacity={0.7}>
+              <Text style={[styles.clearAll, { color: isDark ? '#2dd4bf' : '#3B82F6' }]}>Clear All</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
-        {/* History Items */}
-        <View className="px-4">
+        {/* History List */}
+        <View style={styles.historyList}>
           {isLoading ? (
-            <ActivityIndicator size="small" color="#3B82F6" className="py-4" />
+            <ActivityIndicator size="small" color={isDark ? '#14b8a6' : '#3B82F6'} style={{ marginVertical: 16 }} />
           ) : history.length > 0 ? (
-            history.map((item, index) => (
-              <View key={item.id} className="flex-row items-center py-3 border-b border-gray-50">
+            history.map((item) => (
+              <View key={item.id} style={[styles.historyRow, { borderBottomColor: borderColor }]}>
                 <TouchableOpacity
-                  className="flex-row items-center flex-1"
+                  style={styles.historyLeft}
                   onPress={() => handleSearchClick(item.query)}
+                  activeOpacity={0.7}
                 >
-                  <View className="bg-gray-100 p-2 rounded-full">
-                    <Ionicons name="time-outline" size={20} color="#6B7280" />
+                  <View style={[styles.historyIconBox, { backgroundColor: historyItemBg }]}>
+                    <Ionicons name="time-outline" size={18} color={textSecondary} />
                   </View>
-                  <Text className="text-gray-900 font-medium text-lg ml-3 flex-1">
+                  <Text style={[styles.historyText, { color: textPrimary }]} numberOfLines={1}>
                     {item.query}
                   </Text>
                 </TouchableOpacity>
-
-                {/* Delete Button */}
-                <TouchableOpacity
-                  onPress={() => handleDeleteHistory(item.id)}
-                  className="p-2"
-                >
-                  <Ionicons name="close" size={20} color="#9CA3AF" />
+                <TouchableOpacity onPress={() => handleDeleteHistory(item.id)} style={styles.deleteBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                  <Ionicons name="close" size={18} color={textSecondary} />
                 </TouchableOpacity>
               </View>
             ))
           ) : (
-            <Text className="text-gray-400 text-base py-4">No recent searches</Text>
+            <Text style={[styles.emptyText, { color: textSecondary }]}>No recent searches</Text>
           )}
         </View>
 
-        {/* Trending Searches */}
-        <View className="mt-6 px-4 py-5 bg-gray-50">
-          <Text className="text-gray-900 font-bold text-xl mb-4">
-            Trending Searches
-          </Text>
-          <View className="flex-row flex-wrap">
-            {TRENDING_SEARCHES.map((tag, index) => (
+        {/* Trending */}
+        <View style={[styles.trendingSection, { backgroundColor: sectionBg }]}>
+          <Text style={[styles.sectionTitle, { color: textPrimary, marginBottom: 14 }]}>Trending Searches</Text>
+          <View style={styles.tagWrap}>
+            {TRENDING_SEARCHES.map((tag, i) => (
               <TouchableOpacity
-                key={index}
-                className="bg-white px-5 py-2.5 rounded-full mr-2 mb-2.5 border border-gray-200 active:bg-gray-100"
+                key={i}
+                style={[styles.tag, { backgroundColor: bg, borderColor: isDark ? '#334155' : '#e5e7eb' }]}
                 onPress={() => handleSearchClick(tag)}
+                activeOpacity={0.7}
               >
-                <Text className="text-gray-800 font-medium text-sm">
-                  {tag}
-                </Text>
+                <Text style={[styles.tagText, { color: textPrimary }]}>{tag}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
-        {/* Quick Categories */}
-        <View className="mt-2 px-4 py-5 mb-10">
-          <Text className="text-gray-900 font-bold text-xl mb-4">
-            Quick Filters
-          </Text>
-          <View className="flex-row flex-wrap justify-between">
-            {QUICK_FILTERS.map((filter) => (
+        {/* Quick Filters */}
+        <View style={styles.filtersSection}>
+          <Text style={[styles.sectionTitle, { color: textPrimary, marginBottom: 14 }]}>Quick Filters</Text>
+          <View style={styles.filterGrid}>
+            {QUICK_FILTERS.map((f) => (
               <TouchableOpacity
-                key={filter.label}
-                className={`${filter.color} w-[48%] p-5 rounded-2xl active:opacity-70 mb-3`}
+                key={f.label}
+                style={[
+                  styles.filterCard,
+                  {
+                    width: cardW,
+                    backgroundColor: isDark ? f.darkBg : f.lightBg,
+                  },
+                ]}
+                activeOpacity={0.75}
+                onPress={() => handleSearchClick(f.label)}
               >
-                <Ionicons name={filter.icon as any} size={24} color={filter.iconColor} style={{ marginBottom: 8 }} />
-                <Text className={`${filter.textColor} font-bold text-lg`}>
-                  {filter.label}
-                </Text>
+                <View style={[styles.filterIconBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }]}>
+                  <Ionicons name={f.icon as any} size={22} color={isDark ? f.darkIcon : f.lightIcon} />
+                </View>
+                <Text style={[styles.filterLabel, { color: isDark ? f.darkText : f.lightText }]}>{f.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
+
+        <View style={{ height: 40 }} />
       </ScrollView>
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  scrollContent: { paddingBottom: 20 },
+
+  recentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  clearAll: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+
+  historyList: { paddingHorizontal: 16 },
+  historyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  historyLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  historyIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  historyText: {
+    fontSize: 15,
+    fontWeight: '500',
+    flex: 1,
+  },
+  deleteBtn: { padding: 4 },
+  emptyText: { fontSize: 14, paddingVertical: 20 },
+
+  trendingSection: {
+    marginTop: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 18,
+  },
+  tagWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  tag: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 100,
+    borderWidth: 1,
+    marginRight: 8,
+    marginBottom: 10,
+  },
+  tagText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  filtersSection: {
+    marginTop: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 18,
+  },
+  filterGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  filterCard: {
+    borderRadius: 20,
+    padding: 16,
+    justifyContent: 'flex-start',
+    minHeight: 100,
+  },
+  filterIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  filterLabel: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+});
 
 export default SearchBar;
