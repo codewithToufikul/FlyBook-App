@@ -44,7 +44,45 @@ export interface OrgActivity {
   userId?: string;
   userImage?: string;
   createdAt: string;
+  orgName?: string;
+  orgImage?: string;
 }
+
+/**
+ * Get all activities from all organizations
+ */
+export const getAllActivities = async (): Promise<OrgActivity[]> => {
+  try {
+    const response = await get<{ success: boolean; data: any[] }>(
+      '/organizations/activities',
+    );
+    if (response.success && response.data) {
+      // The data is an array of organizations, each with an activities array
+      const allActivities: OrgActivity[] = [];
+      response.data.forEach((org: any) => {
+        if (org.activities && Array.isArray(org.activities)) {
+          org.activities.forEach((activity: any) => {
+            allActivities.push({
+              ...activity,
+              organizationId: org._id,
+              orgName: org.orgName,
+              orgImage: org.profileImage,
+            });
+          });
+        }
+      });
+      // Sort by date or createdAt
+      return allActivities.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+    }
+    return [];
+  } catch (error) {
+    console.error('Error fetching all activities:', error);
+    return [];
+  }
+};
 
 /**
  * Get all approved partner organizations

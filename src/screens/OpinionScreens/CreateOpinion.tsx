@@ -75,7 +75,7 @@ const CreateOpinion = () => {
 
     // ── Content State ─────────────────────────────────────────────────────────
     const [description, setDescription] = useState('');
-    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [selectedImages, setSelectedImages] = useState<string[]>([]);
     const [selectedPdf, setSelectedPdf] = useState<{ url: string; name: string } | null>(null);
     const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
     const [privacy, setPrivacy] = useState<PrivacyType>('public');
@@ -100,7 +100,8 @@ const CreateOpinion = () => {
     const currentPrivacy = PRIVACY_OPTIONS.find(o => o.value === privacy)!;
     const charPct = description.length / 5000;
     const charColor = charPct > 0.9 ? '#ef4444' : charPct > 0.7 ? '#f59e0b' : ts;
-    const canPost = description.trim().length > 0 && !isPosting && !isUploadingImage && !isUploadingPdf && !isUploadingVideo;
+    const hasMedia = selectedImages.length > 0 || !!selectedVideo || !!selectedPdf;
+    const canPost = (description.trim().length > 0 || hasMedia) && !isPosting && !isUploadingImage && !isUploadingPdf && !isUploadingVideo;
     const isAnyUploading = isUploadingImage || isUploadingPdf || isUploadingVideo;
 
     // ── Handlers ─────────────────────────────────────────────────────────────
@@ -109,12 +110,16 @@ const CreateOpinion = () => {
             Alert.alert('Media Conflict', 'Remove the video first to add an image.');
             return;
         }
+        if (selectedImages.length >= 10) {
+            Alert.alert('Limit Reached', 'You can upload up to 10 images.');
+            return;
+        }
         try {
             setIsUploadingImage(true);
             const url = await handleImageUpload();
             if (url) {
-                setSelectedImage(url);
-                Toast.show({ type: 'success', text1: '✓ Image uploaded successfully' });
+                setSelectedImages(prev => [...prev, url]);
+                Toast.show({ type: 'success', text1: '✓ Image added' });
             }
         } catch (e: any) {
             if (!e.message?.includes('cancelled')) {
@@ -140,8 +145,8 @@ const CreateOpinion = () => {
     };
 
     const handleSelectVideo = async () => {
-        if (selectedImage) {
-            Alert.alert('Media Conflict', 'Remove the image first to add a video.');
+        if (selectedImages.length > 0) {
+            Alert.alert('Media Conflict', 'Remove images first to add a video.');
             return;
         }
         try {
@@ -159,10 +164,10 @@ const CreateOpinion = () => {
         } finally { setIsUploadingVideo(false); }
     };
 
-    const handleRemoveImage = () =>
+    const handleRemoveImage = (index: number) =>
         Alert.alert('Remove Image', 'Are you sure?', [
             { text: 'Cancel', style: 'cancel' },
-            { text: 'Remove', style: 'destructive', onPress: () => setSelectedImage(null) },
+            { text: 'Remove', style: 'destructive', onPress: () => setSelectedImages(prev => prev.filter((_, i) => i !== index)) },
         ]);
 
     const handleRemovePdf = () =>
@@ -183,8 +188,8 @@ const CreateOpinion = () => {
     };
 
     const handleCreatePost = async () => {
-        if (!description.trim()) {
-            Toast.show({ type: 'error', text1: 'Please write something', text2: 'Description cannot be empty' });
+        if (!description.trim() && !hasMedia) {
+            Toast.show({ type: 'error', text1: 'Please write something or add media', text2: 'Post cannot be empty' });
             return;
         }
         if (!user) {
@@ -203,7 +208,8 @@ const CreateOpinion = () => {
                 userName: user.name || user.userName || 'Anonymous',
                 userProfileImage: user.profileImage || '',
                 description: description.trim(),
-                image: selectedImage || '',
+                image: selectedImages[0] || '',
+                images: selectedImages,
                 pdf: selectedPdf?.url || '',
                 video: selectedVideo || '',
                 date: now.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
@@ -235,7 +241,7 @@ const CreateOpinion = () => {
             onPress: handleSelectImage,
             loading: isUploadingImage,
             disabled: isUploadingImage || isPosting || !!selectedVideo,
-            active: !!selectedImage,
+            active: selectedImages.length > 0,
         },
         {
             icon: 'videocam',
@@ -244,7 +250,7 @@ const CreateOpinion = () => {
             bg: 'rgba(244,63,94,0.12)',
             onPress: handleSelectVideo,
             loading: isUploadingVideo,
-            disabled: isUploadingVideo || isPosting || !!selectedImage,
+            disabled: isUploadingVideo || isPosting || selectedImages.length > 0,
             active: !!selectedVideo,
         },
         {
@@ -431,22 +437,41 @@ const CreateOpinion = () => {
                 )}
 
                 {/* ── Image Preview ── */}
-                {selectedImage && (
+                {selectedImages.length > 0 && (
                     <View style={[styles.mediaCard, { backgroundColor: cardBg, borderColor: border }]}>
                         <View style={[styles.mediaCardHeader, { borderBottomColor: border }]}>
                             <View style={styles.mediaHeaderLeft}>
                                 <LinearGradient colors={['#10b981', '#059669']} style={styles.mediaHeaderIcon}>
                                     <Ionicons name="image" size={14} color="#fff" />
                                 </LinearGradient>
-                                <Text style={[styles.mediaHeaderTitle, { color: tp }]}>Photo</Text>
+                                <Text style={[styles.mediaHeaderTitle, { color: tp }]}>Photos ({selectedImages.length}/10)</Text>
                             </View>
-                            <TouchableOpacity onPress={handleRemoveImage} style={styles.removeBtn} activeOpacity={0.8}>
-                                <LinearGradient colors={['#ef4444', '#dc2626']} style={styles.removeBtnGrad}>
-                                    <Ionicons name="close" size={14} color="#fff" />
-                                </LinearGradient>
+                            <TouchableOpacity onPress={() => setSelectedImages([])} style={styles.removeBtn} activeOpacity={0.8}>
+                                <Text style={{ color: '#ef4444', fontSize: 12, fontWeight: '700' }}>Remove All</Text>
                             </TouchableOpacity>
                         </View>
-                        <Image source={{ uri: selectedImage }} style={styles.imagePreview} resizeMode="cover" />
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ padding: 12, gap: 12 }}>
+                            {selectedImages.map((uri, index) => (
+                                <View key={index} style={styles.imagePreviewWrapper}>
+                                    <Image source={{ uri }} style={styles.imagePreviewItem} resizeMode="cover" />
+                                    <TouchableOpacity
+                                        style={styles.imageRemoveBadge}
+                                        onPress={() => handleRemoveImage(index)}
+                                    >
+                                        <Ionicons name="close" size={14} color="#fff" />
+                                    </TouchableOpacity>
+                                </View>
+                            ))}
+                            {selectedImages.length < 10 && (
+                                <TouchableOpacity
+                                    style={[styles.addMoreImageBtn, { backgroundColor: inputBg, borderColor: border }]}
+                                    onPress={handleSelectImage}
+                                >
+                                    <Ionicons name="add" size={32} color={ts} />
+                                    <Text style={{ color: ts, fontSize: 11, fontWeight: '700', marginTop: 4 }}>Add More</Text>
+                                </TouchableOpacity>
+                            )}
+                        </ScrollView>
                     </View>
                 )}
 
@@ -791,6 +816,37 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     imagePreview: { width: '100%', height: 260 },
+    imagePreviewWrapper: {
+        position: 'relative',
+        width: 120,
+        height: 120,
+        borderRadius: 16,
+        overflow: 'hidden',
+    },
+    imagePreviewItem: {
+        width: '100%',
+        height: '100%',
+    },
+    imageRemoveBadge: {
+        position: 'absolute',
+        top: 6,
+        right: 6,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    addMoreImageBtn: {
+        width: 120,
+        height: 120,
+        borderRadius: 16,
+        borderWidth: 2,
+        borderStyle: 'dashed',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     videoPreview: {
         alignItems: 'center',
         justifyContent: 'center',

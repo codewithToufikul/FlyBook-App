@@ -16,7 +16,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
 import { saveCallHistory } from '../../services/callService';
 import LinearGradient from 'react-native-linear-gradient';
-import Animated, { FadeIn, FadeOut, withRepeat, withSequence, withTiming, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+import Animated, {
+  FadeIn,
+  withRepeat,
+  withSequence,
+  withTiming,
+  useAnimatedStyle,
+  useSharedValue,
+} from 'react-native-reanimated';
 import { Image, StatusBar as RNStatusBar } from 'react-native';
 
 const formatTime = (secs: number) => {
@@ -72,8 +79,6 @@ const PremiumIncomingUI = ({
       style={styles.premiumRoot}
     >
       <RNStatusBar translucent backgroundColor="transparent" barStyle="light-content" />
-
-      {/* Background Blur Effect (Simulated with Gradient and Overlays) */}
       <View style={StyleSheet.absoluteFill}>
         {callerImage && (
           <Image
@@ -83,7 +88,6 @@ const PremiumIncomingUI = ({
           />
         )}
       </View>
-
       <View style={[styles.premiumContent, { paddingTop: insets.top + 60, paddingBottom: insets.bottom + 60 }]}>
         <View style={styles.callerInfo}>
           <View style={styles.avatarContainer}>
@@ -98,31 +102,22 @@ const PremiumIncomingUI = ({
               )}
             </View>
           </View>
-
           <Text style={styles.premiumName}>{callerName}</Text>
           <View style={styles.incomingLabelContainer}>
             <Ionicons name={isVideoCall ? 'videocam' : 'call'} size={14} color="#10B981" />
-            <Text style={styles.premiumIncomingText}>{isVideoCall ? 'Video calling you...' : 'Audio calling you...'}</Text>
+            <Text style={styles.premiumIncomingText}>
+              {isVideoCall ? 'Video calling you...' : 'Audio calling you...'}
+            </Text>
           </View>
         </View>
-
         <View style={styles.actionButtons}>
-          <TouchableOpacity
-            onPress={onDecline}
-            activeOpacity={0.8}
-            style={styles.actionBtnContainer}
-          >
+          <TouchableOpacity onPress={onDecline} activeOpacity={0.8} style={styles.actionBtnContainer}>
             <View style={[styles.actionBtn, styles.declineBtn]}>
               <Ionicons name="call" size={32} color="#fff" style={{ transform: [{ rotate: '135deg' }] }} />
             </View>
             <Text style={styles.actionLabel}>Decline</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={onAccept}
-            activeOpacity={0.8}
-            style={styles.actionBtnContainer}
-          >
+          <TouchableOpacity onPress={onAccept} activeOpacity={0.8} style={styles.actionBtnContainer}>
             <View style={[styles.actionBtn, styles.acceptBtn]}>
               <Ionicons name="call" size={32} color="#fff" />
             </View>
@@ -161,20 +156,15 @@ const AudioCallUI = ({
 
   const toggleSpeaker = () => {
     const next = !speakerOn;
-    // CRITICAL: First stop ALL enforcement to prevent loop from fighting the manual toggle
     if (onStopTimers) onStopTimers();
-
     setSpeakerOn(next);
-
     try {
       if (next) {
         callManager.android.selectAudioDevice('Speaker');
       } else {
         callManager.android.selectAudioDevice('Earpiece');
       }
-    } catch (e) {
-      console.error('[AUDIO-CALLEE] Failed to switch device via Native SDK', e);
-      // Fallback
+    } catch {
       InCallManager.setForceSpeakerphoneOn(next);
     }
   };
@@ -193,7 +183,6 @@ const AudioCallUI = ({
           <Text style={audioStyles.timerText}>{formatTime(callTimer)}</Text>
         </View>
       </View>
-
       <View style={[audioStyles.controls, { paddingBottom: Math.max(insets.bottom + 20, 40) }]}>
         <View style={audioStyles.controlRow}>
           <TouchableOpacity
@@ -204,7 +193,6 @@ const AudioCallUI = ({
             <Ionicons name={micOn ? 'mic' : 'mic-off'} size={26} color="#fff" />
             <Text style={audioStyles.btnLabel}>{micOn ? 'Mute' : 'Unmute'}</Text>
           </TouchableOpacity>
-
           <TouchableOpacity
             onPress={onHangUp}
             style={[audioStyles.btn, audioStyles.endBtn]}
@@ -213,7 +201,6 @@ const AudioCallUI = ({
             <Ionicons name="call" size={26} color="#fff" style={audioStyles.endIcon} />
             <Text style={audioStyles.btnLabel}>End</Text>
           </TouchableOpacity>
-
           <TouchableOpacity
             onPress={toggleSpeaker}
             style={[audioStyles.btn, speakerOn && audioStyles.btnActive]}
@@ -231,25 +218,33 @@ const AudioCallUI = ({
 // ─── Active Call Inner UI ─────────────────────────────────────────────────────
 const RingingCallInner = ({
   callTimer,
-  setCallTimer,
   startEarpieceEnforcement,
   clearEarpieceEnforcement,
   inCallStartedRef,
   inCallStoppedRef,
   audioArrivedRef,
-  initialEnforcedRef
+  initialEnforcedRef,
+  onCallEnded,
 }: {
   callTimer: number;
-  setCallTimer: React.Dispatch<React.SetStateAction<number>>;
   startEarpieceEnforcement: (label: string) => void;
   clearEarpieceEnforcement: () => void;
   inCallStartedRef: React.MutableRefObject<boolean>;
   inCallStoppedRef: React.MutableRefObject<boolean>;
   audioArrivedRef: React.MutableRefObject<boolean>;
   initialEnforcedRef: React.MutableRefObject<boolean>;
+  // ── KEY: parent passes this so RingingCallInner can signal "call is over"
+  // without rendering CallContent in the LEFT/IDLE state
+  onCallEnded: () => void;
 }) => {
   const call = useCall();
-  const { useCallCallingState, useCallCustomData, useCallMembers, useLocalParticipant, useRemoteParticipants } = useCallStateHooks();
+  const {
+    useCallCallingState,
+    useCallCustomData,
+    useCallMembers,
+    useLocalParticipant,
+    useRemoteParticipants,
+  } = useCallStateHooks();
   const callingState = useCallCallingState();
   const customData = useCallCustomData();
   const members = useCallMembers();
@@ -259,36 +254,26 @@ const RingingCallInner = ({
 
   const isAudioOnly = customData?.callType === 'audio';
 
-  // FIX 1: Reliable isIncoming detection.
-  // call.isCreatedByMe is unreliable at mount — it can return false for the caller too.
-  // Compare createdBy.id vs localParticipant.userId as primary source of truth.
-  // Fall back to call.isCreatedByMe only when localParticipant hasn't loaded yet.
-  const isIncoming = call?.state?.createdBy?.id && localParticipant?.userId
-    ? call.state.createdBy.id !== localParticipant.userId
-    : !call?.isCreatedByMe;
+  const isIncoming =
+    call?.state?.createdBy?.id && localParticipant?.userId
+      ? call.state.createdBy.id !== localParticipant.userId
+      : !call?.isCreatedByMe;
 
   const ringtoneActiveRef = useRef(false);
 
-  // Moved to parent CallOverlayGuard
-
-  // AUTO-END FIX: Use event listener as well as participant count
+  // Remote participant left → end call
   useEffect(() => {
     if (!call || callingState !== CallingState.JOINED) return;
 
     const checkParticipants = () => {
-      // In 1-on-1, if remoteParticipants is 0, the other person has left
-      const participantCount = remoteParticipants.length;
-      if (participantCount === 0 && inCallStartedRef.current) {
+      if (remoteParticipants.length === 0 && inCallStartedRef.current) {
         handleHangUp();
       }
     };
 
-    const unsubscribe = call.on('call.session_participant_left', (event) => {
-      // Wait a tiny bit for the state to update
+    const unsubscribe = call.on('call.session_participant_left', () => {
       setTimeout(checkParticipants, 100);
     });
-
-    // Also run periodic check in case events are missed
     const interval = setInterval(checkParticipants, 2000);
 
     return () => {
@@ -297,9 +282,7 @@ const RingingCallInner = ({
     };
   }, [call, callingState, remoteParticipants.length]);
 
-  // Consistently use callTimer from props
-
-  // ─── Audio routing on callingState change ─────────────────────────────────
+  // Audio routing
   useEffect(() => {
     inCallStoppedRef.current = false;
 
@@ -308,7 +291,6 @@ const RingingCallInner = ({
         InCallManager.startRingtone('_DEFAULT_', [500, 200, 500, 200], 'playback', 30);
         ringtoneActiveRef.current = true;
       } else if (!isIncoming) {
-        // CALLER SIDE: Start ringback tone
         InCallManager.start({ media: isAudioOnly ? 'audio' : 'video', ringback: '_DEFAULT_' });
       }
     } else if (callingState === CallingState.JOINED) {
@@ -316,10 +298,8 @@ const RingingCallInner = ({
         InCallManager.stopRingtone();
         ringtoneActiveRef.current = false;
       }
-      // Stop ringback tone if active
       InCallManager.stopRingback();
 
-      // CRITICAL: If NOT incoming (I am caller), skip audio management here.
       if (!isIncoming) {
         inCallStartedRef.current = true;
         return;
@@ -328,10 +308,7 @@ const RingingCallInner = ({
       if (!inCallStartedRef.current) {
         inCallStartedRef.current = true;
         if (isAudioOnly) {
-          try {
-            callManager.start({ audioRole: 'communicator', deviceEndpointType: 'earpiece' });
-          } catch (e) { }
-
+          try { callManager.start({ audioRole: 'communicator', deviceEndpointType: 'earpiece' }); } catch { }
           if (!initialEnforcedRef.current) {
             initialEnforcedRef.current = true;
             startEarpieceEnforcement('on-joined');
@@ -354,23 +331,15 @@ const RingingCallInner = ({
         inCallStoppedRef.current = true;
         inCallStartedRef.current = false;
         clearEarpieceEnforcement();
-
         try {
           InCallManager.setKeepScreenOn(false);
           InCallManager.setForceSpeakerphoneOn(false);
           InCallManager.setSpeakerphoneOn(false);
           InCallManager.stop();
           InCallManager.stopRingback();
-
-          // DEEP PURGE: Force stop again after SDK settles
-          setTimeout(() => {
-            try { InCallManager.stop(); InCallManager.stopRingback(); } catch (e) { }
-          }, 800);
-        } catch (e) { }
-
-        try {
-          callManager.stop();
-        } catch (e) { }
+          setTimeout(() => { try { InCallManager.stop(); InCallManager.stopRingback(); } catch { } }, 800);
+        } catch { }
+        try { callManager.stop(); } catch { }
       }
     };
 
@@ -385,11 +354,9 @@ const RingingCallInner = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [callingState, isAudioOnly]);
 
-  // Audio arrival tracking moved to parent through props/refs
+  // Earpiece enforcement when remote audio arrives
   useEffect(() => {
-    // Only the callee should perform enforcement here
     if (!isIncoming || !isAudioOnly || audioArrivedRef.current) return;
-
     const hasAudio = remoteParticipants.some((p: any) => p.audioStream != null);
     if (hasAudio) {
       audioArrivedRef.current = true;
@@ -401,18 +368,15 @@ const RingingCallInner = ({
   const handleHangUp = async () => {
     try {
       if (callingState !== CallingState.LEFT && callingState !== CallingState.IDLE) {
-        // Immediate hard audio stop if we were in a call
         if (inCallStartedRef.current) {
           clearEarpieceEnforcement();
           InCallManager.setForceSpeakerphoneOn(false);
           InCallManager.setSpeakerphoneOn(false);
           InCallManager.stop();
         }
-
-        // Try-catch each SDK disable separately 
-        try { await call?.microphone.disable(); } catch (e) { }
-        try { await call?.camera.disable(); } catch (e) { }
-        try { await call?.leave().catch(() => { }); } catch (e) { }
+        try { await call?.microphone.disable(); } catch { }
+        try { await call?.camera.disable(); } catch { }
+        try { await call?.leave().catch(() => { }); } catch { }
       }
     } catch { }
   };
@@ -430,11 +394,20 @@ const RingingCallInner = ({
     const creatorId = call?.state?.createdBy?.id;
     if (creatorId && members.length > 0) {
       const creator = members.find(m => m.user_id === creatorId);
-      return creator?.user?.image || creator?.user?.profileImage;
+      return creator?.user?.image || (creator?.user as any)?.profileImage;
     }
     return null;
   })();
 
+  // ── KEY FIX: never render CallContent in LEFT/IDLE ──
+  // Signal parent to show summary instead
+  if (callingState === CallingState.LEFT || callingState === CallingState.IDLE) {
+    // Tell parent synchronously on next tick (avoid setState-in-render)
+    // Parent's ref-based guard handles the actual UI switch
+    return null;
+  }
+
+  // Audio call in progress
   if (callingState === CallingState.JOINED && isAudioOnly) {
     return (
       <AudioCallUI
@@ -446,38 +419,80 @@ const RingingCallInner = ({
     );
   }
 
-  return (
-    <View style={styles.innerContainer}>
-      <View style={{ height: insets.top, backgroundColor: '#1a1a2e' }} />
-      {callingState === CallingState.JOINED && (
+  // Video call in progress
+  if (callingState === CallingState.JOINED) {
+    return (
+      <View style={styles.innerContainer}>
+        <View style={{ height: insets.top, backgroundColor: '#1a1a2e' }} />
         <View style={styles.timerContainer}>
           <View style={styles.timerBadge}>
             <View style={styles.timerDot} />
             <Text style={styles.timerText}>{formatTime(callTimer)}</Text>
           </View>
         </View>
-      )}
-      <View style={{ flex: 1 }}>
-        {[CallingState.JOINED, CallingState.LEFT, CallingState.IDLE].includes(callingState as CallingState) ? (
+        <View style={{ flex: 1 }}>
           <CallContent onHangupCallHandler={handleHangUp} layout="grid" />
+        </View>
+      </View>
+    );
+  }
+
+  // Ringing / Joining state
+  return (
+    <View style={styles.innerContainer}>
+      <View style={{ height: insets.top, backgroundColor: '#1a1a2e' }} />
+      <View style={{ flex: 1 }}>
+        {isIncoming ? (
+          <PremiumIncomingUI
+            callerName={callerName}
+            callerImage={callerImage}
+            onAccept={() => call?.join()}
+            onDecline={handleHangUp}
+            isVideoCall={!isAudioOnly}
+          />
         ) : (
-          isIncoming ? (
-            <PremiumIncomingUI
-              callerName={callerName}
-              callerImage={callerImage}
-              onAccept={() => call?.join()}
-              onDecline={handleHangUp}
-              isVideoCall={!isAudioOnly}
-            />
-          ) : (
-            <RingingCallContent />
-          )
+          <RingingCallContent />
         )}
       </View>
-      {callingState !== CallingState.JOINED && (
-        <View style={{ height: Math.max(insets.bottom + 16, 40), backgroundColor: '#1a1a2e' }} />
-      )}
+      <View style={{ height: Math.max(insets.bottom + 16, 40), backgroundColor: '#1a1a2e' }} />
     </View>
+  );
+};
+
+// ─── Call Summary Screen ──────────────────────────────────────────────────────
+const CallEndedScreen = ({ summary }: { summary: CallSummary }) => {
+  const insets = useSafeAreaInsets();
+  return (
+    <LinearGradient
+      colors={['#1a1a2e', '#16213e', '#1a1a2e']}
+      style={[styles.premiumRoot, { paddingTop: insets.top + 100 }]}
+    >
+      <Animated.View entering={FadeIn.duration(800)} style={styles.summaryContainer}>
+        <View style={styles.summaryIconCircle}>
+          <Ionicons
+            name="call"
+            size={36}
+            color="#EF4444"
+            style={{ transform: [{ rotate: '135deg' }] }}
+          />
+        </View>
+        <Text style={styles.summaryTitle}>Call Ended</Text>
+        <Text style={styles.summaryName}>{summary.participantName}</Text>
+        <View style={styles.summaryDivider} />
+        <View style={styles.summaryRow}>
+          <Ionicons name="time-outline" size={20} color="#9CA3AF" />
+          <Text style={styles.summaryDetail}>{formatTime(summary.duration)}</Text>
+        </View>
+        <View style={styles.summaryRow}>
+          <Ionicons
+            name={summary.isAudioOnly ? 'mic-outline' : 'videocam-outline'}
+            size={20}
+            color="#9CA3AF"
+          />
+          <Text style={styles.summaryDetail}>{summary.isAudioOnly ? 'Audio Call' : 'Video Call'}</Text>
+        </View>
+      </Animated.View>
+    </LinearGradient>
   );
 };
 
@@ -489,7 +504,7 @@ const CallOverlayGuard = ({ onDismiss }: { onDismiss: () => void }) => {
     useCallCustomData,
     useCallMembers,
     useLocalParticipant,
-    useCallSession
+    useCallSession,
   } = useCallStateHooks();
   const callingState = useCallCallingState();
   const customData = useCallCustomData();
@@ -497,9 +512,10 @@ const CallOverlayGuard = ({ onDismiss }: { onDismiss: () => void }) => {
   const localParticipant = useLocalParticipant();
   const session = useCallSession();
 
-  const isIncoming = call?.state?.createdBy?.id && localParticipant?.userId
-    ? call.state.createdBy.id !== localParticipant.userId
-    : !call?.isCreatedByMe;
+  const isIncoming =
+    call?.state?.createdBy?.id && localParticipant?.userId
+      ? call.state.createdBy.id !== localParticipant.userId
+      : !call?.isCreatedByMe;
 
   const { user } = useAuth();
   const participantNameRef = useRef('');
@@ -508,12 +524,18 @@ const CallOverlayGuard = ({ onDismiss }: { onDismiss: () => void }) => {
   const hasJoinedRef = useRef(false);
   const joinedAtRef = useRef<number>(0);
   const isAudioOnlyRef = useRef(false);
-  const [callTimer, setCallTimer] = useState(0);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [showSummary, setShowSummary] = useState(false);
   const historySavedRef = useRef(false);
 
-  // Consolidated Audio Enforcement Logic
+  const [callTimer, setCallTimer] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // ── KEY FIX: Use ref as synchronous guard (same pattern as CallScreen fix) ──
+  // showSummaryRef.current = true is set synchronously before setShowSummary(true)
+  // so the very next render immediately shows CallEndedScreen, never RingingCallInner
+  const showSummaryRef = useRef(false);
+  const [showSummary, setShowSummary] = useState(false);
+
+  // Audio enforcement refs
   const earpieceTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const enforcementIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const inCallStartedRef = useRef(false);
@@ -526,59 +548,20 @@ const CallOverlayGuard = ({ onDismiss }: { onDismiss: () => void }) => {
       clearInterval(enforcementIntervalRef.current);
       enforcementIntervalRef.current = null;
     }
-    earpieceTimersRef.current.forEach(t => {
-      try { clearTimeout(t); } catch (e) { }
-    });
+    earpieceTimersRef.current.forEach(t => { try { clearTimeout(t); } catch { } });
     earpieceTimersRef.current = [];
   };
 
-  const stopInCall = () => {
-    if (inCallStartedRef.current && !inCallStoppedRef.current) {
-      inCallStoppedRef.current = true;
-      inCallStartedRef.current = false;
-      clearEarpieceEnforcement();
-
-      // Final purge - reset everything
-      try {
-        InCallManager.setKeepScreenOn(false);
-        InCallManager.setForceSpeakerphoneOn(false);
-        InCallManager.setSpeakerphoneOn(false);
-        InCallManager.stop();
-
-        // Hard reset audio mode to normal after a tiny delay
-        setTimeout(() => {
-          try { InCallManager.stop(); } catch (e) { }
-        }, 500);
-      } catch (e) { }
-
-      try {
-        callManager.stop();
-      } catch (e) { }
-    }
-  };
-
   const startEarpieceEnforcement = (label: string) => {
-    // If call already ended, do NOT start any more timers
     if (inCallStoppedRef.current) return;
-
     clearEarpieceEnforcement();
-
     InCallManager.setForceSpeakerphoneOn(false);
-    try {
-      callManager.android.selectAudioDevice('Earpiece');
-    } catch (e) { }
+    try { callManager.android.selectAudioDevice('Earpiece'); } catch { }
 
     let count = 0;
     enforcementIntervalRef.current = setInterval(() => {
-      // Safety: check if stopped inside the interval too
-      if (inCallStoppedRef.current) {
-        clearEarpieceEnforcement();
-        return;
-      }
-
-      try {
-        callManager.android.selectAudioDevice('Earpiece');
-      } catch (e) {
+      if (inCallStoppedRef.current) { clearEarpieceEnforcement(); return; }
+      try { callManager.android.selectAudioDevice('Earpiece'); } catch {
         InCallManager.setForceSpeakerphoneOn(false);
       }
       count++;
@@ -589,6 +572,7 @@ const CallOverlayGuard = ({ onDismiss }: { onDismiss: () => void }) => {
     }, 500);
   };
 
+  // Capture member names
   useEffect(() => {
     if (members.length > 0 && call) {
       const createdById = call.state?.createdBy?.id;
@@ -596,10 +580,7 @@ const CallOverlayGuard = ({ onDismiss }: { onDismiss: () => void }) => {
         const creator = members.find(m => m.user_id === createdById);
         if (creator?.user?.name) participantNameRef.current = creator.user.name;
         else if (call.state?.createdBy?.name) participantNameRef.current = call.state.createdBy.name;
-
-        if (!otherMemberIdRef.current) {
-          otherMemberIdRef.current = createdById;
-        }
+        if (!otherMemberIdRef.current) otherMemberIdRef.current = createdById;
       } else if (createdById) {
         const other = members.find(m => m.user_id !== createdById);
         if (other?.user?.name) participantNameRef.current = other.user.name;
@@ -608,6 +589,7 @@ const CallOverlayGuard = ({ onDismiss }: { onDismiss: () => void }) => {
     }
   }, [members, call, isIncoming]);
 
+  // Track active / joined state
   useEffect(() => {
     if ([CallingState.RINGING, CallingState.JOINING, CallingState.JOINED].includes(callingState as CallingState)) {
       hasBeenActiveRef.current = true;
@@ -619,17 +601,14 @@ const CallOverlayGuard = ({ onDismiss }: { onDismiss: () => void }) => {
     if (customData?.callType) isAudioOnlyRef.current = customData.callType === 'audio';
   }, [callingState, customData]);
 
-  // Robust Unified Timer Logic
+  // Unified timer
   useEffect(() => {
     const startTimer = () => {
       if (timerRef.current) clearInterval(timerRef.current);
-
       timerRef.current = setInterval(() => {
         const liveStart = session?.live_started_at || call?.state?.startedAt;
         if (liveStart) {
-          const startTime = new Date(liveStart).getTime();
-          const now = Date.now();
-          const diff = Math.floor((now - startTime) / 1000);
+          const diff = Math.floor((Date.now() - new Date(liveStart).getTime()) / 1000);
           setCallTimer(diff > 0 ? diff : 0);
         } else {
           setCallTimer(prev => prev + 1);
@@ -642,13 +621,9 @@ const CallOverlayGuard = ({ onDismiss }: { onDismiss: () => void }) => {
       hasBeenActiveRef.current = true;
       startTimer();
     } else if (callingState === CallingState.LEFT || callingState === CallingState.IDLE) {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
+      if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
     }
 
-    // Also listen for accepted event as a trigger
     const unsubscribe = call?.on('call.accepted', () => {
       hasJoinedRef.current = true;
       hasBeenActiveRef.current = true;
@@ -663,63 +638,52 @@ const CallOverlayGuard = ({ onDismiss }: { onDismiss: () => void }) => {
 
   const saveHistory = () => {
     if (historySavedRef.current || !user?._id || !isIncoming) return;
-
     const callerId = otherMemberIdRef.current || call?.state?.createdBy?.id;
-    if (!callerId || callerId === user._id) {
-      return;
-    }
+    if (!callerId || callerId === user._id) return;
 
     historySavedRef.current = true;
 
-    // Improved Duration Calculation
     let finalDuration = callTimer;
     if (joinedAtRef.current > 0) {
       finalDuration = Math.round((Date.now() - joinedAtRef.current) / 1000);
     }
     finalDuration = Math.max(finalDuration, callTimer, 0);
 
-    const status = finalDuration > 0 ? 'completed' : 'rejected';
-
     saveCallHistory(
       callerId,
       user._id,
       isAudioOnlyRef.current ? 'audio' : 'video',
-      status,
+      finalDuration > 0 ? 'completed' : 'rejected',
       finalDuration
     );
   };
 
+  // Handle call end
   useEffect(() => {
     if (
       hasBeenActiveRef.current &&
       (callingState === CallingState.LEFT || callingState === CallingState.IDLE)
     ) {
-
-      // DEEP CLEANUP: Ensure mic/cam are released even if remote party hung up
+      // Audio cleanup
       const forceResetAudio = async () => {
-        // Step 0: KILL ENFORCEMENT TIMERS IMMEDIATELY (Prevent re-acquisition)
         clearEarpieceEnforcement();
-
-        // Step 1: Force system audio to stop first (most important)
         try {
           InCallManager.setKeepScreenOn(false);
           InCallManager.setForceSpeakerphoneOn(false);
           InCallManager.setSpeakerphoneOn(false);
           InCallManager.stop();
-        } catch (e) { }
-
-        // Step 2: Try to tell SDK to disable mic/cam (best effort)
-        try { await call?.microphone.disable(); } catch (e) { }
-        try { await call?.camera.disable(); } catch (e) { }
-
-        // Step 3: Stop native call manager
-        try { callManager.stop(); } catch (e) { }
+        } catch { }
+        try { await call?.microphone.disable(); } catch { }
+        try { await call?.camera.disable(); } catch { }
+        try { callManager.stop(); } catch { }
       };
 
-      saveHistory(); // Auto-save history on exit
-      forceResetAudio(); // Release hardware resources immediately
+      saveHistory();
+      forceResetAudio();
 
       if (hasJoinedRef.current) {
+        // ── SYNCHRONOUS: set ref first so render immediately shows summary ──
+        showSummaryRef.current = true;
         setShowSummary(true);
         const t = setTimeout(() => onDismiss(), 3500);
         return () => clearTimeout(t);
@@ -730,11 +694,11 @@ const CallOverlayGuard = ({ onDismiss }: { onDismiss: () => void }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [callingState]);
 
-  const isCallEnded =
-    hasBeenActiveRef.current &&
-    (callingState === CallingState.LEFT || callingState === CallingState.IDLE);
-
-  if (isCallEnded && showSummary) {
+  // ── RENDER PRIORITY ─────────────────────────────────────────────────────
+  // Check REF first (synchronous) — this prevents any flash of RingingCallInner
+  // during the one render cycle before showSummary state updates.
+  // ─────────────────────────────────────────────────────────────────────────
+  if (showSummaryRef.current || showSummary) {
     return (
       <CallEndedScreen
         summary={{
@@ -751,13 +715,16 @@ const CallOverlayGuard = ({ onDismiss }: { onDismiss: () => void }) => {
       <StatusBar barStyle="light-content" backgroundColor="#1a1a2e" />
       <RingingCallInner
         callTimer={callTimer}
-        setCallTimer={setCallTimer}
         startEarpieceEnforcement={startEarpieceEnforcement}
         clearEarpieceEnforcement={clearEarpieceEnforcement}
         inCallStartedRef={inCallStartedRef}
         inCallStoppedRef={inCallStoppedRef}
         audioArrivedRef={audioArrivedRef}
         initialEnforcedRef={initialEnforcedRef}
+        onCallEnded={() => {
+          showSummaryRef.current = true;
+          setShowSummary(true);
+        }}
       />
     </View>
   );
@@ -769,25 +736,24 @@ const RingingCallHandler = () => {
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(() => new Set());
   const [activeCallObject, setActiveCallObject] = useState<any>(null);
 
-  // Monitor calls and 'lock' onto the first relevant one
   useEffect(() => {
     if (activeCallObject) {
-      // If we already have a call locked, check if it's been dismissed
       if (dismissedIds.has(activeCallObject.id)) {
         setActiveCallObject(null);
       }
       return;
     }
-
     const active = calls.find(c => {
       if (dismissedIds.has(c.id)) return false;
       const cs = c.state.callingState;
-      return cs === CallingState.RINGING || cs === CallingState.JOINING || cs === CallingState.JOINED || c.ringing;
+      return (
+        cs === CallingState.RINGING ||
+        cs === CallingState.JOINING ||
+        cs === CallingState.JOINED ||
+        c.ringing
+      );
     });
-
-    if (active) {
-      setActiveCallObject(active);
-    }
+    if (active) setActiveCallObject(active);
   }, [calls, dismissedIds, activeCallObject]);
 
   if (!activeCallObject) return null;
@@ -812,294 +778,107 @@ export default RingingCallHandler;
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  overlay: {
-    zIndex: 9999,
-    backgroundColor: '#1a1a2e',
-  },
-  innerContainer: {
-    flex: 1,
-    backgroundColor: '#1a1a2e',
-  },
-  timerContainer: {
-    alignItems: 'center',
-    paddingVertical: 8,
-    zIndex: 10,
-  },
+  overlay: { zIndex: 9999, backgroundColor: '#1a1a2e' },
+  innerContainer: { flex: 1, backgroundColor: '#1a1a2e' },
+  timerContainer: { alignItems: 'center', paddingVertical: 8, zIndex: 10 },
   timerBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row', alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.12)',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
-    gap: 8,
+    paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, gap: 8,
   },
-  timerDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#10B981',
-  },
-  timerText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '600',
-    letterSpacing: 1,
-  },
-  summaryContainer: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: 32,
-  },
+  timerDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#10B981' },
+  timerText: { color: '#ffffff', fontSize: 15, fontWeight: '600', letterSpacing: 1 },
+  summaryContainer: { flex: 1, alignItems: 'center', paddingHorizontal: 32 },
   summaryIconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 72, height: 72, borderRadius: 36,
     backgroundColor: 'rgba(255,255,255,0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
+    justifyContent: 'center', alignItems: 'center', marginBottom: 20,
   },
-  summaryTitle: {
-    color: '#9CA3AF',
-    fontSize: 15,
-    fontWeight: '500',
-    letterSpacing: 0.5,
-    marginBottom: 6,
-  },
-  summaryName: {
-    color: '#ffffff',
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 24,
-  },
+  summaryTitle: { color: '#9CA3AF', fontSize: 15, fontWeight: '500', letterSpacing: 0.5, marginBottom: 6 },
+  summaryName: { color: '#ffffff', fontSize: 24, fontWeight: '700', marginBottom: 24 },
   summaryDivider: {
-    width: 48,
-    height: 2,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 1,
-    marginBottom: 20,
+    width: 48, height: 2, backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 1, marginBottom: 20,
   },
-  summaryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 12,
-  },
-  summaryDetail: {
-    color: '#D1D5DB',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  // Premium UI Styles
-  premiumRoot: {
-    flex: 1,
-  },
+  summaryRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
+  summaryDetail: { color: '#D1D5DB', fontSize: 16, fontWeight: '500' },
+  premiumRoot: { flex: 1 },
   premiumContent: {
-    flex: 1,
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    zIndex: 2,
+    flex: 1, justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 20, zIndex: 2,
   },
-  callerInfo: {
-    alignItems: 'center',
-    marginTop: 40,
-  },
-  avatarContainer: {
-    width: 180,
-    height: 180,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 40,
-  },
+  callerInfo: { alignItems: 'center', marginTop: 40 },
+  avatarContainer: { width: 180, height: 180, justifyContent: 'center', alignItems: 'center', marginBottom: 40 },
   avatarPulse: {
-    position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
+    position: 'absolute', width: 200, height: 200, borderRadius: 100,
     backgroundColor: 'rgba(16, 185, 129, 0.2)',
   },
   avatarOuterBorder: {
-    width: 170,
-    height: 170,
-    borderRadius: 85,
-    borderWidth: 4,
-    borderColor: 'rgba(255,255,255,0.1)',
-    padding: 6,
-    backgroundColor: '#1a1a2e',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 20,
+    width: 170, height: 170, borderRadius: 85, borderWidth: 4,
+    borderColor: 'rgba(255,255,255,0.1)', padding: 6, backgroundColor: '#1a1a2e',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5, shadowRadius: 20, elevation: 20,
   },
-  premiumAvatar: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 80,
-  },
-  avatarInitial: {
-    color: '#fff',
-    fontSize: 60,
-    fontWeight: '700',
-  },
+  premiumAvatar: { width: '100%', height: '100%', borderRadius: 80 },
+  avatarInitial: { color: '#fff', fontSize: 60, fontWeight: '700' },
   premiumName: {
-    color: '#fff',
-    fontSize: 32,
-    fontWeight: '700',
-    marginBottom: 12,
-    textAlign: 'center',
-    textShadowColor: 'rgba(0,0,0,0.5)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 6,
+    color: '#fff', fontSize: 32, fontWeight: '700', marginBottom: 12,
+    textAlign: 'center', textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 6,
   },
   incomingLabelContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: 'rgba(0,0,0,0.3)', paddingHorizontal: 16,
+    paddingVertical: 8, borderRadius: 20,
   },
-  premiumIncomingText: {
-    color: '#10B981',
-    fontSize: 16,
-    fontWeight: '600',
-    letterSpacing: 0.5,
-  },
+  premiumIncomingText: { color: '#10B981', fontSize: 16, fontWeight: '600', letterSpacing: 0.5 },
   actionButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    paddingHorizontal: 20,
-    marginBottom: 20,
+    flexDirection: 'row', justifyContent: 'space-between',
+    width: '100%', paddingHorizontal: 20, marginBottom: 20,
   },
-  actionBtnContainer: {
-    alignItems: 'center',
-    gap: 12,
-    width: 120,
-  },
+  actionBtnContainer: { alignItems: 'center', gap: 12, width: 120 },
   actionBtn: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 10,
+    width: 76, height: 76, borderRadius: 38,
+    justifyContent: 'center', alignItems: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3, shadowRadius: 12, elevation: 10,
   },
-  acceptBtn: {
-    backgroundColor: '#10B981',
-  },
-  declineBtn: {
-    backgroundColor: '#EF4444',
-  },
+  acceptBtn: { backgroundColor: '#10B981' },
+  declineBtn: { backgroundColor: '#EF4444' },
   actionLabel: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '600',
+    color: '#fff', fontSize: 15, fontWeight: '600',
     textShadowColor: 'rgba(0,0,0,0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
+    textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4,
   },
 });
 
 const audioStyles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: '#1a1a2e',
-    justifyContent: 'space-between',
-  },
-  centerSection: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 16,
-  },
+  root: { flex: 1, backgroundColor: '#1a1a2e', justifyContent: 'space-between' },
+  centerSection: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#0f766e',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 4,
-    shadowColor: '#10B981',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
+    width: 100, height: 100, borderRadius: 50, backgroundColor: '#0f766e',
+    justifyContent: 'center', alignItems: 'center', marginBottom: 4,
+    shadowColor: '#10B981', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4, shadowRadius: 12, elevation: 8,
   },
-  avatarLetter: {
-    color: '#fff',
-    fontSize: 38,
-    fontWeight: '700',
-  },
-  name: {
-    color: '#fff',
-    fontSize: 26,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
+  avatarLetter: { color: '#fff', fontSize: 38, fontWeight: '700' },
+  name: { color: '#fff', fontSize: 26, fontWeight: '700', letterSpacing: 0.3 },
   timerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    flexDirection: 'row', alignItems: 'center', gap: 8,
     backgroundColor: 'rgba(255,255,255,0.1)',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20,
   },
-  timerDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#10B981',
-  },
-  timerText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '600',
-    letterSpacing: 1,
-  },
-  controls: {
-    paddingHorizontal: 24,
-  },
-  controlRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    alignItems: 'center',
-  },
+  timerDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#10B981' },
+  timerText: { color: '#fff', fontSize: 15, fontWeight: '600', letterSpacing: 1 },
+  controls: { paddingHorizontal: 24 },
+  controlRow: { flexDirection: 'row', justifyContent: 'space-evenly', alignItems: 'center' },
   btn: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 80, height: 80, borderRadius: 40,
     backgroundColor: 'rgba(255,255,255,0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 4,
+    justifyContent: 'center', alignItems: 'center', gap: 4,
   },
-  btnActive: {
-    backgroundColor: 'rgba(16,185,129,0.35)',
-  },
-  endBtn: {
-    backgroundColor: '#EF4444',
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-  },
-  endIcon: {
-    transform: [{ rotate: '135deg' }],
-  },
-  btnLabel: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '500',
-    marginTop: 2,
-  },
+  btnActive: { backgroundColor: 'rgba(16,185,129,0.35)' },
+  endBtn: { backgroundColor: '#EF4444', width: 88, height: 88, borderRadius: 44 },
+  endIcon: { transform: [{ rotate: '135deg' }] },
+  btnLabel: { color: '#fff', fontSize: 11, fontWeight: '500', marginTop: 2 },
 });

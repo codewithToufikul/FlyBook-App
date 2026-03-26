@@ -1,6 +1,8 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { isAuthenticated, getUser, clearAuth, getToken } from '../services/api';
 import { User, getProfile } from '../services/authServices';
+import * as Keychain from 'react-native-keychain';
+import { Linking } from 'react-native';
 
 interface AuthContextType {
   user: User | null;
@@ -29,6 +31,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     checkAuthStatus();
   }, []);
 
+  const syncToKeychain = async (userData: User, tokenData: string) => {
+    try {
+      console.log('🔄 Attempting to sync to keychain...', { name: userData.name });
+      const keychainData = JSON.stringify({
+        token: tokenData,
+        name: userData.name,
+        profileImage: userData.profileImage,
+        id: userData._id || (userData as any).id
+      });
+      console.log('📦 Keychain Data String:', keychainData);
+      
+      await Keychain.setGenericPassword('flybook_auth', keychainData, {
+        accessGroup: 'group.com.flybook.shared', 
+      });
+      console.log('✅ Keychain.setGenericPassword Success');
+    } catch (e) {
+      console.error('❌ Keychain Sync Failed Error:', e);
+    }
+  };
+
   const checkAuthStatus = async () => {
     try {
       setIsLoading(true);
@@ -39,6 +61,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const userData = await getProfile();
         setUser(userData);
         setAuthenticated(true);
+        if (tokenData && userData) {
+          syncToKeychain(userData, tokenData);
+        }
       } else {
         setToken(null);
         setUser(null);
@@ -60,6 +85,44 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // --- Deep Linking SSO Listener ---
+  useEffect(() => {
+    const handleDeepLink = async (event: { url: string }) => {
+      const { url } = event;
+      console.log('🔗 [SSO] Incoming Link:', url);
+      
+      if (url.includes('flybook://sso-auth')) {
+        if (authenticated && user && token) {
+          try {
+            const ssoDataRaw = {
+              token,
+              name: user.name,
+              profileImage: user.profileImage,
+              id: user._id || (user as any).id
+            };
+            const encodedData = encodeURIComponent(JSON.stringify(ssoDataRaw));
+            const redirectUrl = `flyconnect://auth?data=${encodedData}`;
+            
+            console.log('🚀 [SSO] Redirecting back to FlyConnect...');
+            await Linking.openURL(redirectUrl);
+          } catch (err) {
+            console.error('❌ [SSO] Redirect Error:', err);
+          }
+        } else {
+          console.warn('⚠️ [SSO] Shared Auth requested but user not logged into FlyBook');
+        }
+      }
+    };
+
+    // Handle background launch
+    Linking.getInitialURL().then(url => {
+        if (url) handleDeepLink({ url });
+    });
+
+    const subscription = Linking.addEventListener('url', handleDeepLink);
+    return () => subscription.remove();
+  }, [authenticated, user, token]);
+
   const loginUser = async (userData: User) => {
     setIsLoading(true);
     try {
@@ -69,6 +132,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setToken(tokenData);
       const freshData = await getProfile();
       setUser(freshData);
+      if (tokenData && freshData) {
+        syncToKeychain(freshData, tokenData);
+      }
     } catch (error) {
       console.error('Initial profile fetch failed, using login data');
     } finally {
@@ -80,6 +146,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsLoading(true);
     try {
       await clearAuth();
+      await Keychain.resetGenericPassword({
+        service: 'com.flybook.shared'
+      });
       setToken(null);
       setUser(null);
       setAuthenticated(false);

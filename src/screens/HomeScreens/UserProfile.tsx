@@ -368,16 +368,41 @@ const UserProfile = () => {
         );
     };
 
-    const handleMessage = () => {
+    const handleMessage = async () => {
         if (!user) return;
-        (navigation as any).navigate('ChatRoom', {
-            chatUser: {
-                _id: user._id,
-                name: user.name,
-                profileImage: user.profileImage,
-                isOnline: user.isOnline || false
+        const url = `flyconnect://chat/${user._id}`;
+        try {
+            const supported = await Linking.canOpenURL(url);
+            if (supported) {
+                await Linking.openURL(url);
+            } else {
+                Toast.show({
+                    type: 'info',
+                    text1: 'FlyConnect App Not Installed',
+                    text2: 'Opening local chat as fallback...',
+                });
+                // Fallback to internal chatroom
+                (navigation as any).navigate('ChatRoom', {
+                    chatUser: {
+                        _id: user._id,
+                        name: user.name,
+                        profileImage: user.profileImage,
+                        isOnline: user.isOnline || false
+                    }
+                });
             }
-        });
+        } catch (error) {
+            console.error('Deep linking error:', error);
+            // Emergency fallback
+            (navigation as any).navigate('ChatRoom', {
+                chatUser: {
+                    _id: user._id,
+                    name: user.name,
+                    profileImage: user.profileImage,
+                    isOnline: user.isOnline || false
+                }
+            });
+        }
     };
 
     const handleLibrary = () => {

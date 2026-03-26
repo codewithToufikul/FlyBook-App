@@ -21,13 +21,13 @@ import { Platform } from 'react-native';
 
 const USE_LOCAL_SERVER = false; // Set to false for production
 
-const PRODUCTION_URL = 'https://fly-book-server-lzu4.onrender.com';
+const PRODUCTION_URL = 'https://fly-book-server-production-6270.up.railway.app';
 
 // For local development - automatically detects platform
 const LOCAL_URL = Platform.select({
-  android: 'http://10.0.2.2:3000', // Special Android emulator localhost
+  android: 'http://10.241.175.191:3000', // Special Android emulator localhost
   ios: 'http://localhost:3000',
-  default: 'http://192.168.8.191:3000', // Your computer's current IP
+  default: 'http://10.241.175.191:3000', // Your computer's current IP
 });
 
 // IMPORTANT: If testing on physical device, replace with your computer's IP:

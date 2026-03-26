@@ -60,6 +60,7 @@ interface Post {
     description?: string;
     postText?: string;
     image?: string;
+    images?: string[];
     imageUrl?: string;
     video?: string;
     pdf?: string;
@@ -352,20 +353,39 @@ const OpinionDetails = () => {
                                 </TouchableOpacity>
                             )}
 
-                            {(postData.image || postData.imageUrl) && (
+                            {/* ── Multiple Images ── */}
+                            {postData.images && postData.images.length > 1 ? (
+                                <View style={styles.multiImageContainer}>
+                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} pagingEnabled>
+                                        {postData.images.map((img, idx) => (
+                                            <TouchableOpacity
+                                                key={idx}
+                                                onPress={() => (navigation as any).navigate('FullImageViewer', { imageUrl: img })}
+                                                activeOpacity={0.9}
+                                                style={styles.multiImageItemWrap}
+                                            >
+                                                <Image source={{ uri: img }} style={styles.postImage} resizeMode="cover" />
+                                                <View style={styles.imageBadge}>
+                                                    <Text style={styles.imageBadgeText}>{idx + 1}/{postData.images?.length}</Text>
+                                                </View>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </ScrollView>
+                                </View>
+                            ) : (postData.images && postData.images.length === 1) || postData.image || postData.imageUrl ? (
                                 <TouchableOpacity
-                                    onPress={() => (navigation as any).navigate('FullImageViewer', { imageUrl: postData.image || postData.imageUrl })}
+                                    onPress={() => (navigation as any).navigate('FullImageViewer', { imageUrl: (postData.images && postData.images[0]) || postData.image || postData.imageUrl })}
                                     activeOpacity={0.9}
                                     style={styles.imageContainer}
                                 >
                                     <Image
-                                        source={{ uri: postData.image || postData.imageUrl }}
+                                        source={{ uri: (postData.images && postData.images[0]) || postData.image || postData.imageUrl }}
                                         style={styles.postImage}
                                         resizeMode="cover"
                                     />
                                     <LinearGradient colors={['transparent', 'rgba(0,0,0,0.08)']} style={StyleSheet.absoluteFill} />
                                 </TouchableOpacity>
-                            )}
+                            ) : null}
 
                             {/* ── Video Player ── */}
                             {postData.video && (
@@ -1080,6 +1100,31 @@ const styles = StyleSheet.create({
         marginHorizontal: 10,
         marginBottom: 12,
         height: 340, // Ensures ScrollView layout measures correctly
+    },
+    // ── Multi-image styles ────────────────────────────────────────────────────
+    multiImageContainer: {
+        borderRadius: 16,
+        overflow: 'hidden',
+        marginTop: 4,
+        backgroundColor: '#f8fafc',
+    },
+    multiImageItemWrap: {
+        width: width - 60, // Account for card padding
+        height: 320,
+    },
+    imageBadge: {
+        position: 'absolute',
+        top: 15,
+        right: 15,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 15,
+    },
+    imageBadgeText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: '800',
     },
 });
 

@@ -147,9 +147,6 @@ export const uploadToImgBB = async (imageUri: string): Promise<string> => {
       {
         method: 'POST',
         body: formData,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
       },
     );
 

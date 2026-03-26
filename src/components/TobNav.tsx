@@ -5,6 +5,8 @@ import {
   TouchableOpacity,
   Image,
   StatusBar,
+  Linking,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DrawerActions } from '@react-navigation/native';
@@ -22,6 +24,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useSocket } from '../contexts/SocketContext';
 import { useTheme } from '../contexts/ThemeContext';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import Toast from 'react-native-toast-message';
 
 type TopNavProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -80,7 +83,23 @@ const TopNav = ({ navigation }: TopNavProps) => {
             {/* Messages with Badge */}
             <TouchableOpacity
               className="w-10 h-10 items-center justify-center relative rounded-full active:bg-slate-100 dark:active:bg-slate-800"
-              onPress={() => navigation.navigate('Home', { screen: 'Chats' })}
+              onPress={async () => {
+                const url = 'flyconnect://';
+                try {
+                  const supported = await Linking.canOpenURL(url);
+                  if (supported) {
+                    await Linking.openURL(url);
+                  } else {
+                    Toast.show({
+                      type: 'info',
+                      text1: 'FlyConnect App Not Installed',
+                      text2: 'Please install FlyConnect from Play Store.',
+                    });
+                  }
+                } catch (error) {
+                  console.error('An error occurred', error);
+                }
+              }}
               activeOpacity={0.7}
             >
               <MessageIcon size={36} color={iconColor} />

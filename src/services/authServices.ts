@@ -408,20 +408,65 @@ export const verifyEmail = async (
 };
 
 /**
- * Check if email exists
+ * Find user by email (for forgot password)
  */
-export const checkEmailExists = async (
+export const findUserByEmail = async (
   email: string,
-): Promise<{ exists: boolean }> => {
+): Promise<{ success: boolean; user: any; message?: string }> => {
   try {
-    const response = await post<{ exists: boolean }>('/users/check-email', {
+    const response = await get<any>(
+      `/api/user/find-by-email?email=${encodeURIComponent(email)}`,
+    );
+    return response;
+  } catch (error: any) {
+    console.error('Find user by email error:', error);
+    throw {
+      success: false,
+      message: error.message || 'Failed to find user.',
+    };
+  }
+};
+
+/**
+ * Send OTP for forgot password
+ */
+export const sendForgotPasswordOTP = async (
+  email: string,
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response = await post<any>('/api/user/forgot-password-otp', {
       email,
     });
     return response;
   } catch (error: any) {
-    console.error('Check email error:', error);
+    console.error('Send forgot password OTP error:', error);
     throw {
-      message: error.message || 'Failed to check email.',
+      success: false,
+      message: error.message || 'Failed to send verification code.',
+    };
+  }
+};
+
+/**
+ * Reset password with OTP
+ */
+export const resetPasswordWithOTP = async (
+  email: string,
+  otp: string,
+  newPassword: string,
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response = await post<any>('/api/user/reset-password-otp', {
+      email,
+      otp,
+      newPassword,
+    });
+    return response;
+  } catch (error: any) {
+    console.error('Reset password with OTP error:', error);
+    throw {
+      success: false,
+      message: error.message || 'Failed to reset password.',
     };
   }
 };

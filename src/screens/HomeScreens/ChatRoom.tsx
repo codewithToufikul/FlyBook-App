@@ -25,7 +25,14 @@ import { get, put, del } from '../../services/api';
 import { format, isToday, isYesterday } from 'date-fns';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
-import { handleImageUpload } from '../../utils/imageUpload';
+import {
+    handleImageUpload,
+    showImageSourceSelector,
+    takePhotoWithCamera,
+    pickImageFromGallery,
+    compressImage,
+    uploadToImgBB
+} from '../../utils/imageUpload';
 import { handleVideoUpload } from '../../utils/videoUpload';
 import { handlePdfUpload } from '../../utils/pdfupload';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
@@ -45,6 +52,7 @@ interface Message {
     timestamp: string | Date;
     isRead: boolean;
     isEdited?: boolean;
+    isUploading?: boolean;
 }
 
 interface ChatUser {
@@ -72,7 +80,6 @@ const ChatRoom = () => {
     const [isOptionsModalVisible, setIsOptionsModalVisible] = useState(false);
     const [isEditModalVisible, setIsEditModalVisible] = useState(false);
     const [isAttachMenuVisible, setIsAttachMenuVisible] = useState(false);
-    const [isUploading, setIsUploading] = useState(false);
     const [editText, setEditText] = useState('');
     const flatListRef = useRef<FlatList>(null);
 
@@ -168,28 +175,23 @@ const ChatRoom = () => {
                     queryClient.setQueryData(queryKey, (old: any) => {
                         if (!old) return old;
 
-                        // If this is OUR message confirmed by server, replace the temp optimistic entry
+                        // If this is OUR message, replace the temp optimistic entry
                         if (message.senderId === user?._id) {
-                            const hasTempMsg = old.pages.some((page: any) =>
-                                page.messages.some((msg: any) => msg._id?.startsWith('temp_'))
-                            );
-                            if (hasTempMsg) {
-                                // Replace the first temp message with the real one
-                                let replaced = false;
-                                return {
-                                    ...old,
-                                    pages: old.pages.map((page: any) => ({
-                                        ...page,
-                                        messages: page.messages.map((msg: any) => {
-                                            if (!replaced && msg._id?.startsWith('temp_')) {
-                                                replaced = true;
-                                                return { ...message };
-                                            }
-                                            return msg;
-                                        }),
-                                    })),
-                                };
-                            }
+                            return {
+                                ...old,
+                                pages: old.pages.map((page: any) => ({
+                                    ...page,
+                                    messages: page.messages.map((msg: any) => {
+                                        // Match by type and content if possible, or just the first temp message
+                                        if (msg._id?.startsWith('temp_')) {
+                                            const isMatchingType = msg.messageType === message.messageType;
+                                            const isMatchingText = msg.messageText === message.messageText;
+                                            if (isMatchingType && isMatchingText) return { ...message };
+                                        }
+                                        return msg;
+                                    }),
+                                })),
+                            };
                         }
 
                         // For incoming messages from the other user, check for duplicates
@@ -289,26 +291,8 @@ const ChatRoom = () => {
             messageType: 'text',
         };
 
-        // Optimistically add sender's message to the cache immediately
-        queryClient.setQueryData(queryKey, (old: any) => {
-            if (!old) return old;
-            const tempId = `temp_${Date.now()}`;
-            const optimisticMsg = {
-                _id: tempId,
-                senderId: user?._id,
-                receoientId: chatUser._id,
-                messageText: inputText.trim(),
-                messageType: 'text',
-                timestamp: new Date().toISOString(),
-                isRead: false,
-            };
-            const newPages = [...old.pages];
-            newPages[0] = {
-                ...newPages[0],
-                messages: [optimisticMsg, ...newPages[0].messages],
-            };
-            return { ...old, pages: newPages };
-        });
+        // Optimistically add sender's message
+        addOptimisticMessage('text', inputText.trim());
 
         // Emit to socket
         socket.emit('sendMessage', messageData);
@@ -431,18 +415,56 @@ const ChatRoom = () => {
         socket.emit('sendMessage', messageData);
     };
 
+    const addOptimisticMessage = (type: 'text' | 'image' | 'video' | 'file', text: string, mediaUrl?: string) => {
+        const tempId = `temp_${Date.now()}`;
+        const optimisticMsg = {
+            _id: tempId,
+            senderId: user?._id,
+            receoientId: chatUser._id,
+            messageText: text,
+            messageType: type,
+            mediaUrl: mediaUrl,
+            timestamp: new Date().toISOString(),
+            isRead: false,
+            isUploading: type !== 'text',
+        };
+
+        queryClient.setQueryData(queryKey, (old: any) => {
+            if (!old) return old;
+            const newPages = [...old.pages];
+            newPages[0] = {
+                ...newPages[0],
+                messages: [optimisticMsg, ...newPages[0].messages],
+            };
+            return { ...old, pages: newPages };
+        });
+
+        return tempId;
+    };
+
     const handleAttachmentOption = async (type: 'photo' | 'document' | 'video') => {
         setIsAttachMenuVisible(false);
         try {
-            setIsUploading(true);
-            let url = '';
-
             if (type === 'photo') {
-                url = await handleImageUpload();
-                if (url) sendMediaMessage(url, 'image');
+                const source = await showImageSourceSelector();
+                const selectedImage = source === 'camera' ? await takePhotoWithCamera() : await pickImageFromGallery();
+
+                if (selectedImage?.uri) {
+                    // Add optimistic message with local URI
+                    addOptimisticMessage('image', 'Sent a photo', selectedImage.uri);
+
+                    // Background upload
+                    const compressedUri = await compressImage(selectedImage.uri, {
+                        maxWidth: 1024,
+                        maxHeight: 1024,
+                        quality: 80
+                    });
+                    const url = await uploadToImgBB(compressedUri);
+                    if (url) sendMediaMessage(url, 'image');
+                }
             } else if (type === 'video') {
-                url = await handleVideoUpload();
-                if (url) sendMediaMessage(url, 'video');
+                const selectedVideo = await handleVideoUpload(); // Keep using the helper for convenience, but we'll lose the local preview
+                if (selectedVideo) sendMediaMessage(selectedVideo, 'video');
             } else if (type === 'document') {
                 const result = await handlePdfUpload();
                 if (result?.secureUrl) {
@@ -452,11 +474,10 @@ const ChatRoom = () => {
         } catch (error: any) {
             if (error.message !== 'User cancelled image picker' &&
                 error.message !== 'User cancelled video picker' &&
-                error.message !== 'User cancelled PDF picker') {
+                error.message !== 'User cancelled PDF picker' &&
+                error.message !== 'User cancelled') {
                 Alert.alert('Upload Failed', 'Something went wrong while uploading your file.');
             }
-        } finally {
-            setIsUploading(false);
         }
     };
 
@@ -522,6 +543,11 @@ const ChatRoom = () => {
                                 style={styles.messageImage}
                                 resizeMode="cover"
                             />
+                            {item.isUploading && (
+                                <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' }]}>
+                                    <ActivityIndicator size="small" color="#ffffff" />
+                                </View>
+                            )}
                         </TouchableOpacity>
                     )}
 
@@ -718,15 +744,6 @@ const ChatRoom = () => {
                 </View>
             </KeyboardAvoidingView>
 
-            {/* Uploading Overlay */}
-            {isUploading && (
-                <View style={styles.uploadOverlay}>
-                    <View style={[styles.uploadCard, isDark && { backgroundColor: '#1e293b' }]}>
-                        <ActivityIndicator size="large" color={isDark ? "#14b8a6" : "#0f766e"} />
-                        <Text style={[styles.uploadText, isDark && { color: '#f8fafc' }]}>Uploading file...</Text>
-                    </View>
-                </View>
-            )}
 
             {/* Options Modal */}
             <Modal

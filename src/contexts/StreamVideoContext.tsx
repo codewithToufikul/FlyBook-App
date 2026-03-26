@@ -92,9 +92,6 @@ export const StreamVideoProvider: React.FC<{ children: React.ReactNode }> = ({ c
           image: userImage || undefined,
         };
 
-        // tokenProvider is called automatically by the SDK whenever the current
-        // token is about to expire (or already has). This means the client can
-        // stay connected across the 24-hour expiry without any user interaction.
         const videoClient = StreamVideoClient.getOrCreateInstance({
           apiKey,
           user: streamUser,

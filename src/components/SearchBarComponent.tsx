@@ -1,7 +1,8 @@
-import { TextInput, View } from 'react-native'
+import { TextInput, View, Platform, TouchableOpacity } from 'react-native'
 import React, { useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import Ionicons from 'react-native-vector-icons/Ionicons'
 
 import { saveSearchQuery } from '../utils/searchHistory'
 
@@ -23,17 +24,42 @@ const SearchBarComponent = () => {
     }
 
     return (
-        <View className="flex-1 justify-center">
-            <View className="h-10 my-2 rounded-xl bg-gray-100 px-3 py-0 justify-center">
+        <View style={{ width: '100%', padding: 0, justifyContent: 'center' }}>
+            <View style={{
+                height: 38,
+                backgroundColor: '#f3f4f6',
+                borderRadius: 10,
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingHorizontal: 12,
+            }}>
+                <Ionicons name="search" size={16} color="#9ca3af" />
                 <TextInput
                     placeholder="Search Flybook"
-                    className="text-base text-gray-900"
+                    style={{
+                        flex: 1,
+                        marginLeft: 8,
+                        fontSize: 14,
+                        color: '#111827',
+                        padding: 0,
+                        height: '100%',
+                    }}
                     placeholderTextColor="#9ca3af"
                     value={searchText}
                     onChangeText={setSearchText}
                     returnKeyType="search"
                     onSubmitEditing={handleSearch}
+                    autoFocus={true}
                 />
+                {searchText.length > 0 && (
+                    <TouchableOpacity onPress={() => setSearchText('')}>
+                        <Ionicons
+                            name="close-circle"
+                            size={16}
+                            color="#9ca3af"
+                        />
+                    </TouchableOpacity>
+                )}
             </View>
         </View>
     )

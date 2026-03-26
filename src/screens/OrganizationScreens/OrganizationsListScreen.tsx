@@ -11,6 +11,7 @@ import {
     RefreshControl,
     Image,
     Dimensions,
+    ScrollView,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -129,32 +130,47 @@ const OrganizationsList = ({ navigation }: any) => {
 
             {/* Tabs */}
             <View style={[styles.tabContainer, isDark && { backgroundColor: '#0f172a' }]}>
-                <TouchableOpacity
-                    style={[styles.tab, isDark && { backgroundColor: '#1e293b', borderColor: 'transparent' }, activeTab === 'partner' && (isDark ? styles.activeTabDark : styles.activeTab)]}
-                    onPress={() => setActiveTab('partner')}
-                >
-                    <Ionicons
-                        name="briefcase"
-                        size={18}
-                        color={activeTab === 'partner' ? (isDark ? '#14b8a6' : '#6366F1') : (isDark ? '#64748b' : '#6B7280')}
-                    />
-                    <Text style={[styles.tabText, isDark && { color: '#64748b' }, activeTab === 'partner' && (isDark ? styles.activeTabTextDark : styles.activeTabText)]}>
-                        Partners
-                    </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={[styles.tab, isDark && { backgroundColor: '#1e293b', borderColor: 'transparent' }, activeTab === 'social' && (isDark ? styles.activeTabDark : styles.activeTab)]}
-                    onPress={() => setActiveTab('social')}
-                >
-                    <Ionicons
-                        name="people"
-                        size={18}
-                        color={activeTab === 'social' ? (isDark ? '#14b8a6' : '#6366F1') : (isDark ? '#64748b' : '#6B7280')}
-                    />
-                    <Text style={[styles.tabText, isDark && { color: '#64748b' }, activeTab === 'social' && (isDark ? styles.activeTabTextDark : styles.activeTabText)]}>
-                        Social
-                    </Text>
-                </TouchableOpacity>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingRight: 20 }}>
+                    <TouchableOpacity
+                        style={[styles.tab, isDark && { backgroundColor: '#1e293b', borderColor: 'transparent' }, activeTab === 'partner' && (isDark ? styles.activeTabDark : styles.activeTab)]}
+                        onPress={() => setActiveTab('partner')}
+                    >
+                        <Ionicons
+                            name="briefcase"
+                            size={18}
+                            color={activeTab === 'partner' ? (isDark ? '#14b8a6' : '#6366F1') : (isDark ? '#64748b' : '#6B7280')}
+                        />
+                        <Text style={[styles.tabText, isDark && { color: '#64748b' }, activeTab === 'partner' && (isDark ? styles.activeTabTextDark : styles.activeTabText)]}>
+                            Partners
+                        </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.tab, isDark && { backgroundColor: '#1e293b', borderColor: 'transparent' }, activeTab === 'social' && (isDark ? styles.activeTabDark : styles.activeTab)]}
+                        onPress={() => setActiveTab('social')}
+                    >
+                        <Ionicons
+                            name="people"
+                            size={18}
+                            color={activeTab === 'social' ? (isDark ? '#14b8a6' : '#6366F1') : (isDark ? '#64748b' : '#6B7280')}
+                        />
+                        <Text style={[styles.tabText, isDark && { color: '#64748b' }, activeTab === 'social' && (isDark ? styles.activeTabTextDark : styles.activeTabText)]}>
+                            Social
+                        </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.tab, isDark && { backgroundColor: '#1e293b', borderColor: 'transparent' }]}
+                        onPress={() => navigation.navigate('EventsList')}
+                    >
+                        <Ionicons
+                            name="calendar"
+                            size={18}
+                            color={isDark ? '#3B82F6' : '#6366F1'}
+                        />
+                        <Text style={[styles.tabText, isDark && { color: '#64748b' }]}>
+                            Events
+                        </Text>
+                    </TouchableOpacity>
+                </ScrollView>
             </View>
 
             {/* Search Bar */}
@@ -162,7 +178,7 @@ const OrganizationsList = ({ navigation }: any) => {
                 <View style={[styles.searchInputWrapper, isDark && { backgroundColor: '#1e293b' }]}>
                     <Ionicons name="search" size={20} color={isDark ? "#475569" : "#9CA3AF"} style={styles.searchIcon} />
                     <TextInput
-                        style={[styles.searchInput, isDark && { color: '#f8fafc' }]}
+                        style={[styles.searchInput, isDark && { color: '#f8fafc' }, { paddingVertical: 0 }]}
                         placeholder="Search organizations..."
                         placeholderTextColor={isDark ? "#475569" : "#9CA3AF"}
                         value={searchQuery}

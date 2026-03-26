@@ -39,11 +39,13 @@ const CallEndedSummary = ({
   duration,
   isAudioOnly,
   callStatus,
+  onDismiss
 }: {
   participantName: string;
   duration: number;
   isAudioOnly: boolean;
   callStatus: CallStatus;
+  onDismiss: () => void;
 }) => {
   const insets = useSafeAreaInsets();
   const meta = STATUS_META[callStatus];
@@ -105,7 +107,6 @@ const AudioCallUI = ({
     const next = !speakerOn;
     if (onStopTimers) onStopTimers();
     setSpeakerOn(next);
-
     try {
       if (next) {
         callManager.android.selectAudioDevice('Speaker');
@@ -113,8 +114,6 @@ const AudioCallUI = ({
         callManager.android.selectAudioDevice('Earpiece');
       }
     } catch (e) {
-      console.error('[AUDIO-CALLER] Failed to switch device via Native SDK', e);
-      // Fallback
       InCallManager.setForceSpeakerphoneOn(next);
     }
   };
@@ -124,7 +123,6 @@ const AudioCallUI = ({
   return (
     <View style={[audioStyles.root, { paddingTop: insets.top }]}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a2e" />
-
       <View style={audioStyles.centerSection}>
         <View style={audioStyles.avatar}>
           <Text style={audioStyles.avatarLetter}>{initial}</Text>
@@ -135,7 +133,6 @@ const AudioCallUI = ({
           <Text style={audioStyles.timerText}>{formatTime(callTimer)}</Text>
         </View>
       </View>
-
       <View style={[audioStyles.controls, { paddingBottom: Math.max(insets.bottom + 20, 40) }]}>
         <View style={audioStyles.controlRow}>
           <TouchableOpacity
@@ -146,7 +143,6 @@ const AudioCallUI = ({
             <Ionicons name={micOn ? 'mic' : 'mic-off'} size={26} color="#fff" />
             <Text style={audioStyles.btnLabel}>{micOn ? 'Mute' : 'Unmute'}</Text>
           </TouchableOpacity>
-
           <TouchableOpacity
             onPress={onHangUp}
             style={[audioStyles.btn, audioStyles.endBtn]}
@@ -155,7 +151,6 @@ const AudioCallUI = ({
             <Ionicons name="call" size={26} color="#fff" style={audioStyles.endIcon} />
             <Text style={audioStyles.btnLabel}>End</Text>
           </TouchableOpacity>
-
           <TouchableOpacity
             onPress={toggleSpeaker}
             style={[audioStyles.btn, speakerOn && audioStyles.btnActive]}
@@ -198,41 +193,46 @@ const ActiveCallUI = ({
   const inCallStoppedRef = useRef(false);
   const ringingStartedAtRef = useRef<number>(0);
 
-  // FIX: Single-shot enforcement guards
   const initialEnforcedRef = useRef(false);
   const audioArrivedRef = useRef(false);
-  const earpieceAppliedRef = useRef(false);
   const earpieceTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const enforcementIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // ── KEY FIX: callEndedRef is a SYNCHRONOUS guard used in render ──
+  // setCallEnded(true) triggers re-render but has 1-cycle delay.
+  // callEndedRef.current = true is synchronous — checked FIRST in render
+  // so CallContent is NEVER shown after triggerEndScreen() is called.
+  const callEndedRef = useRef(false);
+  const [callEnded, setCallEnded] = useState(false);
+
+  const callStatusRef = useRef<CallStatus>('no_answer');
+  const summaryDurationRef = useRef(0);
+  const [callTimer, setCallTimer] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const isAudioOnly = callTypeParam === 'audio' || customData?.callType === 'audio';
 
   const clearEarpieceEnforcement = () => {
     if (enforcementIntervalRef.current) {
       clearInterval(enforcementIntervalRef.current);
       enforcementIntervalRef.current = null;
     }
-    earpieceTimersRef.current.forEach(t => {
-      try { clearTimeout(t); } catch (e) { }
-    });
+    earpieceTimersRef.current.forEach(t => { try { clearTimeout(t); } catch { } });
     earpieceTimersRef.current = [];
   };
 
   const startEarpieceEnforcement = (label: string) => {
     clearEarpieceEnforcement();
-
-    // Immediate enforcement
     InCallManager.setForceSpeakerphoneOn(false);
-
-    // Wave: Intensive enforcement for initial 6 seconds
     let count = 0;
     enforcementIntervalRef.current = setInterval(() => {
       try {
         callManager.android.selectAudioDevice('Earpiece');
-      } catch (e) {
-        // Fallback
+      } catch {
         InCallManager.setForceSpeakerphoneOn(false);
       }
       count++;
-      if (count >= 12) { // 6 seconds
+      if (count >= 12) {
         if (enforcementIntervalRef.current) {
           clearInterval(enforcementIntervalRef.current);
           enforcementIntervalRef.current = null;
@@ -240,14 +240,6 @@ const ActiveCallUI = ({
       }
     }, 500);
   };
-
-  const isAudioOnly = callTypeParam === 'audio' || customData?.callType === 'audio';
-  const [callTimer, setCallTimer] = useState(0);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const summaryDurationRef = useRef(0);
-  const callEndedRef = useRef(false);
-  const callStatusRef = useRef<CallStatus>('no_answer');
-  const [callEnded, setCallEnded] = useState(false);
 
   // Call timer
   useEffect(() => {
@@ -264,45 +256,32 @@ const ActiveCallUI = ({
     if (members.length > 0 && user?._id) {
       const other = members.find(m => m.user_id !== user._id);
       if (other) {
-        if (!otherMemberIdRef.current) {
-          otherMemberIdRef.current = other.user_id;
-        }
-        if (other.user?.name && !otherMemberNameRef.current) {
-          otherMemberNameRef.current = other.user.name;
-        }
+        if (!otherMemberIdRef.current) otherMemberIdRef.current = other.user_id;
+        if (other.user?.name && !otherMemberNameRef.current) otherMemberNameRef.current = other.user.name;
       }
     }
   }, [members, user?._id]);
 
   const stopInCall = () => {
-    // 1. SILENCE TIMERS IMMEDIATELY
     clearEarpieceEnforcement();
-
     if (!inCallStoppedRef.current) {
       inCallStoppedRef.current = true;
       inCallStartedRef.current = false;
-
-      // 2. FORCE NATIVE RELEASE
       try {
         InCallManager.setKeepScreenOn(false);
         InCallManager.setForceSpeakerphoneOn(false);
         InCallManager.setSpeakerphoneOn(false);
         InCallManager.stop();
-
-        // DEEP PURGE: Force stop again after delay
-        setTimeout(() => {
-          try { InCallManager.stop(); } catch (e) { }
-        }, 800);
-      } catch (e) { }
-
-      try {
-        callManager.stop();
-      } catch (e) { }
+        setTimeout(() => { try { InCallManager.stop(); } catch { } }, 800);
+      } catch { }
+      try { callManager.stop(); } catch { }
     }
   };
 
   const triggerEndScreen = () => {
     if (callEndedRef.current) return;
+
+    // ── SYNCHRONOUS: set ref immediately so next render skips CallContent ──
     callEndedRef.current = true;
     summaryDurationRef.current = callTimer;
     stopInCall();
@@ -316,7 +295,9 @@ const ActiveCallUI = ({
       callStatusRef.current = ringingMs < 28_000 ? 'declined' : 'no_answer';
     }
 
+    // ── Trigger re-render to show summary ──
     setCallEnded(true);
+
     setTimeout(() => {
       if (hasNavigatedRef.current) return;
       hasNavigatedRef.current = true;
@@ -328,49 +309,39 @@ const ActiveCallUI = ({
     const myId = user?._id;
     if (historySavedRef.current || !myId) return;
 
-    // CRITICAL: Robust otherUserId resolution
     let otherUserId: string | null = otherMemberIdRef.current;
     if (!otherUserId && call) {
       const mems = call.state?.members || [];
       const otherMember = mems.find(m => m.user_id !== myId);
-      if (otherMember) {
-        otherUserId = otherMember.user_id;
-      }
+      if (otherMember) otherUserId = otherMember.user_id;
     }
-
     if (!otherUserId) {
-      // Fallback: check created_by
       const createdById = call?.state?.createdBy?.id;
       if (createdById && createdById !== myId) {
         otherUserId = createdById;
       } else {
-        // Find ANY other member
         const anyOther = call?.state?.members.find(m => m.user_id !== myId);
         if (anyOther) otherUserId = anyOther.user_id;
       }
     }
-
-    if (!otherUserId) {
-      return;
-    }
+    if (!otherUserId) return;
 
     historySavedRef.current = true;
 
-    // Better Duration Calculation
     let finalDuration = callTimer;
     if (joinedAtRef.current > 0) {
       finalDuration = Math.round((Date.now() - joinedAtRef.current) / 1000);
     }
-    // Final safety check - use the larger of the two
     finalDuration = Math.max(finalDuration, callTimer, 0);
 
     const ringingMs = ringingStartedAtRef.current > 0
       ? Date.now() - ringingStartedAtRef.current
       : Infinity;
 
-    const historyStatus: 'completed' | 'missed' | 'rejected' = finalDuration > 0 || callStatusRef.current === 'completed'
-      ? 'completed'
-      : (ringingMs < 28000 ? 'rejected' : 'missed');
+    const historyStatus: 'completed' | 'missed' | 'rejected' =
+      finalDuration > 0 || callStatusRef.current === 'completed'
+        ? 'completed'
+        : (ringingMs < 28000 ? 'rejected' : 'missed');
 
     saveCallHistory(myId, otherUserId, isAudioOnly ? 'audio' : 'video', historyStatus, finalDuration);
   };
@@ -398,12 +369,11 @@ const ActiveCallUI = ({
     return () => { if (typeof unsubscribe === 'function') unsubscribe(); };
   }, [call]);
 
-  // ─── Audio routing ────────────────────────────────────────────────────────
+  // Audio routing
   useEffect(() => {
     if ([CallingState.RINGING, CallingState.JOINING, CallingState.JOINED].includes(callingState as CallingState)) {
       hasBeenActiveRef.current = true;
     }
-
     if (callingState === CallingState.RINGING) {
       if (!isAudioOnly) {
         InCallManager.start({ media: 'video', ringback: '_DEFAULT_' });
@@ -411,20 +381,14 @@ const ActiveCallUI = ({
         InCallManager.start({ media: 'audio', ringback: '_DEFAULT_' });
       }
     } else if (callingState === CallingState.JOINED) {
-      // STOP ringback when joined
       InCallManager.stopRingback();
       joinedAtRef.current = Date.now();
-
       if (!inCallStartedRef.current) {
         inCallStartedRef.current = true;
         inCallStoppedRef.current = false;
-
         if (isAudioOnly) {
           call?.camera.disable();
-          try {
-            callManager.start({ audioRole: 'communicator', deviceEndpointType: 'earpiece' });
-          } catch (e) { }
-
+          try { callManager.start({ audioRole: 'communicator', deviceEndpointType: 'earpiece' }); } catch { }
           if (!initialEnforcedRef.current) {
             initialEnforcedRef.current = true;
             startEarpieceEnforcement('on-joined');
@@ -437,21 +401,17 @@ const ActiveCallUI = ({
     } else if (callingState === CallingState.LEFT || callingState === CallingState.IDLE) {
       InCallManager.stopRingback();
     }
-
     return () => {
       clearEarpieceEnforcement();
       InCallManager.stopRingback();
-      if (callingState === CallingState.JOINED) {
-        stopInCall();
-      }
+      if (callingState === CallingState.JOINED) stopInCall();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [callingState, isAudioOnly]);
 
-  // Enforce earpiece ONCE when remote audio first arrives
+  // Enforce earpiece when remote audio arrives
   useEffect(() => {
     if (!isAudioOnly || audioArrivedRef.current) return;
-
     const hasAudio = remoteParticipants.some((p: any) => p.audioStream != null);
     if (hasAudio) {
       audioArrivedRef.current = true;
@@ -460,30 +420,23 @@ const ActiveCallUI = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [remoteParticipants]);
 
-  // Detect hang-up: If remote participants leave, trigger end screen.
+  // Detect remote hang-up via participant count
   useEffect(() => {
     if (!call || !hasBeenActiveRef.current || callingState !== CallingState.JOINED) return;
-
     const checkParticipants = () => {
       if (remoteParticipants.length === 0 && inCallStartedRef.current) {
         saveHistory();
         triggerEndScreen();
       }
     };
-
     const unsubscribe = call.on('call.session_participant_left', () => {
       setTimeout(checkParticipants, 100);
     });
-
     const interval = setInterval(checkParticipants, 2000);
-
-    return () => {
-      unsubscribe();
-      clearInterval(interval);
-    };
+    return () => { unsubscribe(); clearInterval(interval); };
   }, [call, callingState, remoteParticipants.length]);
 
-  // Handle other state transitions (LEFT/IDLE)
+  // Handle LEFT/IDLE state transitions
   useEffect(() => {
     if (!hasBeenActiveRef.current) return;
     if (callingState === CallingState.LEFT || callingState === CallingState.IDLE) {
@@ -496,26 +449,36 @@ const ActiveCallUI = ({
   const handleHangUp = async () => {
     saveHistory();
     triggerEndScreen();
-
-    // Immediate hard audio stop
     stopInCall();
-
     try {
       if (callingState !== CallingState.LEFT && callingState !== CallingState.IDLE) {
-        // Try-catch each SDK disable to ensure it doesn't block cleanup
-        try { await call?.microphone.disable(); } catch (e) { }
-        try { await call?.camera.disable(); } catch (e) { }
-        try { await call?.leave().catch(() => { }); } catch (e) { }
+        try { await call?.microphone.disable(); } catch { }
+        try { await call?.camera.disable(); } catch { }
+        try { await call?.leave().catch(() => { }); } catch { }
       }
-    } catch (e) { }
+    } catch { }
   };
 
-  const shouldShowSummary =
-    callEnded ||
-    (hasBeenActiveRef.current &&
-      (callingState === CallingState.LEFT || callingState === CallingState.IDLE));
+  // ── RENDER PRIORITY ──────────────────────────────────────────────────────
+  //
+  // 1. callEndedRef.current  → synchronous, checked FIRST every render
+  //                            prevents CallContent from ever flashing
+  // 2. callEnded state       → triggers re-render after triggerEndScreen()
+  // 3. LEFT/IDLE state       → fallback safety net
+  //
+  // By checking the REF (not just state) first, we guarantee zero
+  // black-screen frames between triggerEndScreen() and summary render.
+  // ─────────────────────────────────────────────────────────────────────────
 
-  if (shouldShowSummary) {
+  const isEnded =
+    callEndedRef.current ||
+    callEnded ||
+    (
+      (hasBeenActiveRef.current || ringingStartedAtRef.current > 0) &&
+      (callingState === CallingState.LEFT || callingState === CallingState.IDLE)
+    );
+
+  if (isEnded) {
     const displayStatus: CallStatus =
       callTimer > 0 || callStatusRef.current === 'completed'
         ? 'completed'
@@ -531,25 +494,27 @@ const ActiveCallUI = ({
     );
   }
 
-  if (isAudioOnly) {
-    // For audio calls, keep our custom UI during all active states
-    if ([CallingState.RINGING, CallingState.JOINING, CallingState.JOINED].includes(callingState as CallingState)) {
-      return (
-        <AudioCallUI
-          participantName={otherMemberNameRef.current || otherUserName || 'Unknown'}
-          callTimer={callTimer}
-          onHangUp={handleHangUp}
-          onStopTimers={clearEarpieceEnforcement}
-        />
-      );
-    }
+  // Audio only UI — shown during RINGING, JOINING, JOINED
+  if (
+    isAudioOnly &&
+    [CallingState.RINGING, CallingState.JOINING, CallingState.JOINED].includes(callingState as CallingState)
+  ) {
+    return (
+      <AudioCallUI
+        participantName={otherMemberNameRef.current || otherUserName || 'Unknown'}
+        callTimer={callTimer}
+        onHangUp={handleHangUp}
+        onStopTimers={clearEarpieceEnforcement}
+      />
+    );
   }
 
-  // Allow the default SDK black screen/hangup button to show by not returning null
+  // Safety: never render CallContent during LEFT/IDLE
   if (callingState === CallingState.LEFT || callingState === CallingState.IDLE) {
-    // Falls through to the default return below which renders CallContent
+    return null;
   }
 
+  // Video call UI
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a2e" />

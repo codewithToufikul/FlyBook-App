@@ -16,6 +16,7 @@ import {
     Alert,
     Platform,
     StatusBar,
+    ScrollView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -40,6 +41,7 @@ interface Post {
     userProfileImage: string;
     description: string;
     image?: string;
+    images?: string[];
     video?: string;
     pdf?: string;
     likes: number;
@@ -56,6 +58,7 @@ interface Post {
         authorImage: string;
         description: string;
         image?: string;
+        images?: string[];
         video?: string;
         pdf?: string;
         createdAt?: string;
@@ -308,9 +311,23 @@ const OpinionHome = () => {
                         <Text style={[styles.originalBodyText, { color: isDark ? '#cbd5e1' : '#334155' }]} numberOfLines={3}>
                             {p.originalPostData.description}
                         </Text>
-                        {p.originalPostData.image && (
-                            <Image source={{ uri: p.originalPostData.image }} style={styles.originalPostImg} resizeMode="cover" />
-                        )}
+                        {/* Shared Post Multiple Images */}
+                        {p.originalPostData.images && p.originalPostData.images.length > 1 ? (
+                            <View style={[styles.originalPostImg, { overflow: 'hidden' }]}>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} pagingEnabled>
+                                    {p.originalPostData.images.map((img, idx) => (
+                                        <View key={idx}>
+                                            <Image source={{ uri: img }} style={styles.originalPostImg} resizeMode="cover" />
+                                            <View style={styles.imgBadge}>
+                                                <Text style={styles.imgBadgeText}>{idx + 1}/{p.originalPostData?.images?.length}</Text>
+                                            </View>
+                                        </View>
+                                    ))}
+                                </ScrollView>
+                            </View>
+                        ) : (p.originalPostData.images && p.originalPostData.images[0]) || p.originalPostData.image ? (
+                            <Image source={{ uri: (p.originalPostData.images && p.originalPostData.images[0]) || p.originalPostData.image }} style={styles.originalPostImg} resizeMode="cover" />
+                        ) : null}
                         {p.originalPostData.video && (
                             <View style={styles.originalVideoHint}>
                                 <Ionicons name="play-circle" size={20} color={textSecondary} />
@@ -334,16 +351,29 @@ const OpinionHome = () => {
                     </TouchableOpacity>
                 )}
 
-                {/* ── Image ── */}
-                {p.image && (
+                {/* ── Multiple Images ── */}
+                {p.images && p.images.length > 1 ? (
+                    <View style={styles.multiImgWrap}>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} pagingEnabled>
+                            {p.images.map((img, idx) => (
+                                <TouchableOpacity key={idx} onPress={() => goDetail(p)} activeOpacity={0.95}>
+                                    <Image source={{ uri: img }} style={styles.multiPostImg} resizeMode="cover" />
+                                    <View style={styles.imgBadge}>
+                                        <Text style={styles.imgBadgeText}>{idx + 1}/{p.images?.length}</Text>
+                                    </View>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </View>
+                ) : (p.images && p.images.length === 1) || p.image ? (
                     <TouchableOpacity onPress={() => goDetail(p)} activeOpacity={0.95} style={styles.imgWrap}>
-                        <Image source={{ uri: p.image }} style={styles.postImg} resizeMode="cover" />
+                        <Image source={{ uri: (p.images && p.images[0]) || p.image }} style={styles.postImg} resizeMode="cover" />
                         <LinearGradient
                             colors={['transparent', isDark ? 'rgba(0,0,0,0.35)' : 'rgba(0,0,0,0.15)']}
                             style={StyleSheet.absoluteFill}
                         />
                     </TouchableOpacity>
-                )}
+                ) : null}
 
                 {/* ── Video ── */}
                 {p.video && (
@@ -722,6 +752,29 @@ const styles = StyleSheet.create({
         width: '100%',
         height: 300,
     },
+    multiImgWrap: {
+        width: width - 24,
+        height: 300,
+        overflow: 'hidden',
+    },
+    multiPostImg: {
+        width: width - 24,
+        height: 300,
+    },
+    imgBadge: {
+        position: 'absolute',
+        top: 12,
+        right: 12,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 12,
+    },
+    imgBadgeText: {
+        color: '#fff',
+        fontSize: 11,
+        fontWeight: '800',
+    },
     videoWrap: {
         overflow: 'hidden',
     },
@@ -821,6 +874,11 @@ const styles = StyleSheet.create({
         borderRadius: 14,
         borderTopLeftRadius: 4,
     },
+    commentAuthor: {
+        fontSize: 13,
+        fontWeight: '800',
+        marginBottom: 2,
+    },
     commentBody: {
         fontSize: 13,
         fontWeight: '500',
@@ -909,11 +967,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 28,
         borderRadius: 24,
         marginTop: 4,
-    },
-    emptyBtnText: {
-        color: '#fff',
-        fontSize: 15,
-        fontWeight: '800',
     },
     emptyBtnText: {
         color: '#fff',

@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../../contexts/AuthContext';
-import { get, post, del } from '../../services/api';
+import { get, post, put, del } from '../../services/api';
 import { handleImageUpload } from '../../utils/imageUpload';
 import CustomHeader from '../../components/common/CustomHeader';
 import { useNavigation } from '@react-navigation/native';
@@ -38,6 +38,7 @@ interface Post {
   description: string;
   image?: string;
   imageUrl?: string; // Some apis use imageUrl, some use image
+  images?: string[];
   pdf?: string;
   likes: any; // Can be count or array of IDs depending on endpoint
   likedBy: string[];
@@ -52,6 +53,7 @@ interface Post {
     authorImage: string;
     description: string;
     image?: string;
+    images?: string[];
     video?: string;
     pdf?: string;
     createdAt?: string;
@@ -325,7 +327,7 @@ const Profile = () => {
         maxHeight: 800,
         quality: 85,
       });
-      await post('/profile/update', { profileImage: imageUrl });
+      await put('/profile/update', { profileImageUrl: imageUrl });
       await refreshUser();
       Alert.alert('Success', 'Profile photo updated successfully!');
     } catch (error: any) {
@@ -348,7 +350,7 @@ const Profile = () => {
         maxHeight: 600,
         quality: 85,
       });
-      await post('/profile/cover/update', { coverImageUrl: imageUrl });
+      await put('/profile/cover/update', { coverImageUrl: imageUrl });
       await refreshUser();
       Alert.alert('Success', 'Cover photo updated successfully!');
     } catch (error: any) {
@@ -679,9 +681,23 @@ const Profile = () => {
                           <Text style={[styles.originalBodyText, { color: isDark ? '#cbd5e1' : '#334155' }]} numberOfLines={3}>
                             {postItem.originalPostData.description}
                           </Text>
-                          {postItem.originalPostData.image && (
-                            <Image source={{ uri: postItem.originalPostData.image }} style={styles.originalPostImg} resizeMode="cover" />
-                          )}
+                          {/* Shared Post Multiple Images */}
+                          {postItem.originalPostData.images && postItem.originalPostData.images.length > 1 ? (
+                            <View style={[styles.originalPostImg, { overflow: 'hidden' }]}>
+                              <ScrollView horizontal showsHorizontalScrollIndicator={false} pagingEnabled>
+                                {postItem.originalPostData.images.map((img, idx) => (
+                                  <View key={idx}>
+                                    <Image source={{ uri: img }} style={styles.originalPostImg} resizeMode="cover" />
+                                    <View style={styles.imgBadge}>
+                                      <Text style={styles.imgBadgeText}>{idx + 1}/{postItem.originalPostData?.images?.length}</Text>
+                                    </View>
+                                  </View>
+                                ))}
+                              </ScrollView>
+                            </View>
+                          ) : (postItem.originalPostData.images && postItem.originalPostData.images[0]) || postItem.originalPostData.image ? (
+                            <Image source={{ uri: (postItem.originalPostData.images && postItem.originalPostData.images[0]) || postItem.originalPostData.image }} style={styles.originalPostImg} resizeMode="cover" />
+                          ) : null}
                           {postItem.originalPostData.video && (
                             <View style={styles.originalVideoHint}>
                               <Ionicons name="play-circle" size={20} color={isDark ? '#64748b' : '#94a3b8'} />
@@ -703,19 +719,32 @@ const Profile = () => {
                       )}
 
                       {/* Image */}
-                      {(postItem.image || postItem.imageUrl) && (
+                      {postItem.images && postItem.images.length > 1 ? (
+                        <View style={styles.multiImgWrap}>
+                          <ScrollView horizontal showsHorizontalScrollIndicator={false} pagingEnabled>
+                            {postItem.images.map((img, idx) => (
+                              <TouchableOpacity key={idx} onPress={() => navigation.navigate('FullImageViewer', { imageUrl: img })} activeOpacity={0.95}>
+                                <Image source={{ uri: img }} style={styles.multiPostImg} resizeMode="cover" />
+                                <View style={styles.imgBadge}>
+                                  <Text style={styles.imgBadgeText}>{idx + 1}/{postItem.images?.length}</Text>
+                                </View>
+                              </TouchableOpacity>
+                            ))}
+                          </ScrollView>
+                        </View>
+                      ) : (postItem.images && postItem.images.length === 1) || postItem.image || postItem.imageUrl ? (
                         <TouchableOpacity
-                          onPress={() => navigation.navigate('FullImageViewer', { imageUrl: postItem.image || postItem.imageUrl })}
+                          onPress={() => navigation.navigate('FullImageViewer', { imageUrl: (postItem.images && postItem.images[0]) || postItem.image || postItem.imageUrl })}
                           activeOpacity={0.9}
                           style={[styles.imageContainer, isDark && { backgroundColor: '#0f172a' }]}
                         >
                           <Image
-                            source={{ uri: postItem.image || postItem.imageUrl }}
+                            source={{ uri: (postItem.images && postItem.images[0]) || postItem.image || postItem.imageUrl }}
                             style={styles.postImage}
                             resizeMode="cover"
                           />
                         </TouchableOpacity>
-                      )}
+                      ) : null}
 
                       {/* Video */}
                       {postItem.video && (
@@ -1162,6 +1191,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     marginTop: 4,
+  },
+  multiImgWrap: {
+    width: width - 32,
+    height: 300,
+    overflow: 'hidden',
+  },
+  multiPostImg: {
+    width: width - 32,
+    height: 300,
+  },
+  imgBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  imgBadgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '800',
   },
 });
 

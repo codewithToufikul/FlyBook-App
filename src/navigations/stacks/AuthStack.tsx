@@ -6,6 +6,7 @@ import Step2Email from '../../screens/AuthScreens/RegisterSteps/Step2Email';
 import Step3Verify from '../../screens/AuthScreens/RegisterSteps/Step3Verify';
 import Step4Phone from '../../screens/AuthScreens/RegisterSteps/Step4Phone';
 import Step5Password from '../../screens/AuthScreens/RegisterSteps/Step5Password';
+import ForgotPassword from '../../screens/AuthScreens/ForgotPassword';
 
 const Stack = createStackNavigator();
 
@@ -19,8 +20,8 @@ const AuthStack = () => {
       initialRouteName="Login"
     >
       <Stack.Screen name="Login" component={Login} />
-      <Stack.Screen 
-        name="Step1Name" 
+      <Stack.Screen
+        name="Step1Name"
         component={Step1Name}
         options={{ gestureEnabled: true }}
       />
@@ -28,6 +29,7 @@ const AuthStack = () => {
       <Stack.Screen name="Step3Verify" component={Step3Verify} />
       <Stack.Screen name="Step4Phone" component={Step4Phone} />
       <Stack.Screen name="Step5Password" component={Step5Password} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
     </Stack.Navigator>
   );
 };
