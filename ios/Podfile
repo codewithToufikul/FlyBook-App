@@ -26,6 +26,12 @@ target 'FlyBook' do
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
+  # Google Maps dependencies for react-native-maps
+  pod 'react-native-maps', :path => '../node_modules/react-native-maps', :subspecs => [
+    'Maps',
+    'Google'
+  ]
+
   post_install do |installer|
     react_native_post_install(
       installer,

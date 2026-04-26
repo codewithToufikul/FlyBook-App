@@ -27,7 +27,9 @@ const Login = () => {
   const { loginUser } = useAuth();
   const { isDark } = useTheme();
 
+  const [loginMode, setLoginMode] = useState<'phone' | 'email'>('phone');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -35,21 +37,39 @@ const Login = () => {
   const [showCountryPicker, setShowCountryPicker] = useState(false);
 
   const handleLogin = async () => {
-    if (!phoneNumber.trim()) {
-      Alert.alert('Error', 'Please enter your phone number');
-      return;
+    if (loginMode === 'phone') {
+      if (!phoneNumber.trim()) {
+        Alert.alert('Error', 'Please enter your phone number');
+        return;
+      }
+    } else {
+      if (!email.trim()) {
+        Alert.alert('Error', 'Please enter your email address');
+        return;
+      }
+      if (!email.includes('@')) {
+        Alert.alert('Error', 'Please enter a valid email address');
+        return;
+      }
     }
+
     if (!password.trim()) {
       Alert.alert('Error', 'Please enter your password');
       return;
     }
     setLoading(true);
     try {
-      const cleanPhone = phoneNumber.trim().replace(/^0+/, '');
-      const fullPhoneNumber = `${selectedCountry.dialCode}${cleanPhone}`;
+      let credentials: any = { password };
+
+      if (loginMode === 'phone') {
+        const cleanPhone = phoneNumber.trim().replace(/^0+/, '');
+        credentials.number = `${selectedCountry.dialCode}${cleanPhone}`;
+      } else {
+        credentials.email = email.trim().toLowerCase();
+      }
 
       const { login } = await import('../../services/authServices');
-      const response = await login({ number: fullPhoneNumber, password });
+      const response = await login(credentials);
       if (response.success && response.token) {
         if (response.user) await loginUser(response.user);
         Alert.alert('Success', 'Login successful!');
@@ -57,7 +77,7 @@ const Login = () => {
         Alert.alert('Error', response.message || 'Login failed');
       }
     } catch (error: any) {
-      Alert.alert('Login Failed', error.message || 'Invalid phone number or password');
+      Alert.alert('Login Failed', error.message || 'Invalid credentials or password');
     } finally {
       setLoading(false);
     }
@@ -103,30 +123,66 @@ const Login = () => {
             <Text style={[styles.subtitle, { color: subtitleColor }]}>Sign in to continue</Text>
           </View>
 
+          {/* Login Tabs */}
+          <View style={[styles.tabContainer, { backgroundColor: isDark ? '#1e293b' : '#f1f5f9' }]}>
+            <TouchableOpacity
+              style={[styles.tab, loginMode === 'phone' && styles.activeTab]}
+              onPress={() => setLoginMode('phone')}
+              disabled={loading}
+            >
+              <Ionicons name="call-outline" size={18} color={loginMode === 'phone' ? '#FFFFFF' : iconColor} />
+              <Text style={[styles.tabText, { color: loginMode === 'phone' ? '#FFFFFF' : iconColor }]}>Phone</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tab, loginMode === 'email' && styles.activeTab]}
+              onPress={() => setLoginMode('email')}
+              disabled={loading}
+            >
+              <Ionicons name="mail-outline" size={18} color={loginMode === 'email' ? '#FFFFFF' : iconColor} />
+              <Text style={[styles.tabText, { color: loginMode === 'email' ? '#FFFFFF' : iconColor }]}>Email</Text>
+            </TouchableOpacity>
+          </View>
+
           {/* Form */}
           <View style={styles.formContainer}>
-            {/* Phone */}
+            {/* Identifier Input */}
             <View style={styles.inputContainer}>
-              <Text style={[styles.label, { color: labelColor }]}>Phone Number</Text>
-              <View style={[styles.inputWrapper, { backgroundColor: cardBg, borderColor: border }]}>
-                <TouchableOpacity
-                  style={[styles.countrySelector, { borderRightColor: border }]}
-                  onPress={() => setShowCountryPicker(true)}
-                >
-                  <Text style={{ fontSize: 16 }}>{selectedCountry.flag} {selectedCountry.dialCode}</Text>
-                  <Ionicons name="chevron-down" size={14} color={iconColor} style={{ marginLeft: 4 }} />
-                </TouchableOpacity>
-                <TextInput
-                  style={[styles.input, { color: inputColor }]}
-                  placeholder="Enter phone number"
-                  placeholderTextColor={isDark ? '#475569' : '#94A3B8'}
-                  value={phoneNumber}
-                  onChangeText={setPhoneNumber}
-                  keyboardType="phone-pad"
-                  autoCapitalize="none"
-                  editable={!loading}
-                />
-              </View>
+              <Text style={[styles.label, { color: labelColor }]}>{loginMode === 'phone' ? 'Phone Number' : 'Email Address'}</Text>
+              {loginMode === 'phone' ? (
+                <View style={[styles.inputWrapper, { backgroundColor: cardBg, borderColor: border }]}>
+                  <TouchableOpacity
+                    style={[styles.countrySelector, { borderRightColor: border }]}
+                    onPress={() => setShowCountryPicker(true)}
+                  >
+                    <Text style={{ fontSize: 16 }}>{selectedCountry.flag} {selectedCountry.dialCode}</Text>
+                    <Ionicons name="chevron-down" size={14} color={iconColor} style={{ marginLeft: 4 }} />
+                  </TouchableOpacity>
+                  <TextInput
+                    style={[styles.input, { color: inputColor }]}
+                    placeholder="Enter phone number"
+                    placeholderTextColor={isDark ? '#475569' : '#94A3B8'}
+                    value={phoneNumber}
+                    onChangeText={setPhoneNumber}
+                    keyboardType="phone-pad"
+                    autoCapitalize="none"
+                    editable={!loading}
+                  />
+                </View>
+              ) : (
+                <View style={[styles.inputWrapper, { backgroundColor: cardBg, borderColor: border, paddingLeft: 12 }]}>
+                  <Ionicons name="mail-outline" size={20} color={iconColor} style={styles.inputIcon} />
+                  <TextInput
+                    style={[styles.input, { color: inputColor }]}
+                    placeholder="Enter your email"
+                    placeholderTextColor={isDark ? '#475569' : '#94A3B8'}
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    editable={!loading}
+                  />
+                </View>
+              )}
             </View>
 
             {/* Password */}
@@ -244,6 +300,10 @@ const styles = StyleSheet.create({
   countryFlag: { fontSize: 24, marginRight: 16 },
   countryName: { flex: 1, fontSize: 16, fontWeight: '500' },
   countryDialCode: { fontSize: 16 },
+  tabContainer: { flexDirection: 'row', borderRadius: 12, padding: 4, marginBottom: 24, gap: 4 },
+  tab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 8, gap: 8 },
+  activeTab: { backgroundColor: '#3B82F6' },
+  tabText: { fontSize: 15, fontWeight: '600' },
 });
 
 export default Login;

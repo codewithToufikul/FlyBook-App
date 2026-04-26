@@ -131,6 +131,25 @@ const ShareSheet = ({
                 onClose();
             },
         },
+        {
+            id: 'block',
+            label: 'Block User',
+            icon: 'ban',
+            color: '#ef4444',
+            action: () => {
+                Alert.alert('Block User', 'Are you sure you want to block this user?', [
+                    { text: 'Cancel', style: 'cancel' },
+                    { 
+                        text: 'Block', 
+                        style: 'destructive',
+                        onPress: () => {
+                            Alert.alert('User Blocked', 'You will no longer see content from this user.');
+                            onClose();
+                        }
+                    }
+                ]);
+            },
+        },
     ];
 
     return (

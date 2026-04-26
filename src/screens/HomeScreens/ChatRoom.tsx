@@ -19,10 +19,7 @@ import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/nativ
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSocket } from '../../contexts/SocketContext';
-import { useStreamVideo } from '../../contexts/StreamVideoContext';
-import { initiateCall } from '../../services/callService';
-import { get, put, del } from '../../services/api';
-import { format, isToday, isYesterday } from 'date-fns';
+import { get, put, del } from '../../services/api';import { format, isToday, isYesterday } from 'date-fns';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
 import {
@@ -70,7 +67,6 @@ const ChatRoom = () => {
     const navigation = useNavigation();
     const { user } = useAuth();
     const { socket, isConnected } = useSocket();
-    const { client: streamClient, isReady: isStreamReady } = useStreamVideo();
     const { chatUser } = route.params as { chatUser: ChatUser };
     const queryClient = useQueryClient();
 
@@ -88,24 +84,6 @@ const ChatRoom = () => {
     // In joinRoom it uses userId.sort().join("-").
     const roomId = [user?._id, chatUser._id].sort().join("-");
 
-    const handleStartCall = async (isVideo: boolean) => {
-        if (!streamClient || !isStreamReady) {
-            Alert.alert('Not Ready', 'Video service is still connecting. Please try again.');
-            return;
-        }
-        if (!user?._id || !chatUser._id) return;
-        try {
-            const call = await initiateCall(streamClient, user._id, chatUser._id, isVideo);
-            (navigation as any).navigate('CallScreen', {
-                callId: call.id,
-                otherUserName: chatUser.name,
-                callType: isVideo ? 'video' : 'audio',
-            });
-        } catch (error) {
-            console.error('Call error:', error);
-            Alert.alert('Call Failed', 'Could not start the call. Please try again.');
-        }
-    };
 
     const markMessagesAsRead = async () => {
         try {
@@ -481,45 +459,7 @@ const ChatRoom = () => {
         }
     };
 
-    const renderCallMessage = (item: Message) => {
-        const isMe = item.senderId === user?._id;
-        const isMissed = item.callData?.status === 'missed';
-        const isRejected = item.callData?.status === 'rejected';
-        const isVideo = item.callData?.callType === 'video';
-        const iconName = isVideo ? (isMissed || isRejected ? 'videocam-off' : 'videocam') : (isMissed || isRejected ? 'call-outline' : 'call');
-
-        // Premium colors
-        const bgColor = isMe ? (isDark ? '#14b8a6' : '#0f766e') : (isDark ? '#1e293b' : '#ffffff');
-        const iconColor = isMe ? '#ffffff' : (isMissed || isRejected ? '#EF4444' : (isDark ? '#10B981' : '#10B981'));
-        const textColor = isMe ? '#ffffff' : (isDark ? '#f8fafc' : '#111827');
-        const subTextColor = isMe ? 'rgba(255,255,255,0.7)' : (isDark ? '#94a3b8' : '#6B7280');
-
-        return (
-            <View style={[styles.callMessageWrapper, isMe ? styles.myMessageWrapper : styles.theirMessageWrapper]}>
-                <View style={[styles.callBubble, { backgroundColor: bgColor }, !isMe && styles.theirBubbleShadow]}>
-                    <View style={styles.callHeader}>
-                        <View style={[styles.callIconBg, { backgroundColor: isMe ? 'rgba(255,255,255,0.2)' : (isMissed || isRejected ? '#FEE2E2' : '#ECFDF5') }]}>
-                            <Ionicons name={iconName} size={16} color={iconColor} />
-                        </View>
-                        <View>
-                            <Text style={[styles.callSummaryText, { color: textColor }]}>
-                                {item.messageText}
-                            </Text>
-                            <Text style={[styles.callTimeText, { color: subTextColor }]}>
-                                {formatMessageTime(item.timestamp)}
-                            </Text>
-                        </View>
-                    </View>
-                </View>
-            </View>
-        );
-    };
-
     const renderMessageItem = ({ item }: { item: Message }) => {
-        if (item.messageType === 'call') {
-            return renderCallMessage(item);
-        }
-
         const isMe = item.senderId === user?._id;
 
         return (
@@ -639,12 +579,6 @@ const ChatRoom = () => {
                 </TouchableOpacity>
 
                 <View style={styles.headerActions}>
-                    <TouchableOpacity style={styles.headerActionBtn} onPress={() => handleStartCall(false)}>
-                        <Ionicons name="call-outline" size={22} color={isDark ? "#14b8a6" : "#0f766e"} />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.headerActionBtn} onPress={() => handleStartCall(true)}>
-                        <Ionicons name="videocam-outline" size={24} color={isDark ? "#14b8a6" : "#0f766e"} />
-                    </TouchableOpacity>
                 </View>
             </View>
 

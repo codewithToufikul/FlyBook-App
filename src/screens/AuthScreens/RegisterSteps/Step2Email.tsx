@@ -29,7 +29,7 @@ const Step2Email = () => {
     try {
       const response = await post('/users/send-otp', { email: email.trim().toLowerCase() });
       if (response.success) {
-        navigation.navigate('Step3Verify' as never, { firstName, lastName, email: email.trim().toLowerCase() } as never);
+        (navigation as any).navigate('Step3Verify', { firstName, lastName, email: email.trim().toLowerCase() });
       } else {
         Alert.alert('Error', response.message || 'Failed to send OTP');
       }
@@ -59,11 +59,12 @@ const Step2Email = () => {
             <Ionicons name="arrow-back" size={24} color={isDark ? '#f8fafc' : '#1E293B'} />
           </TouchableOpacity>
           <View style={styles.progressContainer}>
-            <View style={[styles.progressDot, { backgroundColor: '#3B82F6', width: 24 }]} />
-            <View style={[styles.progressDot, { backgroundColor: '#3B82F6', width: 24 }]} />
-            <View style={[styles.progressDot, { backgroundColor: dotInactive }]} />
-            <View style={[styles.progressDot, { backgroundColor: dotInactive }]} />
-            <View style={[styles.progressDot, { backgroundColor: dotInactive }]} />
+            <View style={[styles.progressDot, { backgroundColor: '#3B82F6', width: 24 } ]} />
+            <View style={[styles.progressDot, { backgroundColor: '#3B82F6', width: 24 } ]} />
+            <View style={[styles.progressDot, { backgroundColor: dotInactive } ]} />
+            <View style={[styles.progressDot, { backgroundColor: dotInactive } ]} />
+            <View style={[styles.progressDot, { backgroundColor: dotInactive } ]} />
+            <View style={[styles.progressDot, { backgroundColor: dotInactive } ]} />
           </View>
           <View style={styles.placeholder} />
         </View>

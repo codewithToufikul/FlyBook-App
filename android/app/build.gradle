@@ -88,8 +88,8 @@ android {
         applicationId "com.flybook"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 5
-        versionName "1.0.5"
+        versionCode 8
+        versionName "1.0.8"
         // Maps API key injected from gradle.properties (not hardcoded)
         if (project.hasProperty('GOOGLE_MAPS_API_KEY')) {
             manifestPlaceholders = [mapsApiKey: GOOGLE_MAPS_API_KEY]

@@ -18,7 +18,7 @@ const Step5Password = () => {
   const route = useRoute();
   const { loginUser } = useAuth();
   const { isDark } = useTheme();
-  const { firstName, lastName, email, phone } = route.params as any;
+  const { firstName, lastName, email, phone, referrerUsername } = route.params as any;
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -45,7 +45,7 @@ const Step5Password = () => {
     setLoading(true);
     try {
       const { register } = await import('../../../services/authServices');
-      const response = await register({ name: `${firstName} ${lastName}`, email, number: phone || '', password, userLocation, referrerUsername: '' });
+      const response = await register({ name: `${firstName} ${lastName}`, email, number: phone || '', password, userLocation, referrerUsername: referrerUsername || '' });
       if (response.success && response.token) {
         if (response.user) await loginUser(response.user);
         Alert.alert('Success!', 'Your account has been created successfully!', [{ text: 'OK', onPress: () => { } }]);
@@ -84,7 +84,7 @@ const Step5Password = () => {
             <Ionicons name="arrow-back" size={24} color={isDark ? '#f8fafc' : '#1E293B'} />
           </TouchableOpacity>
           <View style={styles.progressContainer}>
-            {[0, 1, 2, 3, 4].map(i => (
+            {[0, 1, 2, 3, 4, 5].map(i => (
               <View key={i} style={[styles.progressDot, { backgroundColor: '#3B82F6', width: 24 }]} />
             ))}
           </View>

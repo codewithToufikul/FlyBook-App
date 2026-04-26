@@ -17,23 +17,23 @@ import { Platform } from 'react-native';
 // - Physical Device: Use your computer's IP (e.g., '192.168.1.100')
 
 // 2. FOR PRODUCTION:
-// - Use: 'https://fly-book-server-lzu4.onrender.com'
+// - Use: 'https://api.flybook.com.bd'
 
-const USE_LOCAL_SERVER = false; // Set to false for production
+// const USE_LOCAL_SERVER = true; // Set to false for production (REMOVED)
 
-const PRODUCTION_URL = 'https://fly-book-server-production-6270.up.railway.app';
+const PRODUCTION_URL = 'https://api.flybook.com.bd';
 
 // For local development - automatically detects platform
 const LOCAL_URL = Platform.select({
-  android: 'http://10.241.175.191:3000', // Special Android emulator localhost
+  android: 'http://192.168.1.195:3000',
   ios: 'http://localhost:3000',
-  default: 'http://10.241.175.191:3000', // Your computer's current IP
+  default: 'http://192.168.1.195:3000',
 });
 
 // IMPORTANT: If testing on physical device, replace with your computer's IP:
 // const LOCAL_URL = 'http://192.168.8.191:3000'; // Replace with your IP
 
-export const BASE_URL = USE_LOCAL_SERVER ? LOCAL_URL : PRODUCTION_URL;
+export const BASE_URL = __DEV__ ? LOCAL_URL : PRODUCTION_URL;
 
 // Storage keys
 const TOKEN_KEY = '@flybook_token';

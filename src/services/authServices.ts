@@ -5,7 +5,8 @@ import { post, get, saveToken, saveUser, clearAuth } from './api';
  */
 
 export interface LoginCredentials {
-  number: string;
+  number?: string;
+  email?: string;
   password: string;
 }
 
@@ -63,6 +64,7 @@ const mapUserData = (userData: any): User => {
     friendRequestsSent: userData.friendRequestsSent || [],
     friendRequestsReceived: userData.friendRequestsReceived || [],
     friends: userData.friends || [],
+    blockedUsers: userData.blockedUsers || [],
     referrerId: userData.referrerId || userData.referrer_id || null,
     referrerName: userData.referrerName || userData.referrer_name || null,
   };
@@ -91,6 +93,7 @@ export interface User {
   friendRequestsSent?: string[];
   friendRequestsReceived?: string[];
   friends?: string[];
+  blockedUsers?: string[];
   referrerId?: string | null;
   referrerName?: string | null;
   lastNameChange?: string;
@@ -229,6 +232,7 @@ export const getProfile = async (): Promise<User> => {
       friendRequestsSent: userData.friendRequestsSent || [],
       friendRequestsReceived: userData.friendRequestsReceived || [],
       friends: userData.friends || [],
+      blockedUsers: userData.blockedUsers || [],
       referrerId: userData.referrerId || userData.referrer_id || null,
       referrerName: userData.referrerName || userData.referrer_name || null,
     };

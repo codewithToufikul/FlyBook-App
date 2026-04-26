@@ -17,7 +17,7 @@ import {
   ScrollView,
   Animated,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useScrollToTop } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -542,6 +542,8 @@ const Home = () => {
   const [likingPosts, setLikingPosts] = useState<Record<string, boolean>>({});
   const [activeCategory, setActiveCategory] = useState('All');
   const [tobNavHeight, setTobNavHeight] = useState(0);
+  const flatListRef = useRef<FlatList>(null);
+  useScrollToTop(flatListRef);
 
   // Scroll-aware filter bar
   const filterTranslateY = useRef(new Animated.Value(0)).current;
@@ -691,6 +693,7 @@ const Home = () => {
         <ErrorState onRetry={refetch} />
       ) : (
         <FlatList
+          ref={flatListRef}
           data={allPosts}
           keyExtractor={(item) => item._id}
           renderItem={({ item }) => (

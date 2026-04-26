@@ -48,7 +48,7 @@ const Step3Verify = () => {
     try {
       const response = await post('/users/verify-otp', { email, otp: otpCode });
       if (response.success) {
-        navigation.navigate('Step4Phone' as never, { firstName, lastName, email, otpVerified: true } as never);
+        (navigation as any).navigate('Step4Phone', { firstName, lastName, email, otpVerified: true });
       } else {
         Alert.alert('Error', response.message || 'Invalid verification code');
         setOtp(['', '', '', '', '', '']);
@@ -92,7 +92,7 @@ const Step3Verify = () => {
             <Ionicons name="arrow-back" size={24} color={isDark ? '#f8fafc' : '#1E293B'} />
           </TouchableOpacity>
           <View style={styles.progressContainer}>
-            {[0, 1, 2, 3, 4].map(i => (
+            {[0, 1, 2, 3, 4, 5].map(i => (
               <View key={i} style={[styles.progressDot, { backgroundColor: i <= 2 ? '#3B82F6' : dotInactive, width: i <= 2 ? 24 : 8 }]} />
             ))}
           </View>
@@ -112,7 +112,7 @@ const Step3Verify = () => {
             {otp.map((digit, index) => (
               <TextInput
                 key={index}
-                ref={(ref) => (inputRefs.current[index] = ref)}
+                ref={(ref) => { inputRefs.current[index] = ref; }}
                 style={[styles.otpInput, { backgroundColor: cardBg, borderColor: border, color: inputColor }, digit && { borderColor: '#3B82F6', backgroundColor: isDark ? '#1e293b' : '#FFFFFF' }]}
                 value={digit}
                 onChangeText={(value) => handleOtpChange(value, index)}

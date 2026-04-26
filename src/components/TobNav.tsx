@@ -84,17 +84,23 @@ const TopNav = ({ navigation }: TopNavProps) => {
             <TouchableOpacity
               className="w-10 h-10 items-center justify-center relative rounded-full active:bg-slate-100 dark:active:bg-slate-800"
               onPress={async () => {
-                const url = 'flyconnect://';
+                const ssoUrl = 'flybook://sso-auth?callback=flyconnect';
                 try {
-                  const supported = await Linking.canOpenURL(url);
+                  const supported = await Linking.canOpenURL(ssoUrl);
                   if (supported) {
-                    await Linking.openURL(url);
+                    await Linking.openURL(ssoUrl);
                   } else {
-                    Toast.show({
-                      type: 'info',
-                      text1: 'FlyConnect App Not Installed',
-                      text2: 'Please install FlyConnect from Play Store.',
-                    });
+                    // Fallback to just opening the app if sso-auth scheme fails
+                    const appUrl = 'flyconnect://';
+                    if (await Linking.canOpenURL(appUrl)) {
+                      await Linking.openURL(appUrl);
+                    } else {
+                      Toast.show({
+                        type: 'info',
+                        text1: 'FlyConnect App Not Installed',
+                        text2: 'Please install FlyConnect from Play Store.',
+                      });
+                    }
                   }
                 } catch (error) {
                   console.error('An error occurred', error);
@@ -150,7 +156,7 @@ const TopNav = ({ navigation }: TopNavProps) => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={() => navigation.navigate('Marketplace')}
+              onPress={() => navigation.navigate('Home', { screen: 'Marketplace' })}
               className="items-center w-12 h-12 justify-center rounded-xl active:bg-slate-100 dark:active:bg-slate-800"
               activeOpacity={0.7}
             >

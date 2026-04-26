@@ -15,7 +15,9 @@ import {
     PermissionsAndroid,
     Modal,
     ScrollView,
+    Linking,
 } from 'react-native';
+import { useScrollToTop } from '@react-navigation/native';
 import Geolocation from '@react-native-community/geolocation';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
@@ -54,6 +56,9 @@ const NearByBooks = ({ navigation }: any) => {
     const [selectedBook, setSelectedBook] = useState<NearbyBook | null>(null);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [requesting, setRequesting] = useState(false);
+    
+    const flatListRef = React.useRef<FlatList>(null);
+    useScrollToTop(flatListRef);
 
     const requestLocationPermission = async () => {
         if (Platform.OS === 'ios') {
@@ -61,40 +66,65 @@ const NearByBooks = ({ navigation }: any) => {
             getUserLocation();
         } else {
             try {
-                const granted = await PermissionsAndroid.request(
+                // Request both FINE and COARSE for maximum compatibility
+                const results = await PermissionsAndroid.requestMultiple([
                     PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-                    {
-                        title: 'Location Permission',
-                        message: 'FlyBook needs access to your location to find books near you.',
-                        buttonPositive: 'OK',
-                    }
-                );
-                if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+                    PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
+                ]);
+
+                const fineGranted = results[PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION];
+                const coarseGranted = results[PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION];
+
+                if (
+                    fineGranted === PermissionsAndroid.RESULTS.GRANTED ||
+                    coarseGranted === PermissionsAndroid.RESULTS.GRANTED
+                ) {
                     getUserLocation();
+                } else if (
+                    fineGranted === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN ||
+                    coarseGranted === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN
+                ) {
+                    setError('location_permission_blocked');
                 } else {
-                    setError('Location permission denied');
+                    setError('Location permission denied. Please allow location access to find books near you.');
                 }
             } catch (err) {
-                console.warn(err);
+                console.warn('Permission error:', err);
+                setError('Failed to request location permission.');
             }
         }
     };
 
     const getUserLocation = () => {
         setLoading(true);
+        setError(null);
+
+        // Strategy 1: Try network-based location first (faster, no GPS needed)
         Geolocation.getCurrentPosition(
             (position) => {
                 const { latitude, longitude } = position.coords;
                 setLocation({ latitude, longitude });
                 fetchNearbyBooks(latitude, longitude);
             },
-            (error) => {
-                setError('Failed to get your location. Make sure GPS is on.');
-                setLoading(false);
+            (_lowAccuracyError) => {
+                // Strategy 2: Fallback to GPS (High Accuracy)
+                Geolocation.getCurrentPosition(
+                    (position) => {
+                        const { latitude, longitude } = position.coords;
+                        setLocation({ latitude, longitude });
+                        fetchNearbyBooks(latitude, longitude);
+                    },
+                    (_highAccuracyError) => {
+                        setError('Failed to get your location. Please enable Location Services in your device settings.');
+                        setLoading(false);
+                    },
+                    { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
+                );
             },
-            { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+            { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
         );
     };
+
 
     const fetchNearbyBooks = async (lat: number, lng: number) => {
         try {
@@ -147,6 +177,11 @@ const NearByBooks = ({ navigation }: any) => {
         navigation.navigate('UserLibrary', { userId, userName });
     };
 
+    const handleViewProfile = (userId: string) => {
+        setIsModalVisible(false);
+        navigation.navigate('UserProfile', { userId });
+    };
+
     const renderBookItem = ({ item }: { item: NearbyBook }) => (
         <TouchableOpacity
             style={[styles.bookCard, isDark && styles.darkBookCard]}
@@ -173,12 +208,16 @@ const NearByBooks = ({ navigation }: any) => {
                 <Text style={[styles.bookTitle, isDark && styles.darkText]} numberOfLines={1}>{item.bookName}</Text>
                 <Text style={[styles.writerName, isDark && styles.darkSubText]} numberOfLines={1}>by {item.writer}</Text>
 
-                <View style={[styles.ownerInfo, isDark && styles.darkBorder]}>
+                <TouchableOpacity 
+                    style={[styles.ownerInfo, isDark && styles.darkBorder]}
+                    onPress={() => handleViewProfile(item.userId)}
+                    activeOpacity={0.7}
+                >
                     <View style={styles.ownerAvatar}>
                         <Text style={styles.ownerInitial}>{item.owner?.charAt(0) || 'U'}</Text>
                     </View>
                     <Text style={[styles.ownerName, isDark && styles.darkText]}>{item.owner}</Text>
-                </View>
+                </TouchableOpacity>
 
                 <View style={styles.cardFooter}>
                     <View style={styles.dateInfo}>
@@ -216,15 +255,35 @@ const NearByBooks = ({ navigation }: any) => {
                 </View>
             ) : error ? (
                 <View style={styles.centerContainer}>
-                    <Ionicons name="alert-circle-outline" size={64} color="#EF4444" />
-                    <Text style={[styles.errorTitle, isDark && styles.darkText]}>Oops!</Text>
-                    <Text style={[styles.errorText, isDark && styles.darkSubText]}>{error}</Text>
-                    <TouchableOpacity style={styles.retryBtn} onPress={onRefresh}>
-                        <Text style={styles.retryBtnText}>Try Again</Text>
-                    </TouchableOpacity>
+                    <Ionicons
+                        name={error === 'location_permission_blocked' ? 'lock-closed-outline' : 'location-outline'}
+                        size={64}
+                        color="#EF4444"
+                    />
+                    <Text style={[styles.errorTitle, isDark && styles.darkText]}>
+                        {error === 'location_permission_blocked' ? 'Permission Blocked' : 'Location Error'}
+                    </Text>
+                    <Text style={[styles.errorText, isDark && styles.darkSubText]}>
+                        {error === 'location_permission_blocked'
+                            ? 'Location permission is blocked. Please enable it from Settings.'
+                            : error}
+                    </Text>
+                    {error === 'location_permission_blocked' ? (
+                        <TouchableOpacity
+                            style={styles.retryBtn}
+                            onPress={() => Linking.openSettings()}
+                        >
+                            <Text style={styles.retryBtnText}>Open Settings</Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity style={styles.retryBtn} onPress={requestLocationPermission}>
+                            <Text style={styles.retryBtnText}>Try Again</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
             ) : (
                 <FlatList
+                    ref={flatListRef}
                     data={books}
                     renderItem={renderBookItem}
                     keyExtractor={(item) => item._id}
@@ -290,12 +349,16 @@ const NearByBooks = ({ navigation }: any) => {
 
                                     <View style={styles.modalOwnerRow}>
                                         <Text style={[styles.detailsLabel, isDark && styles.darkText]}>Shared by</Text>
-                                        <View style={styles.ownerInfo}>
+                                        <TouchableOpacity 
+                                            style={styles.ownerInfo}
+                                            onPress={() => handleViewProfile(selectedBook.userId)}
+                                            activeOpacity={0.7}
+                                        >
                                             <View style={styles.ownerAvatar}>
                                                 <Text style={styles.ownerInitial}>{selectedBook.owner?.charAt(0) || 'U'}</Text>
                                             </View>
                                             <Text style={[styles.ownerName, isDark && styles.darkText]}>{selectedBook.owner}</Text>
-                                        </View>
+                                        </TouchableOpacity>
                                     </View>
 
                                     <View style={styles.modalDistanceRow}>

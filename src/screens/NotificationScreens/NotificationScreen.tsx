@@ -14,7 +14,7 @@ import { useSocket } from '../../contexts/SocketContext';
 import { formatDistanceToNow } from 'date-fns';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useScrollToTop } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -45,6 +45,9 @@ export default function NotificationScreen() {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    
+    const flatListRef = React.useRef<FlatList>(null);
+    useScrollToTop(flatListRef);
 
     const fetchNotifications = useCallback(async (showLoading = true) => {
         if (!user?._id) return;
@@ -326,6 +329,7 @@ export default function NotificationScreen() {
                 </View>
             ) : (
                 <FlatList
+                    ref={flatListRef}
                     data={notifications}
                     renderItem={renderItem}
                     keyExtractor={item => item._id}

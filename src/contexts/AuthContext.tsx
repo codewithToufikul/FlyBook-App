@@ -42,9 +42,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
       console.log('📦 Keychain Data String:', keychainData);
       
-      await Keychain.setGenericPassword('flybook_auth', keychainData, {
-        accessGroup: 'group.com.flybook.shared', 
-      });
+      await Keychain.setGenericPassword('flybook_auth', keychainData);
       console.log('✅ Keychain.setGenericPassword Success');
     } catch (e) {
       console.error('❌ Keychain Sync Failed Error:', e);
@@ -92,18 +90,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('🔗 [SSO] Incoming Link:', url);
       
       if (url.includes('flybook://sso-auth')) {
+        // Extract target screen if provided (e.g. flybook://sso-auth?callback=flyconnect&target=chat:123)
+        const targetMatch = url.match(/target=([^&]*)/);
+        const target = targetMatch ? targetMatch[1] : null;
+
         if (authenticated && user && token) {
           try {
             const ssoDataRaw = {
               token,
               name: user.name,
               profileImage: user.profileImage,
-              id: user._id || (user as any).id
+              id: user._id || (user as any).id,
+              target // Pass the target screen back to FlyConnect
             };
             const encodedData = encodeURIComponent(JSON.stringify(ssoDataRaw));
             const redirectUrl = `flyconnect://auth?data=${encodedData}`;
             
-            console.log('🚀 [SSO] Redirecting back to FlyConnect...');
+            console.log(`🚀 [SSO] Redirecting back to FlyConnect${target ? ' with target: ' + target : ''}...`);
             await Linking.openURL(redirectUrl);
           } catch (err) {
             console.error('❌ [SSO] Redirect Error:', err);

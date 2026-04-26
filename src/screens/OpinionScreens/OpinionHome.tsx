@@ -18,7 +18,7 @@ import {
     StatusBar,
     ScrollView,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useScrollToTop } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -202,6 +202,9 @@ const OpinionHome = () => {
     const { isDark } = useTheme();
     const queryClient = useQueryClient();
     const [sharePost, setSharePost] = useState<Post | null>(null);
+
+    const flatListRef = React.useRef<FlatList>(null);
+    useScrollToTop(flatListRef);
 
     const bg = isDark ? '#070d1a' : '#f0f4f8';
     const cardBg = isDark ? '#111827' : '#ffffff';
@@ -467,6 +470,7 @@ const OpinionHome = () => {
             <TobNav navigation={navigation} />
 
             <FlatList
+                ref={flatListRef}
                 data={allPosts}
                 keyExtractor={item => item._id}
                 showsVerticalScrollIndicator={false}

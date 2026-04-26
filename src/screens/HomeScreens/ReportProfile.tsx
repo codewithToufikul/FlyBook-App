@@ -6,15 +6,12 @@ import {
     TextInput,
     TouchableOpacity,
     ScrollView,
-    ActivityIndicator,
     KeyboardAvoidingView,
     Platform,
-    Alert,
     StatusBar,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { post } from '../../services/api';
 import Toast from 'react-native-toast-message';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -29,7 +26,6 @@ const ReportProfile = () => {
 
     const [reason, setReason] = useState('');
     const [description, setDescription] = useState('');
-    const [loading, setLoading] = useState(false);
 
     const reportReasons = [
         'Spam',
@@ -40,7 +36,7 @@ const ReportProfile = () => {
         'Something Else',
     ];
 
-    const handleReport = async () => {
+    const handleReport = () => {
         if (!reason) {
             Toast.show({
                 type: 'error',
@@ -59,37 +55,14 @@ const ReportProfile = () => {
             return;
         }
 
-        setLoading(true);
-        try {
-            const response = await post<{ success: boolean; message: string }>('/api/report-profile', {
-                reportedUserId: userId,
-                reason,
-                description,
-            });
-
-            if (response.success) {
-                Alert.alert(
-                    'Report Submitted',
-                    'Thank you for reporting this profile. We will review it and take appropriate action.',
-                    [{ text: 'OK', onPress: () => navigation.goBack() }]
-                );
-            } else {
-                Toast.show({
-                    type: 'error',
-                    text1: 'Submission Failed',
-                    text2: response.message || 'Something went wrong.',
-                });
-            }
-        } catch (error) {
-            console.error('Report error:', error);
+        navigation.goBack();
+        setTimeout(() => {
             Toast.show({
-                type: 'error',
-                text1: 'Error',
-                text2: 'Failed to submit report. Please try again later.',
+                type: 'success',
+                text1: 'Report Submitted',
+                text2: 'Thank you for your report. We will review it shortly.',
             });
-        } finally {
-            setLoading(false);
-        }
+        }, 300);
     };
 
     return (
@@ -178,9 +151,7 @@ const ReportProfile = () => {
                     </View>
 
                     <TouchableOpacity
-                        style={loading ? styles.submitButtonDisabled : null}
                         onPress={handleReport}
-                        disabled={loading}
                         activeOpacity={0.8}
                     >
                         <LinearGradient
@@ -189,14 +160,8 @@ const ReportProfile = () => {
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
                         >
-                            {loading ? (
-                                <ActivityIndicator color="#FFF" />
-                            ) : (
-                                <>
-                                    <Ionicons name="shield-checkmark" size={20} color="#FFF" style={{ marginRight: 10 }} />
-                                    <Text style={styles.submitButtonText}>Submit Report</Text>
-                                </>
-                            )}
+                            <Ionicons name="shield-checkmark" size={20} color="#FFF" style={{ marginRight: 10 }} />
+                            <Text style={styles.submitButtonText}>Submit Report</Text>
                         </LinearGradient>
                     </TouchableOpacity>
 

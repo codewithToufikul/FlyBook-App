@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, Alert, StatusBar,
+  KeyboardAvoidingView, Platform, Alert, StatusBar, Linking,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -17,7 +17,7 @@ const Step1Name = () => {
   const handleNext = () => {
     if (!firstName.trim()) { Alert.alert('Error', 'Please enter your first name'); return; }
     if (!lastName.trim()) { Alert.alert('Error', 'Please enter your last name'); return; }
-    navigation.navigate('Step2Email' as never, { firstName: firstName.trim(), lastName: lastName.trim() } as never);
+    (navigation as any).navigate('Step2Email', { firstName: firstName.trim(), lastName: lastName.trim() });
   };
 
   const bg = isDark ? '#0f172a' : '#FFFFFF';
@@ -40,6 +40,7 @@ const Step1Name = () => {
           </TouchableOpacity>
           <View style={styles.progressContainer}>
             <View style={[styles.progressDot, { backgroundColor: '#3B82F6', width: 24 }]} />
+            <View style={[styles.progressDot, { backgroundColor: dotInactive }]} />
             <View style={[styles.progressDot, { backgroundColor: dotInactive }]} />
             <View style={[styles.progressDot, { backgroundColor: dotInactive }]} />
             <View style={[styles.progressDot, { backgroundColor: dotInactive }]} />
@@ -73,6 +74,12 @@ const Step1Name = () => {
               onChangeText={setLastName}
               autoCapitalize="words"
             />
+          </View>
+
+          <View style={[styles.eulaContainer, { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.05)' : '#F8FAFC' }]}>
+            <Text style={[styles.eulaText, { color: subtitleColor }]}>
+              By clicking "Next", you agree to our <Text style={styles.eulaLink} onPress={() => Linking.openURL('https://flybook.com.bd/privacy-policy')}>EULA</Text> and zero-tolerance policy for objectionable content or abusive behaviors.
+            </Text>
           </View>
         </View>
 
@@ -111,6 +118,23 @@ const styles = StyleSheet.create({
   },
   nextButtonDisabled: { backgroundColor: '#CBD5E1', shadowOpacity: 0 },
   nextButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  eulaContainer: {
+    marginTop: 24,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.1)',
+  },
+  eulaText: {
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'center',
+  },
+  eulaLink: {
+    color: '#3B82F6',
+    fontWeight: '700',
+    textDecorationLine: 'underline',
+  },
 });
 
 export default Step1Name;

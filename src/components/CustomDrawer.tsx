@@ -51,7 +51,8 @@ const MENU_SECTIONS = [
       {
         label: 'Marketplace',
         icon: MarketThinIcon,
-        route: 'Marketplace',
+        route: 'MainTabs',
+        params: { screen: 'Home', params: { screen: 'Marketplace' } },
       },
       {
         label: 'E-Learning',

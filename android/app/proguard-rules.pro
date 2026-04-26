@@ -26,3 +26,12 @@
 # Google Maps
 -keep class com.google.android.gms.maps.** { *; }
 -keep class com.google.android.libraries.maps.** { *; }
+
+# OkHttp3 / Axios
+-keepattributes Signature
+-keepattributes *Annotation*
+-keep class okhttp3.** { *; }
+-keep interface okhttp3.** { *; }
+-dontwarn okhttp3.**
+-keep class retrofit2.** { *; }
+-keep class axios.** { *; }

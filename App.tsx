@@ -6,7 +6,6 @@ import { NavigationContainer, DefaultTheme as NavigationDefaultTheme, DarkTheme 
 import { AuthProvider } from './src/contexts/AuthContext';
 import { SocketProvider } from './src/contexts/SocketContext';
 import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
-import { StreamVideoProvider } from './src/contexts/StreamVideoContext';
 import { CoinEarningProvider } from './src/contexts/CoinEarningContext';
 import { CartProvider } from './src/contexts/CartContext';
 import RootNavigator from './src/navigations/RootNavigator';
@@ -20,11 +19,6 @@ import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native
 import Toast, { ToastConfig } from 'react-native-toast-message';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import notifee from '@notifee/react-native';
-import {
-  isNotifeeStreamVideoEvent,
-  onAndroidNotifeeEvent,
-  oniOSNotifeeEvent,
-} from '@stream-io/video-react-native-sdk';
 import { navigationRef } from './src/services/NavigationService';
 import { notificationService } from './src/services/notificationService';
 import ErrorBoundary from './src/components/ErrorBoundary';
@@ -190,13 +184,7 @@ export default function App() {
     const unsubscribe = notificationService.setupNotificationListeners();
 
     const unsubscribeNotifee = notifee.onForegroundEvent((event) => {
-      if (isNotifeeStreamVideoEvent(event)) {
-        if (Platform.OS === 'android') {
-          onAndroidNotifeeEvent({ event, isBackground: false });
-        } else {
-          oniOSNotifeeEvent({ event, isBackground: false });
-        }
-      }
+      // General foreground event handling
     });
 
     return () => {
@@ -212,19 +200,17 @@ export default function App() {
           <AuthProvider>
             <ThemeProvider>
               <SocketProvider>
-                <StreamVideoProvider>
-                  <CoinEarningProvider>
-                    <CartProvider>
-                      <PersistQueryClientProvider
-                        client={queryClient}
-                        persistOptions={{ persister: asyncStoragePersister }}
-                      >
-                        <AppContent />
-                        <Toast config={toastConfig} />
-                      </PersistQueryClientProvider>
-                    </CartProvider>
-                  </CoinEarningProvider>
-                </StreamVideoProvider>
+                <CoinEarningProvider>
+                  <CartProvider>
+                    <PersistQueryClientProvider
+                      client={queryClient}
+                      persistOptions={{ persister: asyncStoragePersister }}
+                    >
+                      <AppContent />
+                      <Toast config={toastConfig} />
+                    </PersistQueryClientProvider>
+                  </CartProvider>
+                </CoinEarningProvider>
               </SocketProvider>
             </ThemeProvider>
           </AuthProvider>

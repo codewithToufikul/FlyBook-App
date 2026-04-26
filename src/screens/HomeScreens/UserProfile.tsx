@@ -23,12 +23,11 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { get, post } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
-import { useStreamVideo } from '../../contexts/StreamVideoContext';
 import VideoPlayer from '../../components/VideoPlayer';
-import { initiateCall } from '../../services/callService';
 import Toast from 'react-native-toast-message';
 import Clipboard from '@react-native-clipboard/clipboard';
 import LinearGradient from 'react-native-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
@@ -166,41 +165,67 @@ const ProfileOptionsSheet = ({
     visible,
     onClose,
     user,
-    onAudioCall,
-    onVideoCall,
     onSeeFriendship,
     onReportProfile,
     onBlock,
     onShareProfile,
+    isFriend,
+    isSent,
+    isReceived,
+    onUnfriend,
+    onCancelRequest,
+    onAccept,
+    onReject,
 }: {
     visible: boolean;
     onClose: () => void;
     user: UserProfileData | null;
-    onAudioCall: () => void;
-    onVideoCall: () => void;
     onSeeFriendship: () => void;
     onReportProfile: () => void;
     onBlock: () => void;
     onShareProfile: () => void;
+    isFriend: boolean;
+    isSent: boolean;
+    isReceived: boolean;
+    onUnfriend: () => void;
+    onCancelRequest: () => void;
+    onAccept: () => void;
+    onReject: () => void;
 }) => {
     const { isDark } = useTheme();
     if (!user) return null;
 
     const profileOptions = [
-        {
-            id: 'audio_call',
-            label: 'Audio Call',
-            icon: 'call-outline',
-            color: '#10B981',
-            action: onAudioCall,
-        },
-        {
-            id: 'video_call',
-            label: 'Video Call',
-            icon: 'videocam-outline',
-            color: '#3B82F6',
-            action: onVideoCall,
-        },
+        ...(isFriend ? [{
+            id: 'unfriend',
+            label: 'Unfriend',
+            icon: 'person-remove-outline',
+            color: '#EF4444',
+            action: onUnfriend,
+        }] : []),
+        ...(isSent ? [{
+            id: 'cancel_request',
+            label: 'Cancel Friend Request',
+            icon: 'close-circle-outline',
+            color: '#D97706',
+            action: onCancelRequest,
+        }] : []),
+        ...(isReceived ? [
+            {
+                id: 'accept_request',
+                label: 'Accept Friend Request',
+                icon: 'checkmark-circle-outline',
+                color: '#10B981',
+                action: onAccept,
+            },
+            {
+                id: 'reject_request',
+                label: 'Reject Friend Request',
+                icon: 'close-circle-outline',
+                color: '#EF4444',
+                action: onReject,
+            }
+        ] : []),
         {
             id: 'see_friendship',
             label: 'See Friendship',
@@ -277,7 +302,6 @@ const UserProfile = () => {
     const route = useRoute<any>();
     const { userId } = route.params || {};
     const { user: currentUser, refreshUser } = useAuth();
-    const { client: streamClient, isReady: isStreamReady } = useStreamVideo();
 
     const queryClient = useQueryClient();
     const [activeTab, setActiveTab] = useState<'posts' | 'about'>('posts');
@@ -288,6 +312,9 @@ const UserProfile = () => {
 
     const defaultAvatar = 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png';
     const defaultCover = 'https://i.ibb.co.com/xmyN9fT/freepik-expand-75906-min.png';
+    const insets = useSafeAreaInsets();
+    // iOS: Dynamic Island/notch অনুযায়ী button position নির্ধারণ
+    const topButtonPosition = Platform.OS === 'ios' ? Math.max(insets.top, 44) : 40;
 
     const {
         data: user,
@@ -348,6 +375,32 @@ const UserProfile = () => {
         onSettled: () => setProcessingAction(false),
     });
 
+    const blockUserMutation = useMutation({
+        mutationFn: () => post('/api/user/block', { userId: userId }),
+        onSuccess: () => {
+            refreshUser();
+            queryClient.invalidateQueries({ queryKey: ['peoples'] });
+            queryClient.invalidateQueries({ queryKey: ['opinion-posts'] });
+            queryClient.invalidateQueries({ queryKey: ['home-posts'] });
+            Toast.show({ type: 'success', text1: 'User blocked', text2: 'They have been removed from your feeds.' });
+            navigation.goBack();
+        },
+        onError: (err: any) => {
+            Toast.show({ type: 'error', text1: 'Block failed', text2: err.message || 'Please try again.' });
+        },
+        onSettled: () => setProcessingAction(false),
+    });
+
+    const unblockUserMutation = useMutation({
+        mutationFn: () => post('/api/user/unblock', { unblockId: userId }),
+        onSuccess: () => {
+            refreshUser();
+            refetchProfile();
+            Toast.show({ type: 'success', text1: 'User unblocked' });
+        },
+        onSettled: () => setProcessingAction(false),
+    });
+
     const handleAction = (action: () => void) => {
         setProcessingAction(true);
         action();
@@ -370,9 +423,14 @@ const UserProfile = () => {
 
     const handleMessage = async () => {
         if (!user) return;
-        const url = `flyconnect://chat/${user._id}`;
+
+        // --- PRO SSO FLOW ---
+        // We use the sso-auth flow with a 'target' parameter.
+        // This ensures the user is logged in AND navigates to this specific chat.
+        const url = `flybook://sso-auth?callback=flyconnect&target=chat:${user._id}`;
+
         try {
-            const supported = await Linking.canOpenURL(url);
+            const supported = await Linking.canOpenURL('flyconnect://'); // Check if FlyConnect exists
             if (supported) {
                 await Linking.openURL(url);
             } else {
@@ -409,27 +467,6 @@ const UserProfile = () => {
         navigation.navigate('UserLibrary', { userId, userName: user?.name });
     };
 
-    const startCall = async (isVideo: boolean) => {
-        if (!streamClient || !isStreamReady) {
-            Alert.alert('Not Ready', 'Video service is still connecting. Please try again.');
-            return;
-        }
-        if (!currentUser?._id || !userId) return;
-        try {
-            const call = await initiateCall(streamClient, currentUser._id, userId, isVideo);
-            navigation.navigate('CallScreen' as any, {
-                callId: call.id,
-                otherUserName: user?.name,
-                callType: isVideo ? 'video' : 'audio',
-            });
-        } catch (error: any) {
-            console.error('Call error:', error);
-            Alert.alert('Call Failed', 'Could not start the call. Please try again.');
-        }
-    };
-
-    const handleAudioCall = () => startCall(false);
-    const handleVideoCall = () => startCall(true);
 
     const handleSeeFriendship = () => {
         navigation.navigate('UserFriends', { userId, userName: user?.name });
@@ -442,15 +479,13 @@ const UserProfile = () => {
     const handleBlockUser = () => {
         Alert.alert(
             'Block User',
-            `Are you sure you want to block ${user?.name}? They won't be able to see your profile or contact you.`,
+            `Are you sure you want to block ${user?.name}? You won't see each other's content and they won't be able to message you.`,
             [
                 { text: 'Cancel', style: 'cancel' },
                 {
                     text: 'Block',
                     style: 'destructive',
-                    onPress: () => {
-                        Toast.show({ type: 'success', text1: 'User blocked', text2: `${user?.name} has been blocked.` });
-                    },
+                    onPress: () => handleAction(() => blockUserMutation.mutate()),
                 },
             ]
         );
@@ -552,80 +587,28 @@ const UserProfile = () => {
     const renderActionButtons = () => {
         if (currentUser?._id === userId) return null;
 
-        let friendButton;
-        if (isFriend) {
-            friendButton = (
-                <TouchableOpacity
-                    style={[styles.actionButton, styles.btnRedLight]}
-                    onPress={handleUnfriendConfirm}
-                    disabled={processingAction}
-                >
-                    <Ionicons name="person-remove" size={18} color="#EF4444" />
-                    <Text style={[styles.actionButtonText, styles.textRed]}>Unfriend</Text>
-                </TouchableOpacity>
-            );
-        } else if (isSent) {
-            friendButton = (
-                <TouchableOpacity
-                    style={[styles.actionButton, styles.btnYellow]}
-                    onPress={() => handleAction(() => cancelRequestMutation.mutate())}
-                    disabled={processingAction}
-                >
-                    <Ionicons name="close-circle" size={18} color="#D97706" />
-                    <Text style={[styles.actionButtonText, styles.textYellow]}>Cancel</Text>
-                </TouchableOpacity>
-            );
-        } else if (isReceived) {
-            return (
-                <View style={[styles.actionRow, { flex: 2 }]}>
+        const hasFriendshipStatus = isFriend || isSent || isReceived;
+
+        return (
+            <View style={styles.actionRow}>
+                {/* Only show Add Friend prominently if no existing relationship */}
+                {!hasFriendshipStatus && (
                     <TouchableOpacity
-                        style={{ flex: 1 }}
-                        onPress={() => handleAction(() => acceptRequestMutation.mutate())}
+                        style={{ flex: 1.2 }}
+                        onPress={() => handleAction(() => sendRequestMutation.mutate())}
                         disabled={processingAction}
                     >
                         <LinearGradient
-                            colors={['#3B82F6', '#2563EB']}
+                            colors={['#14B8A6', '#0D9488']}
                             style={styles.actionButton}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 0 }}
                         >
-                            <Ionicons name="checkmark-circle" size={18} color="#FFF" />
-                            <Text style={[styles.actionButtonText, { color: '#FFF' }]}>Accept</Text>
+                            <Ionicons name="person-add" size={18} color="#FFF" />
+                            <Text style={[styles.actionButtonText, { color: '#FFF' }]}>Add Friend</Text>
                         </LinearGradient>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.actionButton, styles.btnRedLight, { flex: 1 }]}
-                        onPress={() => handleAction(() => rejectRequestMutation.mutate())}
-                        disabled={processingAction}
-                    >
-                        <Ionicons name="close-circle" size={18} color="#EF4444" />
-                        <Text style={[styles.actionButtonText, styles.textRed]}>Reject</Text>
-                    </TouchableOpacity>
-                </View>
-            );
-        } else {
-            friendButton = (
-                <TouchableOpacity
-                    style={{ flex: 1 }}
-                    onPress={() => handleAction(() => sendRequestMutation.mutate())}
-                    disabled={processingAction}
-                >
-                    <LinearGradient
-                        colors={['#14B8A6', '#0D9488']}
-                        style={styles.actionButton}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                    >
-                        <Ionicons name="person-add" size={18} color="#FFF" />
-                        <Text style={[styles.actionButtonText, { color: '#FFF' }]}>Add Friend</Text>
-                    </LinearGradient>
-                </TouchableOpacity>
-            );
-        }
-
-        return (
-            <View style={styles.actionRow}>
-                <View style={{ flex: 1.2 }}>{friendButton}</View>
+                )}
 
                 <TouchableOpacity style={{ flex: 1 }} onPress={handleMessage}>
                     <View style={[styles.actionButton, isDark ? { backgroundColor: '#334155' } : styles.btnGray]}>
@@ -661,7 +644,41 @@ const UserProfile = () => {
     if (!user) {
         return (
             <View style={[styles.errorContainer, isDark && { backgroundColor: '#0f172a' }]}>
+                <Ionicons name="alert-circle-outline" size={64} color={isDark ? "#475569" : "#CBD5E1"} />
                 <Text style={[styles.errorText, isDark && { color: '#f8fafc' }]}>User not found</Text>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backLink}>
+                    <Text style={styles.backLinkText}>Go Back</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
+
+    const isBlocked = currentUser?.blockedUsers?.some((id: any) => id?.toString() === userId?.toString());
+
+    if (isBlocked) {
+        return (
+            <View style={[styles.container, isDark && { backgroundColor: '#0f172a' }]}>
+                <View style={styles.blockedHeader}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.blockedBack}>
+                        <Ionicons name="arrow-back" size={24} color={isDark ? "#FFF" : "#000"} />
+                    </TouchableOpacity>
+                </View>
+                <View style={[styles.center, { flex: 1, paddingHorizontal: 40 }]}>
+                    <View style={styles.blockedIconContainer}>
+                        <Ionicons name="ban" size={80} color="#EF4444" />
+                    </View>
+                    <Text style={[styles.blockedTitle, isDark && { color: '#f8fafc' }]}>Account Blocked</Text>
+                    <Text style={[styles.blockedSub, isDark && { color: '#94a3b8' }]}>
+                        You have blocked this account. You cannot see their posts or visit their profile unless you unblock them.
+                    </Text>
+                    <TouchableOpacity
+                        style={styles.unblockBtnLarge}
+                        onPress={() => handleAction(() => unblockUserMutation.mutate())}
+                        disabled={processingAction}
+                    >
+                        {processingAction ? <ActivityIndicator color="#FFF" /> : <Text style={styles.unblockBtnText}>Unblock Account</Text>}
+                    </TouchableOpacity>
+                </View>
             </View>
         );
     }
@@ -689,7 +706,7 @@ const UserProfile = () => {
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        style={styles.backButton}
+                        style={[styles.backButton, { top: topButtonPosition }]}
                         onPress={() => navigation.goBack()}
                     >
                         <Ionicons name="arrow-back" size={24} color="#FFF" />
@@ -697,7 +714,7 @@ const UserProfile = () => {
 
                     {currentUser?._id !== userId && (
                         <TouchableOpacity
-                            style={styles.moreButton}
+                            style={[styles.moreButton, { top: topButtonPosition }]}
                             onPress={() => setProfileOptionsVisible(true)}
                         >
                             <Ionicons name="ellipsis-vertical" size={22} color="#FFF" />
@@ -1025,12 +1042,17 @@ const UserProfile = () => {
                 visible={isProfileOptionsVisible}
                 onClose={() => setProfileOptionsVisible(false)}
                 user={user}
-                onAudioCall={handleAudioCall}
-                onVideoCall={handleVideoCall}
                 onSeeFriendship={handleSeeFriendship}
                 onReportProfile={handleReportProfile}
                 onBlock={handleBlockUser}
                 onShareProfile={handleShareProfile}
+                isFriend={!!isFriend}
+                isSent={!!isSent}
+                isReceived={!!isReceived}
+                onUnfriend={handleUnfriendConfirm}
+                onCancelRequest={() => handleAction(() => cancelRequestMutation.mutate())}
+                onAccept={() => handleAction(() => acceptRequestMutation.mutate())}
+                onReject={() => handleAction(() => rejectRequestMutation.mutate())}
             />
         </View >
     );
@@ -1052,8 +1074,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     errorText: {
-        fontSize: 16,
-        color: '#EF4444',
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#1e293b',
+        marginTop: 12,
     },
     headerContainer: {
         backgroundColor: '#FFF',
@@ -1062,7 +1086,7 @@ const styles = StyleSheet.create({
     },
     coverImage: {
         width: '100%',
-        height: 160,
+        height: Platform.OS === 'ios' ? 200 : 170,
     },
     backButton: {
         position: 'absolute',
@@ -1091,7 +1115,7 @@ const styles = StyleSheet.create({
     profileContentWrapper: {
         borderTopLeftRadius: 32,
         borderTopRightRadius: 32,
-        marginTop: -40,
+        marginTop: Platform.OS === 'ios' ? -50 : -40,
         paddingTop: 20,
     },
     profileContent: {
@@ -1100,14 +1124,14 @@ const styles = StyleSheet.create({
         paddingBottom: 20,
     },
     avatarContainer: {
-        width: 130,
-        height: 130,
-        borderRadius: 65,
+        width: 120,
+        height: 120,
+        borderRadius: 60,
         borderWidth: 4,
         borderColor: '#FFF',
         overflow: 'hidden',
         backgroundColor: '#F3F4F6',
-        marginTop: -85,
+        marginTop: Platform.OS === 'ios' ? -70 : -85,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.3,
@@ -1231,8 +1255,6 @@ const styles = StyleSheet.create({
     btnGray: { backgroundColor: '#F1F5F9' },
     btnRedLight: { backgroundColor: '#FEF2F2' },
     textRed: { color: '#EF4444' },
-
-    // Tabs
     tabContainer: {
         flexDirection: 'row',
         backgroundColor: '#FFF',
@@ -1258,8 +1280,6 @@ const styles = StyleSheet.create({
     activeTabText: {
         color: '#0D9488',
     },
-
-    // Post Card
     postsContainer: {
         paddingTop: 20,
         paddingBottom: 60,
@@ -1400,8 +1420,6 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         marginTop: 15,
     },
-
-    // About Tab
     aboutContainer: {
         padding: 16,
         gap: 20,
@@ -1455,8 +1473,6 @@ const styles = StyleSheet.create({
         color: '#1E293B',
         fontWeight: '700',
     },
-
-    // Share Sheet
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(15, 23, 42, 0.8)',
@@ -1519,6 +1535,69 @@ const styles = StyleSheet.create({
         fontSize: 17,
         fontWeight: '900',
         color: '#475569',
+    },
+    backLink: {
+        marginTop: 15,
+        padding: 10,
+    },
+    backLinkText: {
+        color: '#14b8a6',
+        fontWeight: '600',
+        fontSize: 16,
+    },
+    center: {
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    blockedHeader: {
+        paddingTop: Platform.OS === 'ios' ? 60 : 40,
+        paddingHorizontal: 20,
+    },
+    blockedBack: {
+        width: 40,
+        height: 40,
+        justifyContent: 'center',
+    },
+    blockedIconContainer: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        backgroundColor: '#FEF2F2',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 24,
+    },
+    blockedTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#1e293b',
+        marginBottom: 12,
+        textAlign: 'center',
+    },
+    blockedSub: {
+        fontSize: 16,
+        color: '#64748B',
+        textAlign: 'center',
+        lineHeight: 24,
+        marginBottom: 32,
+    },
+    unblockBtnLarge: {
+        backgroundColor: '#14B8A6',
+        paddingHorizontal: 32,
+        paddingVertical: 14,
+        borderRadius: 12,
+        width: '100%',
+        alignItems: 'center',
+        shadowColor: '#14B8A6',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    unblockBtnText: {
+        color: '#FFF',
+        fontSize: 16,
+        fontWeight: 'bold',
     },
     btnYellow: { backgroundColor: '#FEF3C7' },
     textYellow: { color: '#D97706' },

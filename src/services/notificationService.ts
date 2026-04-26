@@ -2,7 +2,6 @@ import messaging from '@react-native-firebase/messaging';
 import { Platform, PermissionsAndroid } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
-import { isFirebaseStreamVideoMessage } from '@stream-io/video-react-native-sdk';
 import { put } from './api';
 import * as NavigationService from './NavigationService';
 
@@ -11,25 +10,36 @@ const FCM_TOKEN_KEY = '@fcm_token';
 class NotificationService {
   async registerAppWithFCM() {
     if (Platform.OS === 'ios') {
-      await messaging().registerDeviceForRemoteMessages();
+      try {
+        await messaging().registerDeviceForRemoteMessages();
+      } catch (error) {
+        console.warn(
+          '⚠️ FCM registration failed (expected on simulator without entitlements):',
+          error,
+        );
+      }
     }
   }
 
   async requestUserPermission() {
-    // Android 13+ permission request
-    if (Platform.OS === 'android' && Platform.Version >= 33) {
-      await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-      );
-    }
+    try {
+      // Android 13+ permission request
+      if (Platform.OS === 'android' && Platform.Version >= 33) {
+        await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+        );
+      }
 
-    const authStatus = await messaging().requestPermission();
-    const enabled =
-      authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-      authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+      const authStatus = await messaging().requestPermission();
+      const enabled =
+        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
-    if (enabled) {
-      await this.getFcmToken();
+      if (enabled) {
+        await this.getFcmToken();
+      }
+    } catch (error) {
+      console.warn('⚠️ Push permission request failed:', error);
     }
   }
 
@@ -37,6 +47,7 @@ class NotificationService {
     try {
       const token = await messaging().getToken();
       if (token) {
+        console.log('📱 Your iOS Device FCM Token:', token);
         await AsyncStorage.setItem(FCM_TOKEN_KEY, token);
         await this.updateTokenOnServer(token);
       }
@@ -126,6 +137,7 @@ class NotificationService {
       case 'FOLLOW':
       case 'PROFILE_VIEW':
       case 'FRIEND_REQUEST':
+      case 'FRIEND_ACCEPTED':
         if (senderId) {
           this.navigateNested('Home', 'UserProfile', { userId: senderId });
         }
@@ -166,8 +178,6 @@ class NotificationService {
   setupNotificationListeners() {
     const unsubscribeForeground = messaging().onMessage(async remoteMessage => {
       try {
-        if (isFirebaseStreamVideoMessage(remoteMessage)) return;
-
         const type = remoteMessage.data?.type as string | undefined;
         const isMessage = type === 'MESSAGE';
         const isBookEvent = [

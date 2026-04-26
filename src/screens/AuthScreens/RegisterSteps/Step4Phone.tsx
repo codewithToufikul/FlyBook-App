@@ -22,21 +22,18 @@ const Step4Phone = () => {
 
   const handleNext = () => {
     let cleanPhone = phoneNumber.trim().replace(/^0+/, '');
-    if (!cleanPhone) {
-      Alert.alert('Error', 'Phone number is required');
-      return;
+
+    // If phone is provided, validate it. If not, just proceed.
+    if (cleanPhone) {
+      if (cleanPhone.length < 6 || cleanPhone.length > 15) {
+        Alert.alert('Invalid Phone Number', 'Please enter a valid phone number');
+        return;
+      }
     }
 
-    // Combine dial code and phone number
-    const fullPhoneNumber = `${selectedCountry.dialCode}${cleanPhone}`;
+    const fullPhoneNumber = cleanPhone ? `${selectedCountry.dialCode}${cleanPhone}` : '';
 
-    // Basic length validation (most international numbers are between 7-15 digits after dial code)
-    if (cleanPhone.length < 6 || cleanPhone.length > 15) {
-      Alert.alert('Invalid Phone Number', 'Please enter a valid phone number');
-      return;
-    }
-
-    (navigation as any).navigate('Step5Password', {
+    (navigation as any).navigate('Step4bAffiliate', {
       firstName,
       lastName,
       email,
@@ -79,7 +76,7 @@ const Step4Phone = () => {
             <Ionicons name="arrow-back" size={24} color={isDark ? '#f8fafc' : '#1E293B'} />
           </TouchableOpacity>
           <View style={styles.progressContainer}>
-            {[0, 1, 2, 3, 4].map(i => (
+            {[0, 1, 2, 3, 4, 5].map(i => (
               <View key={i} style={[styles.progressDot, { backgroundColor: i <= 3 ? '#3B82F6' : dotInactive, width: i <= 3 ? 24 : 8 }]} />
             ))}
           </View>
@@ -125,11 +122,10 @@ const Step4Phone = () => {
         {/* Footer */}
         <View style={styles.footer}>
           <TouchableOpacity
-            style={[styles.nextButton, !phoneNumber.trim() && styles.nextButtonDisabled]}
+            style={styles.nextButton}
             onPress={handleNext}
-            disabled={!phoneNumber.trim()}
           >
-            <Text style={styles.nextButtonText}>Next</Text>
+            <Text style={styles.nextButtonText}>{phoneNumber.trim() ? 'Next' : 'Skip for now'}</Text>
           </TouchableOpacity>
         </View>
 

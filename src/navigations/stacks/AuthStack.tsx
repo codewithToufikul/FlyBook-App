@@ -5,6 +5,7 @@ import Step1Name from '../../screens/AuthScreens/RegisterSteps/Step1Name';
 import Step2Email from '../../screens/AuthScreens/RegisterSteps/Step2Email';
 import Step3Verify from '../../screens/AuthScreens/RegisterSteps/Step3Verify';
 import Step4Phone from '../../screens/AuthScreens/RegisterSteps/Step4Phone';
+import Step4bAffiliate from '../../screens/AuthScreens/RegisterSteps/Step4bAffiliate';
 import Step5Password from '../../screens/AuthScreens/RegisterSteps/Step5Password';
 import ForgotPassword from '../../screens/AuthScreens/ForgotPassword';
 
@@ -28,6 +29,7 @@ const AuthStack = () => {
       <Stack.Screen name="Step2Email" component={Step2Email} />
       <Stack.Screen name="Step3Verify" component={Step3Verify} />
       <Stack.Screen name="Step4Phone" component={Step4Phone} />
+      <Stack.Screen name="Step4bAffiliate" component={Step4bAffiliate} />
       <Stack.Screen name="Step5Password" component={Step5Password} />
       <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
     </Stack.Navigator>
