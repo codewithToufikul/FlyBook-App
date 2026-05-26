@@ -35,6 +35,7 @@ const Peoples = ({ navigation }: any) => {
     const [activeTab, setActiveTab] = useState<TabType>('home');
     const [refreshing, setRefreshing] = useState(false);
     const [processingId, setProcessingId] = useState<string | null>(null);
+    const [hiddenUserIds, setHiddenUserIds] = useState<string[]>([]);
 
     // Fetch Peoples (Suggestions)
     const { data: peoples = [], isLoading: loadingPeoples, refetch: refetchPeoples } = useQuery({
@@ -66,6 +67,7 @@ const Peoples = ({ navigation }: any) => {
 
     const onRefresh = async () => {
         setRefreshing(true);
+        setHiddenUserIds([]);
         if (activeTab === 'home') await refetchPeoples();
         if (activeTab === 'friendRequests') await refetchReq();
         if (activeTab === 'sentRequests') await refetchSent();
@@ -89,7 +91,8 @@ const Peoples = ({ navigation }: any) => {
 
     const acceptRequestMutation = useMutation({
         mutationFn: (acceptId: string) => post('/friend-request/accept', { acceptId }),
-        onSuccess: () => {
+        onSuccess: (data, acceptId) => {
+            setHiddenUserIds(prev => [...prev, acceptId]);
             refreshUser();
             refetchReq();
             refetchFriends();
@@ -100,7 +103,8 @@ const Peoples = ({ navigation }: any) => {
 
     const rejectRequestMutation = useMutation({
         mutationFn: (senderId: string) => post('/friend-request/reject', { senderId }),
-        onSuccess: () => {
+        onSuccess: (data, senderId) => {
+            setHiddenUserIds(prev => [...prev, senderId]);
             refreshUser();
             refetchReq();
         },
@@ -121,7 +125,8 @@ const Peoples = ({ navigation }: any) => {
 
     const unfriendMutation = useMutation({
         mutationFn: (friendId: string) => post('/friend-request/unfriend', { friendId }),
-        onSuccess: () => {
+        onSuccess: (data, friendId) => {
+            setHiddenUserIds(prev => [...prev, friendId]);
             refreshUser();
             refetchFriends();
             refetchPeoples();
@@ -129,6 +134,44 @@ const Peoples = ({ navigation }: any) => {
         onError: (err) => { },
         onSettled: () => setProcessingId(null),
     });
+
+    const filteredAndSortedData = React.useMemo(() => {
+        if (activeTab === 'home') {
+            // Suggestions
+            const list = peoples.filter(item => {
+                // Hide if in hiddenUserIds
+                if (hiddenUserIds.includes(item._id)) return false;
+                // Hide if already a friend
+                if (user?.friends?.includes(item._id)) return false;
+                return true;
+            });
+            // Sort: received requests first, then sent requests, then the rest
+            return [...list].sort((a, b) => {
+                const aReceived = user?.friendRequestsReceived?.includes(a._id) ? 1 : 0;
+                const bReceived = user?.friendRequestsReceived?.includes(b._id) ? 1 : 0;
+                const aSent = user?.friendRequestsSent?.includes(a._id) ? 1 : 0;
+                const bSent = user?.friendRequestsSent?.includes(b._id) ? 1 : 0;
+
+                const aScore = aReceived * 2 + aSent;
+                const bScore = bReceived * 2 + bSent;
+
+                if (aScore !== bScore) {
+                    return bScore - aScore; // Descending (received first, then sent, then others)
+                }
+                // Maintain stable sorting or alphabetical otherwise
+                return a.name.localeCompare(b.name);
+            });
+        } else if (activeTab === 'friendRequests') {
+            // Received Requests
+            return reqFriends.filter(item => !hiddenUserIds.includes(item._id));
+        } else if (activeTab === 'sentRequests') {
+            // Sent Requests
+            return sentReq.filter(item => !hiddenUserIds.includes(item._id));
+        } else {
+            // All Friends
+            return allFriends.filter(item => !hiddenUserIds.includes(item._id));
+        }
+    }, [activeTab, peoples, reqFriends, sentReq, allFriends, user, hiddenUserIds]);
 
     const handleAction = (action: () => void, id: string) => {
         setProcessingId(id);
@@ -355,12 +398,7 @@ const Peoples = ({ navigation }: any) => {
                 </View>
             ) : (
                 <FlatList
-                    data={
-                        activeTab === 'home' ? peoples :
-                            activeTab === 'friendRequests' ? reqFriends :
-                                activeTab === 'sentRequests' ? sentReq :
-                                    allFriends
-                    }
+                    data={filteredAndSortedData}
                     renderItem={renderUserItem}
                     keyExtractor={(item) => item._id}
                     contentContainerStyle={styles.list}

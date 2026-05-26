@@ -25,19 +25,7 @@ const Step2Email = () => {
       Alert.alert('Error', 'Please enter a valid email address');
       return;
     }
-    setLoading(true);
-    try {
-      const response = await post('/users/send-otp', { email: email.trim().toLowerCase() });
-      if (response.success) {
-        (navigation as any).navigate('Step3Verify', { firstName, lastName, email: email.trim().toLowerCase() });
-      } else {
-        Alert.alert('Error', response.message || 'Failed to send OTP');
-      }
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to send verification code');
-    } finally {
-      setLoading(false);
-    }
+    (navigation as any).navigate('Step4Phone', { firstName, lastName, email: email.trim().toLowerCase(), otpVerified: true });
   };
 
   const bg = isDark ? '#0f172a' : '#FFFFFF';
@@ -68,14 +56,14 @@ const Step2Email = () => {
           </View>
           <View style={styles.placeholder} />
         </View>
-
+ 
         {/* Content */}
         <View style={styles.formContainer}>
           <Text style={[styles.title, { color: titleColor }]}>What's your email?</Text>
           <Text style={[styles.subtitle, { color: subtitleColor }]}>
-            Enter the email where you can be reached. We'll send you a verification code.
+            Enter the email where you can be reached.
           </Text>
-
+ 
           <View style={styles.inputContainer}>
             <TextInput
               style={[styles.input, { backgroundColor: cardBg, borderColor: border, color: inputColor }]}
@@ -89,10 +77,10 @@ const Step2Email = () => {
               editable={!loading}
             />
           </View>
-
+ 
           <Text style={[styles.hint, { color: subtitleColor }]}>💡 Make sure you have access to this email</Text>
         </View>
-
+ 
         {/* Footer */}
         <View style={styles.footer}>
           <TouchableOpacity
@@ -100,7 +88,7 @@ const Step2Email = () => {
             onPress={handleNext}
             disabled={!email.trim() || loading}
           >
-            {loading ? <ButtonLoader color="#FFFFFF" size="medium" /> : <Text style={styles.nextButtonText}>Send Code</Text>}
+            {loading ? <ButtonLoader color="#FFFFFF" size="medium" /> : <Text style={styles.nextButtonText}>Next</Text>}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

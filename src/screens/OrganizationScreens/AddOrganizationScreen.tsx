@@ -52,8 +52,8 @@ const AddOrganization = ({ navigation }: any) => {
     };
 
     const validateForm = () => {
-        const { orgName, email, phone, address, description, profileImage } = formData;
-        if (!orgName || !email || !phone || !address || !description || !profileImage) {
+        const { orgName, email, phone, address, description } = formData;
+        if (!orgName || !email || !phone || !address || !description) {
             return 'Please fill in all required fields marked with *';
         }
         if (!email.includes('@')) {
@@ -112,7 +112,7 @@ const AddOrganization = ({ navigation }: any) => {
 
                     {/* Image Picker */}
                     <View style={styles.imageSelectorContainer}>
-                        <Text style={[styles.fieldLabel, isDark && { color: '#94a3b8' }]}>Profile Image *</Text>
+                        <Text style={[styles.fieldLabel, isDark && { color: '#94a3b8' }]}>Profile Image (Optional)</Text>
                         <TouchableOpacity
                             style={[styles.imagePlaceholder, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}
                             onPress={handlePickImage}

@@ -10,7 +10,8 @@ import {
     Alert,
     KeyboardAvoidingView,
     Platform,
-    StatusBar
+    StatusBar,
+    Image
 } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -19,16 +20,34 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSound } from 'react-native-nitro-sound';
 import { uploadAudioToCloudinary } from '../../utils/audioUpload';
 import { PermissionsAndroid } from 'react-native';
+import { handleImageUpload } from '../../utils/imageUpload';
+import { pickPdfFile, uploadPdfToCloudinary } from '../../utils/pdfupload';
+import { pickVideoFromGallery, uploadVideoToCloudinary } from '../../utils/videoUpload';
+import { Camera, useCameraDevice, useCameraPermission, useMicrophonePermission } from 'react-native-vision-camera';
+import { useRef } from 'react';
 
 const CommunityExamRunner = ({ route, navigation }: any) => {
-    const { courseId, examId, examType } = route.params;
+    const { courseId, examId, examType, identityNumber, chapterIdx } = route.params;
     const insets = useSafeAreaInsets();
     const { isDark } = useTheme();
 
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [exam, setExam] = useState<any>(null);
-    const [answers, setAnswers] = useState<Record<number, string>>({});
+    
+    // answers state is now structured: Record<number, { type: 'text'|'image'|'pdf'|'option', answer: string, originalName?: string }>
+    const [answers, setAnswers] = useState<Record<number, any>>({});
+    
+    // Answer types per written question (defaults to 'text')
+    const [answerTypes, setAnswerTypes] = useState<Record<number, 'text' | 'image' | 'pdf'>>({});
+
+    // Asset uploading states
+    const [uploadingQuestionIndex, setUploadingQuestionIndex] = useState<number | null>(null);
+    const [uploadProgress, setUploadProgress] = useState<number>(0);
+
+    // Timer states
+    const [timeLeft, setTimeLeft] = useState<number | null>(null);
+    const [startedAt] = useState<Date>(new Date());
 
     // Listening exam audio recording state
     const [recording, setRecording] = useState(false);
@@ -38,6 +57,17 @@ const CommunityExamRunner = ({ route, navigation }: any) => {
     const [uploadingAudio, setUploadingAudio] = useState(false);
     const [audioUrl, setAudioUrl] = useState<string>('');
     const [isPlaying, setIsPlaying] = useState(false);
+
+    // Video answer mode: 'audio' | 'gallery' | 'record'
+    const [videoMode, setVideoMode] = useState<'audio' | 'gallery' | 'record'>('audio');
+    const [videoAnswerUrl, setVideoAnswerUrl] = useState<string>('');
+    const [uploadingVideo, setUploadingVideo] = useState(false);
+    const [isRecordingVideo, setIsRecordingVideo] = useState(false);
+    const [recordedVideoPath, setRecordedVideoPath] = useState<string | null>(null);
+    const cameraRef = useRef<Camera>(null);
+    const cameraDevice = useCameraDevice('front');
+    const { hasPermission: hasCamPerm, requestPermission: requestCamPerm } = useCameraPermission();
+    const { hasPermission: hasMicPerm, requestPermission: requestMicPerm } = useMicrophonePermission();
 
     const {
         startRecorder,
@@ -61,12 +91,34 @@ const CommunityExamRunner = ({ route, navigation }: any) => {
         fetchExam();
     }, [examId]);
 
+    // Timer implementation
+    useEffect(() => {
+        if (timeLeft === null) return;
+        if (timeLeft === 0) {
+            Alert.alert(
+                'Time is Up!',
+                'Your allocated time has expired. Submitting your answers automatically.',
+                [{ text: 'OK', onPress: () => submitExam(true) }]
+            );
+            return;
+        }
+
+        const timerId = setInterval(() => {
+            setTimeLeft(prev => (prev !== null && prev > 0) ? prev - 1 : 0);
+        }, 1000);
+
+        return () => clearInterval(timerId);
+    }, [timeLeft]);
+
     const fetchExam = async () => {
         try {
             setLoading(true);
             const res = await get<any>(`/exams/${examId}`);
             if (res.success) {
                 setExam(res.data);
+                if (res.data.timeLimitMinutes) {
+                    setTimeLeft(res.data.timeLimitMinutes * 60);
+                }
             } else {
                 Alert.alert('Error', 'Failed to load exam details');
                 navigation.goBack();
@@ -81,14 +133,140 @@ const CommunityExamRunner = ({ route, navigation }: any) => {
     };
 
     const handleOptionSelect = (qIdx: number, option: string) => {
-        setAnswers(prev => ({ ...prev, [qIdx]: option }));
+        setAnswers(prev => ({ ...prev, [qIdx]: { type: 'option', answer: option } }));
     };
 
     const handleTextAnswer = (qIdx: number, text: string) => {
-        setAnswers(prev => ({ ...prev, [qIdx]: text }));
+        setAnswers(prev => ({ ...prev, [qIdx]: { type: 'text', answer: text } }));
     };
 
-    // --- Audio Features ---
+    const toggleAnswerType = (qIdx: number, type: 'text' | 'image' | 'pdf') => {
+        setAnswerTypes(prev => ({ ...prev, [qIdx]: type }));
+        // Reset answer for this question
+        setAnswers(prev => {
+            const next = { ...prev };
+            delete next[qIdx];
+            return next;
+        });
+    };
+
+    const triggerImageUpload = async (qIdx: number) => {
+        try {
+            setUploadingQuestionIndex(qIdx);
+            const url = await handleImageUpload();
+            if (url) {
+                setAnswers(prev => ({
+                    ...prev,
+                    [qIdx]: { type: 'image', answer: url }
+                }));
+            }
+        } catch (error: any) {
+            if (!error?.message?.includes('cancelled')) {
+                Alert.alert('Upload Failed', 'Could not upload your photo. Please try again.');
+            }
+        } finally {
+            setUploadingQuestionIndex(null);
+        }
+    };
+
+    const triggerPdfUpload = async (qIdx: number) => {
+        try {
+            setUploadingQuestionIndex(qIdx);
+            setUploadProgress(0);
+            const pdfFile = await pickPdfFile();
+            const result = await uploadPdfToCloudinary(pdfFile, (progress) => {
+                setUploadProgress(progress);
+            });
+            if (result?.secureUrl) {
+                setAnswers(prev => ({
+                    ...prev,
+                    [qIdx]: { type: 'pdf', answer: result.secureUrl, originalName: pdfFile.name }
+                }));
+            }
+        } catch (error: any) {
+            if (!error?.message?.includes('cancelled')) {
+                Alert.alert('Upload Failed', error?.message || 'Could not upload the PDF document.');
+            }
+        } finally {
+            setUploadingQuestionIndex(null);
+            setUploadProgress(0);
+        }
+    };
+
+    // --- Video Answer Features ---
+    const handleGalleryVideoUpload = async () => {
+        try {
+            setUploadingVideo(true);
+            const selected = await pickVideoFromGallery();
+            if (!selected.uri) throw new Error('No video selected');
+            Alert.alert('Uploading', 'Uploading video to cloud, please wait...');
+            const url = await uploadVideoToCloudinary(selected.uri);
+            setVideoAnswerUrl(url);
+            setRecordedVideoPath(null);
+            Alert.alert('Success', 'Video uploaded successfully!');
+        } catch (err: any) {
+            if (err.message !== 'User cancelled video picker') {
+                Alert.alert('Upload Failed', err.message || 'Could not upload video.');
+            }
+        } finally {
+            setUploadingVideo(false);
+        }
+    };
+
+    const ensureCameraPermissions = async () => {
+        if (!hasCamPerm) await requestCamPerm();
+        if (!hasMicPerm) await requestMicPerm();
+        return hasCamPerm && hasMicPerm;
+    };
+
+    const handleStartVideoRecording = async () => {
+        const ok = await ensureCameraPermissions();
+        if (!ok) {
+            Alert.alert('Permission Required', 'Camera and microphone access is needed to record video.');
+            return;
+        }
+        if (!cameraRef.current) return;
+        try {
+            setIsRecordingVideo(true);
+            cameraRef.current.startRecording({
+                onRecordingFinished: async (video: any) => {
+                    setIsRecordingVideo(false);
+                    setRecordedVideoPath(video.path);
+                    // Auto-upload
+                    try {
+                        setUploadingVideo(true);
+                        const url = await uploadVideoToCloudinary(
+                            Platform.OS === 'android' ? `file://${video.path}` : video.path
+                        );
+                        setVideoAnswerUrl(url);
+                        Alert.alert('Uploaded', 'Your recorded video has been uploaded!');
+                    } catch (e: any) {
+                        Alert.alert('Upload Failed', 'Could not upload the recorded video.');
+                    } finally {
+                        setUploadingVideo(false);
+                    }
+                },
+                onRecordingError: (error: any) => {
+                    setIsRecordingVideo(false);
+                    console.error('Video recording error:', error);
+                    Alert.alert('Error', 'Failed to record video.');
+                }
+            });
+        } catch (e) {
+            setIsRecordingVideo(false);
+            Alert.alert('Error', 'Could not start video recording.');
+        }
+    };
+
+    const handleStopVideoRecording = async () => {
+        if (!cameraRef.current) return;
+        try {
+            await cameraRef.current.stopRecording();
+        } catch (e) {
+            setIsRecordingVideo(false);
+        }
+    };
+    // --- End Video Answer Features ---
 
     const requestMicPermission = async () => {
         if (Platform.OS === 'android') {
@@ -237,32 +415,35 @@ const CommunityExamRunner = ({ route, navigation }: any) => {
                 `You have answered ${answeredCount} of ${totalQuestions} questions. Are you sure you want to submit?`,
                 [
                     { text: 'Cancel', style: 'cancel' },
-                    { text: 'Submit', style: 'destructive', onPress: submitExam }
+                    { text: 'Submit', style: 'destructive', onPress: () => submitExam(false) }
                 ]
             );
         } else {
-            submitExam();
+            submitExam(false);
         }
     };
 
-    const submitExam = async () => {
+    const submitExam = async (isAuto = false) => {
         if (!exam) return;
 
-        // Validation for listening/speaking exam
-        if ((exam.type === 'listening' || exam.type === 'speaking') && !audioUrl) {
-            Alert.alert('Wait', 'Please record and upload your audio answer before submitting.');
+        // Validation for listening/speaking exam — require audio OR video
+        if (!isAuto && (exam.type === 'listening' || exam.type === 'speaking') && !audioUrl && !videoAnswerUrl) {
+            Alert.alert('Answer Required', 'Please record/upload your audio or video answer before submitting.');
             return;
         }
 
         setSubmitting(true);
         try {
             const payload: any = {
-                answers: Object.entries(answers).map(([idx, ans]) => ({
+                identityNumber: identityNumber || null,
+                startedAt: startedAt.toISOString(),
+                answers: Object.entries(answers).map(([idx, ansObj]: any) => ({
                     questionIndex: Number(idx),
-                    answer: ans
+                    type: ansObj.type || 'text',
+                    answer: ansObj.answer
                 })),
                 proctoring: {
-                    startedAt: Date.now(),
+                    startedAt: startedAt.getTime(),
                     endedAt: Date.now(),
                     violations: [],
                     totals: { noFace: 0, multiFace: 0, speech: 0, tab: 0 },
@@ -273,25 +454,37 @@ const CommunityExamRunner = ({ route, navigation }: any) => {
             // Add audioUrl if it's a listening or speaking exam
             if (exam.type === 'listening' || exam.type === 'speaking') {
                 payload.audioUrl = audioUrl;
+                if (videoAnswerUrl) payload.videoUrl = videoAnswerUrl;
             }
 
             const res = await post<any>(`/exams/${exam.examId}/attempt`, payload);
 
             if (res.success) {
-                if (exam.type === 'quiz') {
-                    const { score, passed } = res;
-                    Alert.alert(
-                        passed ? 'Passed! 🎉' : 'Failed',
-                        `You scored ${score}%. ${passed ? 'Congratulations!' : 'Please try again.'}`,
-                        [{ text: 'OK', onPress: () => navigation.goBack() }]
-                    );
-                } else {
-                    Alert.alert(
-                        'Submitted',
-                        'Your exam has been submitted successfully and is pending grading.',
-                        [{ text: 'OK', onPress: () => navigation.goBack() }]
-                    );
-                }
+                    const nextChapterIdx = (chapterIdx ?? 0) + 1;
+                    if (exam.type === 'quiz') {
+                        const { score, passed } = res;
+                        Alert.alert(
+                            passed ? 'Passed! 🎉' : 'Failed',
+                            `You scored ${score}%. ${passed ? 'Congratulations! Moving to next chapter.' : 'Please consult your instructor.'}`,
+                            [{
+                                text: 'OK', onPress: () => navigation.navigate('CommunityCourseDetails', {
+                                    courseId,
+                                    nextChapterIdx
+                                })
+                            }]
+                        );
+                    } else {
+                        Alert.alert(
+                            'Submitted ✓',
+                            'Your exam has been submitted and is pending grading. Moving to next chapter.',
+                            [{
+                                text: 'OK', onPress: () => navigation.navigate('CommunityCourseDetails', {
+                                    courseId,
+                                    nextChapterIdx
+                                })
+                            }]
+                        );
+                    }
             } else {
                 Alert.alert('Error', res.message || 'Submission failed');
             }
@@ -328,7 +521,28 @@ const CommunityExamRunner = ({ route, navigation }: any) => {
                             exam.type === 'speaking' ? 'Speaking Exam' :
                                 exam.type === 'listening' ? 'Listening Exam' : 'Exam'}
                 </Text>
-                <View style={{ width: 24 }} />
+                {timeLeft !== null ? (
+                    <View style={[
+                        styles.timerBadge,
+                        timeLeft <= 300 && { backgroundColor: 'rgba(239, 68, 68, 0.1)', borderColor: '#ef4444' }
+                    ]}>
+                        <Ionicons name="time-outline" size={14} color={timeLeft <= 300 ? '#ef4444' : (isDark ? '#14b8a6' : '#4F46E5')} />
+                        <Text style={[
+                            styles.timerBadgeText,
+                            timeLeft <= 300 && { color: '#ef4444', fontWeight: 'bold' },
+                            timeLeft > 300 && isDark && { color: '#14b8a6' },
+                            timeLeft > 300 && !isDark && { color: '#4F46E5' }
+                        ]}>
+                            {(() => {
+                                const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+                                const s = (timeLeft % 60).toString().padStart(2, '0');
+                                return `${m}:${s}`;
+                            })()}
+                        </Text>
+                    </View>
+                ) : (
+                    <View style={{ width: 24 }} />
+                )}
             </View>
 
             <KeyboardAvoidingView
@@ -343,62 +557,195 @@ const CommunityExamRunner = ({ route, navigation }: any) => {
 
                     {(exam.type === 'listening' || exam.type === 'speaking') ? (
                         <View style={styles.listeningContainer}>
-                            <View style={[styles.recordingCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
-                                <Ionicons name="mic-circle" size={64} color={recording ? "#EF4444" : (isDark ? "#14b8a6" : "#4F46E5")} />
-                                <Text style={[styles.recordingTitle, isDark && { color: '#f8fafc' }]}>Listening Response</Text>
+                            {/* Mode Selector Tabs */}
+                            <View style={[styles.modeSelectorRow, isDark && { backgroundColor: '#1e293b' }]}>
+                                {([
+                                    ['audio', 'mic', 'Audio'],
+                                    ['gallery', 'cloud-upload-outline', 'Video'],
+                                    ['record', 'videocam', 'Record'],
+                                ] as [string, string, string][]).map(([mode, icon, label]) => (
+                                    <TouchableOpacity
+                                        key={mode}
+                                        style={[
+                                            styles.modeTab,
+                                            videoMode === mode && (isDark ? styles.modeTabActiveDark : styles.modeTabActive)
+                                        ]}
+                                        onPress={() => setVideoMode(mode as any)}
+                                    >
+                                        <Ionicons
+                                            name={icon as any}
+                                            size={18}
+                                            color={videoMode === mode ? (isDark ? '#14b8a6' : '#4F46E5') : (isDark ? '#64748b' : '#9CA3AF')}
+                                        />
+                                        <Text style={[
+                                            styles.modeTabText,
+                                            isDark && { color: '#64748b' },
+                                            videoMode === mode && (isDark ? { color: '#14b8a6', fontWeight: '700' } : { color: '#4F46E5', fontWeight: '700' })
+                                        ]}>{label}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
 
-                                {audioUrl ? (
-                                    <View style={[styles.successBadge, isDark && { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
-                                        <Ionicons name="cloud-done" size={16} color="#10B981" />
-                                        <Text style={[styles.successText, isDark && { color: '#10B981' }]}>Audio Uploaded</Text>
-                                    </View>
-                                ) : uploadingAudio ? (
-                                    <View style={[styles.uploadingBadge, isDark && { backgroundColor: 'rgba(59, 130, 246, 0.1)' }]}>
-                                        <ActivityIndicator size="small" color={isDark ? "#14b8a6" : "#4F46E5"} />
-                                        <Text style={[styles.uploadingText, isDark && { color: '#14b8a6' }]}>Uploading...</Text>
-                                    </View>
-                                ) : (
-                                    <Text style={[styles.recordingSubtitle, isDark && { color: '#64748b' }]}>
-                                        {recording ? 'Recording in progress...' : 'Press the button below to start'}
-                                    </Text>
-                                )}
+                            {/* ── AUDIO MODE ── */}
+                            {videoMode === 'audio' && (
+                                <View style={[styles.recordingCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
+                                    <Ionicons name="mic-circle" size={64} color={recording ? "#EF4444" : (isDark ? "#14b8a6" : "#4F46E5")} />
+                                    <Text style={[styles.recordingTitle, isDark && { color: '#f8fafc' }]}>Audio Response</Text>
 
-                                <Text style={[styles.timerText, isDark && { color: '#14b8a6' }]}>{formatDuration(recordingDuration)}</Text>
-
-                                <View style={styles.recordingActions}>
-                                    {!audioPath || recording ? (
-                                        <View style={styles.recordingControlsRow}>
-                                            <TouchableOpacity
-                                                style={[styles.recordBtn, recording && !isPaused ? styles.stopBtnActive : {}, isDark && !recording && { backgroundColor: '#14b8a6' }]}
-                                                onPress={recording ? handleStopRecording : handleStartRecording}
-                                            >
-                                                <Ionicons name={recording ? "stop" : "mic"} size={24} color="#FFFFFF" />
-                                                <Text style={styles.recordBtnText}>{recording ? "Stop" : "Start"}</Text>
-                                            </TouchableOpacity>
-
-                                            {recording && (
-                                                <TouchableOpacity
-                                                    style={[styles.pauseBtn, isDark && { backgroundColor: '#0f172a', borderColor: '#14b8a6' }]}
-                                                    onPress={isPaused ? handleResumeRecording : handlePauseRecording}
-                                                >
-                                                    <Ionicons name={isPaused ? "play" : "pause"} size={24} color={isDark ? "#14b8a6" : "#4F46E5"} />
-                                                </TouchableOpacity>
-                                            )}
+                                    {audioUrl ? (
+                                        <View style={[styles.successBadge, isDark && { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
+                                            <Ionicons name="cloud-done" size={16} color="#10B981" />
+                                            <Text style={[styles.successText, isDark && { color: '#10B981' }]}>Audio Uploaded</Text>
+                                        </View>
+                                    ) : uploadingAudio ? (
+                                        <View style={[styles.uploadingBadge, isDark && { backgroundColor: 'rgba(59, 130, 246, 0.1)' }]}>
+                                            <ActivityIndicator size="small" color={isDark ? "#14b8a6" : "#4F46E5"} />
+                                            <Text style={[styles.uploadingText, isDark && { color: '#14b8a6' }]}>Uploading...</Text>
                                         </View>
                                     ) : (
-                                        <View style={styles.playbackActions}>
-                                            <TouchableOpacity style={styles.playBtn} onPress={handlePlayAudio}>
-                                                <Ionicons name={isPlaying ? "pause" : "play"} size={24} color="#FFFFFF" />
+                                        <Text style={[styles.recordingSubtitle, isDark && { color: '#64748b' }]}>
+                                            {recording ? 'Recording in progress...' : 'Press the button below to start'}
+                                        </Text>
+                                    )}
+
+                                    <Text style={[styles.timerText, isDark && { color: '#14b8a6' }]}>{formatDuration(recordingDuration)}</Text>
+
+                                    <View style={styles.recordingActions}>
+                                        {!audioPath || recording ? (
+                                            <View style={styles.recordingControlsRow}>
+                                                <TouchableOpacity
+                                                    style={[styles.recordBtn, recording && !isPaused ? styles.stopBtnActive : {}, isDark && !recording && { backgroundColor: '#14b8a6' }]}
+                                                    onPress={recording ? handleStopRecording : handleStartRecording}
+                                                >
+                                                    <Ionicons name={recording ? "stop" : "mic"} size={24} color="#FFFFFF" />
+                                                    <Text style={styles.recordBtnText}>{recording ? "Stop" : "Start"}</Text>
+                                                </TouchableOpacity>
+                                                {recording && (
+                                                    <TouchableOpacity
+                                                        style={[styles.pauseBtn, isDark && { backgroundColor: '#0f172a', borderColor: '#14b8a6' }]}
+                                                        onPress={isPaused ? handleResumeRecording : handlePauseRecording}
+                                                    >
+                                                        <Ionicons name={isPaused ? "play" : "pause"} size={24} color={isDark ? "#14b8a6" : "#4F46E5"} />
+                                                    </TouchableOpacity>
+                                                )}
+                                            </View>
+                                        ) : (
+                                            <View style={styles.playbackActions}>
+                                                <TouchableOpacity style={styles.playBtn} onPress={handlePlayAudio}>
+                                                    <Ionicons name={isPlaying ? "pause" : "play"} size={24} color="#FFFFFF" />
+                                                </TouchableOpacity>
+                                                <TouchableOpacity style={[styles.deleteBtn, isDark && { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]} onPress={handleDeleteAudio}>
+                                                    <Ionicons name="trash" size={24} color="#EF4444" />
+                                                </TouchableOpacity>
+                                            </View>
+                                        )}
+                                    </View>
+                                </View>
+                            )}
+
+                            {/* ── GALLERY VIDEO MODE ── */}
+                            {videoMode === 'gallery' && (
+                                <View style={[styles.recordingCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
+                                    <Ionicons name="videocam" size={52} color={isDark ? '#14b8a6' : '#4F46E5'} />
+                                    <Text style={[styles.recordingTitle, isDark && { color: '#f8fafc' }]}>Upload Video</Text>
+                                    <Text style={[styles.recordingSubtitle, isDark && { color: '#64748b' }]}>Pick a video file from your gallery</Text>
+
+                                    {videoAnswerUrl ? (
+                                        <View style={{ width: '100%', alignItems: 'center', gap: 10 }}>
+                                            <View style={[styles.successBadge, isDark && { backgroundColor: 'rgba(16,185,129,0.1)' }]}>
+                                                <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+                                                <Text style={[styles.successText, isDark && { color: '#10B981' }]}>Video Uploaded ✓</Text>
+                                            </View>
+                                            <TouchableOpacity
+                                                style={[styles.deleteBtn, { paddingHorizontal: 20 }, isDark && { backgroundColor: 'rgba(239,68,68,0.1)' }]}
+                                                onPress={() => setVideoAnswerUrl('')}
+                                            >
+                                                <Ionicons name="refresh" size={18} color="#EF4444" />
+                                                <Text style={{ color: '#EF4444', fontWeight: '600', marginLeft: 6 }}>Replace Video</Text>
                                             </TouchableOpacity>
-                                            <TouchableOpacity style={[styles.deleteBtn, isDark && { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]} onPress={handleDeleteAudio}>
-                                                <Ionicons name="trash" size={24} color="#EF4444" />
-                                            </TouchableOpacity>
+                                        </View>
+                                    ) : uploadingVideo ? (
+                                        <View style={[styles.uploadingBadge, isDark && { backgroundColor: 'rgba(59,130,246,0.1)' }]}>
+                                            <ActivityIndicator size="small" color={isDark ? '#14b8a6' : '#4F46E5'} />
+                                            <Text style={[styles.uploadingText, isDark && { color: '#14b8a6' }]}>Uploading video...</Text>
+                                        </View>
+                                    ) : (
+                                        <TouchableOpacity
+                                            style={[styles.recordBtn, isDark && { backgroundColor: '#14b8a6' }]}
+                                            onPress={handleGalleryVideoUpload}
+                                        >
+                                            <Ionicons name="cloud-upload-outline" size={22} color="#fff" />
+                                            <Text style={styles.recordBtnText}>Choose Video</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+                            )}
+
+                            {/* ── RECORD VIDEO MODE ── */}
+                            {videoMode === 'record' && (
+                                <View style={[styles.recordingCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
+                                    {cameraDevice ? (
+                                        <>
+                                            <View style={styles.cameraPreview}>
+                                                <Camera
+                                                    ref={cameraRef}
+                                                    style={StyleSheet.absoluteFill}
+                                                    device={cameraDevice}
+                                                    isActive={videoMode === 'record'}
+                                                    video={true}
+                                                    audio={true}
+                                                />
+                                                {isRecordingVideo && (
+                                                    <View style={styles.recIndicator}>
+                                                        <View style={styles.recDot} />
+                                                        <Text style={styles.recText}>REC</Text>
+                                                    </View>
+                                                )}
+                                            </View>
+
+                                            {videoAnswerUrl ? (
+                                                <View style={{ alignItems: 'center', gap: 10 }}>
+                                                    <View style={[styles.successBadge, isDark && { backgroundColor: 'rgba(16,185,129,0.1)' }]}>
+                                                        <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+                                                        <Text style={[styles.successText, isDark && { color: '#10B981' }]}>Video Ready ✓</Text>
+                                                    </View>
+                                                    <TouchableOpacity
+                                                        style={[styles.deleteBtn, { paddingHorizontal: 20 }, isDark && { backgroundColor: 'rgba(239,68,68,0.1)' }]}
+                                                        onPress={() => { setVideoAnswerUrl(''); setRecordedVideoPath(null); }}
+                                                    >
+                                                        <Ionicons name="refresh" size={18} color="#EF4444" />
+                                                        <Text style={{ color: '#EF4444', fontWeight: '600', marginLeft: 6 }}>Re-record</Text>
+                                                    </TouchableOpacity>
+                                                </View>
+                                            ) : uploadingVideo ? (
+                                                <View style={[styles.uploadingBadge, isDark && { backgroundColor: 'rgba(59,130,246,0.1)' }]}>
+                                                    <ActivityIndicator size="small" color={isDark ? '#14b8a6' : '#4F46E5'} />
+                                                    <Text style={[styles.uploadingText, isDark && { color: '#14b8a6' }]}>Uploading recorded video...</Text>
+                                                </View>
+                                            ) : (
+                                                <TouchableOpacity
+                                                    style={[
+                                                        styles.recordBtn,
+                                                        isRecordingVideo && styles.stopBtnActive,
+                                                        !isRecordingVideo && isDark && { backgroundColor: '#14b8a6' }
+                                                    ]}
+                                                    onPress={isRecordingVideo ? handleStopVideoRecording : handleStartVideoRecording}
+                                                >
+                                                    <Ionicons name={isRecordingVideo ? 'stop' : 'videocam'} size={22} color="#fff" />
+                                                    <Text style={styles.recordBtnText}>{isRecordingVideo ? 'Stop Recording' : 'Start Recording'}</Text>
+                                                </TouchableOpacity>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <View style={{ alignItems: 'center', gap: 8, padding: 24 }}>
+                                            <Ionicons name="camera-outline" size={48} color={isDark ? '#475569' : '#9CA3AF'} />
+                                            <Text style={[styles.recordingSubtitle, isDark && { color: '#475569' }]}>Camera not available on this device</Text>
                                         </View>
                                     )}
                                 </View>
-                            </View>
+                            )}
 
-                            {/* Optional text questions if any */}
+                            {/* Optional text questions */}
                             {exam.questions?.length > 0 && (
                                 <View style={styles.questionsList}>
                                     {exam.questions.map((q: any, idx: number) => (
@@ -410,7 +757,7 @@ const CommunityExamRunner = ({ route, navigation }: any) => {
                                                 numberOfLines={3}
                                                 placeholder="Additional notes (optional)..."
                                                 placeholderTextColor={isDark ? "#475569" : "#9CA3AF"}
-                                                value={answers[idx] || ''}
+                                                value={answers[idx]?.answer || ''}
                                                 onChangeText={(text) => handleTextAnswer(idx, text)}
                                             />
                                         </View>
@@ -430,7 +777,7 @@ const CommunityExamRunner = ({ route, navigation }: any) => {
                                     {exam.type === 'quiz' ? (
                                         <View style={styles.optionsList}>
                                             {q.options?.map((opt: string, oIdx: number) => {
-                                                const isSelected = answers[idx] === opt;
+                                                const isSelected = answers[idx]?.answer === opt;
                                                 return (
                                                     <TouchableOpacity
                                                         key={oIdx}
@@ -461,16 +808,141 @@ const CommunityExamRunner = ({ route, navigation }: any) => {
                                             })}
                                         </View>
                                     ) : (
-                                        <View style={[styles.writtenInputContainer, isDark && { backgroundColor: '#0f172a', borderColor: '#334155' }]}>
-                                            <TextInput
-                                                style={[styles.textArea, isDark && { color: '#f8fafc' }]}
-                                                multiline
-                                                numberOfLines={4}
-                                                placeholder="Write your answer here..."
-                                                placeholderTextColor={isDark ? "#475569" : "#9CA3AF"}
-                                                value={answers[idx] || ''}
-                                                onChangeText={(text) => handleTextAnswer(idx, text)}
-                                            />
+                                        <View style={styles.writtenContainer}>
+                                            {/* Type Selector Tabs */}
+                                            <View style={styles.selectorContainer}>
+                                                {(['text', 'image', 'pdf'] as const).map((type) => {
+                                                    const currentType = answerTypes[idx] || 'text';
+                                                    const isSelected = currentType === type;
+                                                    return (
+                                                        <TouchableOpacity
+                                                            key={type}
+                                                            style={[
+                                                                styles.selectorTab,
+                                                                isSelected && { backgroundColor: isDark ? 'rgba(20, 184, 166, 0.1)' : '#eff6ff', borderColor: isDark ? '#14b8a6' : '#4F46E5' },
+                                                                isDark && { borderColor: '#334155' }
+                                                            ]}
+                                                            onPress={() => toggleAnswerType(idx, type)}
+                                                        >
+                                                            <Ionicons
+                                                                name={type === 'text' ? 'document-text-outline' : type === 'image' ? 'camera-outline' : 'document-outline'}
+                                                                size={16}
+                                                                color={isSelected ? (isDark ? '#14b8a6' : '#4F46E5') : (isDark ? '#94a3b8' : '#4B5563')}
+                                                            />
+                                                            <Text style={[
+                                                                styles.selectorTabText,
+                                                                isSelected && { color: isDark ? '#14b8a6' : '#4F46E5', fontWeight: 'bold' },
+                                                                isDark && { color: '#94a3b8' }
+                                                            ]}>
+                                                                {type === 'text' ? 'Text' : type === 'image' ? 'Photo' : 'PDF'}
+                                                            </Text>
+                                                        </TouchableOpacity>
+                                                    );
+                                                })}
+                                            </View>
+
+                                            {/* Conditional inputs */}
+                                            {(() => {
+                                                const currentType = answerTypes[idx] || 'text';
+                                                const answerObj = answers[idx];
+
+                                                if (currentType === 'text') {
+                                                    return (
+                                                        <View style={[styles.writtenInputContainer, isDark && { backgroundColor: '#0f172a', borderColor: '#334155' }]}>
+                                                            <TextInput
+                                                                style={[styles.textArea, isDark && { color: '#f8fafc' }]}
+                                                                multiline
+                                                                numberOfLines={4}
+                                                                placeholder="Type your written answer here..."
+                                                                placeholderTextColor={isDark ? "#475569" : "#9CA3AF"}
+                                                                value={answerObj?.answer || ''}
+                                                                onChangeText={(text) => handleTextAnswer(idx, text)}
+                                                            />
+                                                        </View>
+                                                    );
+                                                }
+
+                                                if (currentType === 'image') {
+                                                    if (uploadingQuestionIndex === idx) {
+                                                        return (
+                                                            <View style={styles.uploadingBox}>
+                                                                <ActivityIndicator size="small" color={isDark ? "#14b8a6" : "#4F46E5"} />
+                                                                <Text style={[styles.uploadingBoxText, isDark && { color: '#94a3b8' }]}>Uploading photo... Please wait.</Text>
+                                                            </View>
+                                                        );
+                                                    }
+
+                                                    if (answerObj?.answer) {
+                                                        return (
+                                                            <View style={styles.previewBox}>
+                                                                <Image source={{ uri: answerObj.answer }} style={styles.previewImage} resizeMode="cover" />
+                                                                <TouchableOpacity
+                                                                    style={styles.removeBtn}
+                                                                    onPress={() => toggleAnswerType(idx, 'image')}
+                                                                >
+                                                                    <Ionicons name="trash-outline" size={16} color="#ef4444" style={{ marginRight: 4 }} />
+                                                                    <Text style={styles.removeBtnText}>Remove Photo</Text>
+                                                                </TouchableOpacity>
+                                                            </View>
+                                                        );
+                                                    }
+
+                                                    return (
+                                                        <TouchableOpacity
+                                                            style={[styles.uploadPlaceholder, isDark && { borderColor: '#334155', backgroundColor: '#0f172a' }]}
+                                                            onPress={() => triggerImageUpload(idx)}
+                                                        >
+                                                            <Ionicons name="camera-outline" size={32} color={isDark ? '#14b8a6' : '#4F46E5'} />
+                                                            <Text style={[styles.uploadPlaceholderText, isDark && { color: '#94a3b8' }]}>Capture or Select Photo</Text>
+                                                        </TouchableOpacity>
+                                                    );
+                                                }
+
+                                                if (currentType === 'pdf') {
+                                                    if (uploadingQuestionIndex === idx) {
+                                                        return (
+                                                            <View style={styles.uploadingBox}>
+                                                                <ActivityIndicator size="small" color={isDark ? "#14b8a6" : "#4F46E5"} />
+                                                                <Text style={[styles.uploadingBoxText, isDark && { color: '#94a3b8' }]}>
+                                                                    Uploading PDF ({uploadProgress}%)... Please wait.
+                                                                </Text>
+                                                            </View>
+                                                        );
+                                                    }
+
+                                                    if (answerObj?.answer) {
+                                                        return (
+                                                            <View style={styles.pdfPreviewBox}>
+                                                                <View style={styles.pdfFileInfo}>
+                                                                    <Ionicons name="document-text" size={32} color={isDark ? '#14b8a6' : '#4F46E5'} />
+                                                                    <Text style={[styles.pdfFileName, isDark && { color: '#f8fafc' }]} numberOfLines={1}>
+                                                                        {answerObj.originalName || 'uploaded_document.pdf'}
+                                                                    </Text>
+                                                                </View>
+                                                                <TouchableOpacity
+                                                                    style={styles.removeBtn}
+                                                                    onPress={() => toggleAnswerType(idx, 'pdf')}
+                                                                >
+                                                                    <Ionicons name="trash-outline" size={16} color="#ef4444" style={{ marginRight: 4 }} />
+                                                                    <Text style={styles.removeBtnText}>Remove PDF</Text>
+                                                                </TouchableOpacity>
+                                                            </View>
+                                                        );
+                                                    }
+
+                                                    return (
+                                                        <TouchableOpacity
+                                                            style={[styles.uploadPlaceholder, isDark && { borderColor: '#334155', backgroundColor: '#0f172a' }]}
+                                                            onPress={() => triggerPdfUpload(idx)}
+                                                        >
+                                                            <Ionicons name="document-outline" size={32} color={isDark ? '#14b8a6' : '#4F46E5'} />
+                                                            <Text style={[styles.uploadPlaceholderText, isDark && { color: '#94a3b8' }]}>Choose PDF Document</Text>
+                                                        </TouchableOpacity>
+                                                    );
+                                                }
+
+                                                return null;
+                                            })()}
                                         </View>
                                     )}
                                 </View>
@@ -485,16 +957,16 @@ const CommunityExamRunner = ({ route, navigation }: any) => {
                         style={[
                             styles.submitBtn,
                             isDark && { backgroundColor: '#14b8a6' },
-                            ((exam.type === 'listening' || exam.type === 'speaking') && (!audioUrl || uploadingAudio)) && styles.submitBtnDisabled,
-                            ((exam.type === 'listening' || exam.type === 'speaking') && (!audioUrl || uploadingAudio)) && isDark && { backgroundColor: '#1e293b', borderColor: '#334155', borderWidth: 1 }
+                            ((exam.type === 'listening' || exam.type === 'speaking') && (!audioUrl && !videoAnswerUrl) && !uploadingAudio && !uploadingVideo) && styles.submitBtnDisabled,
+                            ((exam.type === 'listening' || exam.type === 'speaking') && (!audioUrl && !videoAnswerUrl) && !uploadingAudio && !uploadingVideo) && isDark && { backgroundColor: '#1e293b', borderColor: '#334155', borderWidth: 1 }
                         ]}
                         onPress={handleSubmit}
-                        disabled={submitting || ((exam.type === 'listening' || exam.type === 'speaking') && uploadingAudio)}
+                        disabled={submitting || uploadingAudio || uploadingVideo}
                     >
                         {submitting ? (
                             <ActivityIndicator color="#FFFFFF" />
                         ) : (
-                            <Text style={[styles.submitBtnText, ((exam.type === 'listening' || exam.type === 'speaking') && (!audioUrl || uploadingAudio)) && isDark && { color: '#475569' }]}>Submit Exam</Text>
+                            <Text style={[styles.submitBtnText, ((exam.type === 'listening' || exam.type === 'speaking') && (!audioUrl && !videoAnswerUrl) && !uploadingAudio && !uploadingVideo) && isDark && { color: '#475569' }]}>Submit Exam</Text>
                         )}
                     </TouchableOpacity>
                 </View>
@@ -680,6 +1152,71 @@ const styles = StyleSheet.create({
     // Listening Exam styles
     listeningContainer: {
         paddingBottom: 20,
+        gap: 16,
+    },
+    modeSelectorRow: {
+        flexDirection: 'row',
+        backgroundColor: '#F3F4F6',
+        borderRadius: 12,
+        padding: 4,
+        gap: 4,
+    },
+    modeTab: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        paddingVertical: 8,
+        borderRadius: 9,
+    },
+    modeTabActive: {
+        backgroundColor: '#FFFFFF',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.08,
+        shadowRadius: 2,
+        elevation: 2,
+    },
+    modeTabActiveDark: {
+        backgroundColor: 'rgba(20,184,166,0.12)',
+    },
+    modeTabText: {
+        fontSize: 13,
+        fontWeight: '500',
+        color: '#9CA3AF',
+    },
+    cameraPreview: {
+        width: '100%',
+        height: 220,
+        borderRadius: 12,
+        overflow: 'hidden',
+        backgroundColor: '#000',
+        marginBottom: 12,
+    },
+    recIndicator: {
+        position: 'absolute',
+        top: 10,
+        left: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        borderRadius: 6,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        gap: 5,
+    },
+    recDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: '#EF4444',
+    },
+    recText: {
+        color: '#FFFFFF',
+        fontSize: 11,
+        fontWeight: '700',
+        letterSpacing: 1,
     },
     recordingCard: {
         backgroundColor: '#FFFFFF',
@@ -799,6 +1336,119 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#10B981',
         fontWeight: '500',
+    },
+    timerBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(79, 70, 229, 0.05)',
+        borderWidth: 1,
+        borderColor: 'rgba(79, 70, 229, 0.1)',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
+        gap: 4,
+    },
+    timerBadgeText: {
+        fontSize: 13,
+        fontWeight: '600',
+    },
+    writtenContainer: {
+        gap: 12,
+        marginTop: 4,
+    },
+    selectorContainer: {
+        flexDirection: 'row',
+        gap: 8,
+        marginBottom: 4,
+    },
+    selectorTab: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        backgroundColor: '#F9FAFB',
+    },
+    selectorTabText: {
+        fontSize: 12,
+        fontWeight: '500',
+        color: '#4B5563',
+    },
+    uploadPlaceholder: {
+        borderWidth: 1,
+        borderStyle: 'dashed',
+        borderColor: '#9CA3AF',
+        borderRadius: 8,
+        paddingVertical: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        backgroundColor: '#F9FAFB',
+    },
+    uploadPlaceholderText: {
+        fontSize: 13,
+        fontWeight: '500',
+        color: '#6B7280',
+    },
+    uploadingBox: {
+        paddingVertical: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        borderRadius: 8,
+    },
+    uploadingBoxText: {
+        fontSize: 13,
+        color: '#6B7280',
+    },
+    previewBox: {
+        borderRadius: 8,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        backgroundColor: '#FFFFFF',
+    },
+    previewImage: {
+        width: '100%',
+        height: 180,
+    },
+    removeBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 8,
+        borderTopWidth: 1,
+        borderTopColor: '#E5E7EB',
+        backgroundColor: '#FFF5F5',
+    },
+    removeBtnText: {
+        fontSize: 13,
+        color: '#EF4444',
+        fontWeight: '600',
+    },
+    pdfPreviewBox: {
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        borderRadius: 8,
+        overflow: 'hidden',
+        backgroundColor: '#FFFFFF',
+    },
+    pdfFileInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        gap: 12,
+    },
+    pdfFileName: {
+        flex: 1,
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#374151',
     },
 });
 

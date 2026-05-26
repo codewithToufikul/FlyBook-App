@@ -191,6 +191,24 @@ export default function NotificationScreen() {
             case 'bookReturn':
                 navigation.navigate('MyLibrary', { initialTab: 'myBooks' });
                 break;
+            case 'SOCIAL_APPOINTMENT':
+                navigation.navigate('Home', { 
+                    screen: 'Communities', 
+                    params: { 
+                        screen: 'SocialResponse', 
+                        params: { initialTab: 'dashboard' } 
+                    } 
+                });
+                break;
+            case 'SOCIAL_APPOINTMENT_UPDATE':
+                navigation.navigate('Home', { 
+                    screen: 'Communities', 
+                    params: { 
+                        screen: 'SocialResponse', 
+                        params: { initialTab: 'appointments' } 
+                    } 
+                });
+                break;
             default:
                 if (postId) {
                     navigation.navigate('OpinionDetails', { postId });
@@ -235,6 +253,10 @@ export default function NotificationScreen() {
                 return <View className={`p-2 rounded-full ${isDark ? 'bg-green-900/40' : 'bg-green-100'}`}><Ionicons name="checkmark-circle" size={12} color="#22c55e" /></View>;
             case 'bookReturn':
                 return <View className={`p-2 rounded-full ${isDark ? 'bg-blue-900/40' : 'bg-blue-100'}`}><Ionicons name="return-down-back" size={12} color="#3b82f6" /></View>;
+            case 'SOCIAL_APPOINTMENT':
+                return <View className={`p-2 rounded-full ${isDark ? 'bg-purple-900/40' : 'bg-purple-100'}`}><Ionicons name="calendar" size={12} color="#a855f7" /></View>;
+            case 'SOCIAL_APPOINTMENT_UPDATE':
+                return <View className={`p-2 rounded-full ${isDark ? 'bg-green-900/40' : 'bg-green-100'}`}><Ionicons name="checkmark-circle" size={12} color="#22c55e" /></View>;
             default:
                 return <View className={`p-2 rounded-full ${isDark ? 'bg-teal-900/40' : 'bg-teal-100'}`}><Ionicons name="notifications" size={12} color={isDark ? "#2dd4bf" : "#0f766e"} /></View>;
         }

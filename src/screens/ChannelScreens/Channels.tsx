@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -21,6 +21,7 @@ import Toast from 'react-native-toast-message';
 import { handleImageUpload } from '../../utils/imageUpload';
 import CustomHeader from '../../components/common/CustomHeader';
 import { useTheme } from '../../contexts/ThemeContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
@@ -30,10 +31,13 @@ interface Channel {
     description: string;
     avatar: string;
     lastMessage?: string;
+    lastMessageAt?: string;
     time?: string;
     isOnline?: boolean;
     members?: string[];
 }
+
+const PINNED_KEY = 'flybook_pinned_channels';
 
 const fetchChannels = async (): Promise<Channel[]> => {
     try {
@@ -53,6 +57,27 @@ const Channels = ({ navigation }: any) => {
     const [newChannel, setNewChannel] = useState({ name: '', description: '', avatar: '' });
     const [isCreating, setCreating] = useState(false);
     const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+    const [pinnedIds, setPinnedIds] = useState<string[]>([]);
+
+    // Load pinned channels from AsyncStorage on mount
+    useEffect(() => {
+        AsyncStorage.getItem(PINNED_KEY).then(raw => {
+            if (raw) {
+                try { setPinnedIds(JSON.parse(raw)); } catch {}
+            }
+        });
+    }, []);
+
+
+    const togglePin = useCallback((channelId: string) => {
+        setPinnedIds(prev => {
+            const next = prev.includes(channelId)
+                ? prev.filter(id => id !== channelId)
+                : [...prev, channelId];
+            AsyncStorage.setItem(PINNED_KEY, JSON.stringify(next));
+            return next;
+        });
+    }, []);
 
     const { data: channels = [], isLoading, refetch, isFetching } = useQuery({
         queryKey: ['channels'],
@@ -86,10 +111,16 @@ const Channels = ({ navigation }: any) => {
         });
     }, [channels, user]);
 
+    // Pinned channels (from filteredChannels)
+    const pinnedChannels = useMemo(() => {
+        return filteredChannels.filter(c => pinnedIds.includes(c._id));
+    }, [filteredChannels, pinnedIds]);
+
+    // Non-pinned, non-matched channels
     const displayChannels = useMemo(() => {
         const matchedIds = new Set(matchedChannels.map(c => c._id));
-        return filteredChannels.filter(c => !matchedIds.has(c._id));
-    }, [filteredChannels, matchedChannels]);
+        return filteredChannels.filter(c => !matchedIds.has(c._id) && !pinnedIds.includes(c._id));
+    }, [filteredChannels, matchedChannels, pinnedIds]);
 
     const handleCreateChannel = async () => {
         if (!newChannel.name.trim()) {
@@ -139,12 +170,15 @@ const Channels = ({ navigation }: any) => {
         }
     };
 
-    const renderChannelItem = ({ item, isMatched }: { item: Channel, isMatched?: boolean }) => (
+    const renderChannelItem = ({ item, isMatched, isPinned }: { item: Channel, isMatched?: boolean, isPinned?: boolean }) => {
+        const pinned = pinnedIds.includes(item._id);
+        return (
         <TouchableOpacity
             style={[
                 styles.channelCard,
                 isDark && { backgroundColor: '#1e293b', borderColor: '#334155' },
-                isMatched && (isDark ? styles.matchedCardDark : styles.matchedCard)
+                isMatched && (isDark ? styles.matchedCardDark : styles.matchedCard),
+                isPinned && (isDark ? styles.pinnedCardDark : styles.pinnedCard),
             ]}
             onPress={() => navigation.navigate('ChannelChat', { channelId: item._id, channelName: item.name })}
             activeOpacity={0.7}
@@ -175,9 +209,21 @@ const Channels = ({ navigation }: any) => {
                     </Text>
                 ) : null}
             </View>
-            <Ionicons name="chevron-forward" size={20} color={isDark ? "#4B5563" : "#D1D5DB"} />
+            {/* Pin toggle button */}
+            <TouchableOpacity
+                style={[styles.pinButton, pinned && styles.pinButtonActive]}
+                onPress={() => togglePin(item._id)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+                <Ionicons
+                    name={pinned ? 'bookmark' : 'bookmark-outline'}
+                    size={18}
+                    color={pinned ? '#14b8a6' : (isDark ? '#4B5563' : '#CBD5E1')}
+                />
+            </TouchableOpacity>
         </TouchableOpacity>
     );
+    };
 
     return (
         <View style={[styles.container, isDark && { backgroundColor: '#0f172a' }]}>
@@ -225,6 +271,23 @@ const Channels = ({ navigation }: any) => {
                     contentContainerStyle={styles.listContent}
                     ListHeaderComponent={() => (
                         <>
+                            {/* ── Pinned Channels Section ── */}
+                            {pinnedChannels.length > 0 && (
+                                <View style={styles.matchedSection}>
+                                    <View style={styles.sectionHeader}>
+                                        <Ionicons name="bookmark" size={15} color={isDark ? '#14b8a6' : '#0D9488'} />
+                                        <Text style={[styles.sectionTitle, { color: isDark ? '#14b8a6' : '#0D9488' }]}>Pinned Channels</Text>
+                                    </View>
+                                    {pinnedChannels.map(item => (
+                                        <View key={item._id}>
+                                            {renderChannelItem({ item, isPinned: true })}
+                                        </View>
+                                    ))}
+                                    <View style={[styles.divider, isDark && { backgroundColor: '#1e293b' }]} />
+                                </View>
+                            )}
+
+                            {/* ── Address Matched Channels ── */}
                             {matchedChannels.length > 0 && !searchQuery && (
                                 <View style={styles.matchedSection}>
                                     <View style={styles.sectionHeader}>
@@ -245,10 +308,12 @@ const Channels = ({ navigation }: any) => {
                         </>
                     )}
                     ListEmptyComponent={
+                        pinnedChannels.length === 0 && matchedChannels.length === 0 ? (
                         <View style={styles.emptyContainer}>
                             <Ionicons name="chatbubbles-outline" size={64} color={isDark ? "#334155" : "#D1D5DB"} />
                             <Text style={[styles.emptyText, isDark && { color: '#4B5563' }]}>No channels found</Text>
                         </View>
+                        ) : null
                     }
                     onRefresh={refetch}
                     refreshing={isFetching}
@@ -435,6 +500,14 @@ const styles = StyleSheet.create({
         borderColor: '#1e3a8a',
         backgroundColor: '#172554',
     },
+    pinnedCard: {
+        borderColor: '#99f6e4',
+        backgroundColor: '#f0fdfa',
+    },
+    pinnedCardDark: {
+        borderColor: '#134e4a',
+        backgroundColor: '#042f2e',
+    },
     avatarContainer: {
         position: 'relative',
     },
@@ -525,6 +598,14 @@ const styles = StyleSheet.create({
         backgroundColor: '#E5E7EB',
         marginHorizontal: 20,
         marginTop: 20,
+    },
+    pinButton: {
+        padding: 6,
+        borderRadius: 8,
+        marginLeft: 4,
+    },
+    pinButtonActive: {
+        backgroundColor: 'rgba(20,184,166,0.1)',
     },
     emptyContainer: {
         alignItems: 'center',

@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 
-const CLOUDINARY_CLOUD_NAME = 'dljmobi4k';
-const CLOUDINARY_UPLOAD_PRESET = 'flybook';
+const CLOUDINARY_CLOUD_NAME = 'duyrnfagi';
+const CLOUDINARY_UPLOAD_PRESET = 'flybook_video';
 
 export const uploadAudioToCloudinary = async (
   fileUri: string,

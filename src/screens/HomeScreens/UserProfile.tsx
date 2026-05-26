@@ -28,6 +28,7 @@ import Toast from 'react-native-toast-message';
 import Clipboard from '@react-native-clipboard/clipboard';
 import LinearGradient from 'react-native-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { openPdfLink } from '../../utils/openLink';
 
 const { width } = Dimensions.get('window');
 
@@ -70,6 +71,8 @@ interface Post {
     video?: string;
     date?: string;
     time?: string;
+    channelId?: string;
+    channelName?: string;
 }
 
 const ShareSheet = ({
@@ -434,32 +437,26 @@ const UserProfile = () => {
             if (supported) {
                 await Linking.openURL(url);
             } else {
-                Toast.show({
-                    type: 'info',
-                    text1: 'FlyConnect App Not Installed',
-                    text2: 'Opening local chat as fallback...',
-                });
-                // Fallback to internal chatroom
-                (navigation as any).navigate('ChatRoom', {
-                    chatUser: {
-                        _id: user._id,
-                        name: user.name,
-                        profileImage: user.profileImage,
-                        isOnline: user.isOnline || false
+                if (Platform.OS === 'android') {
+                    const playStoreUrl = 'market://details?id=com.flyconnect';
+                    const webPlayStoreUrl = 'https://play.google.com/store/apps/details?id=com.flyconnect';
+                    try {
+                        await Linking.openURL(playStoreUrl);
+                    } catch {
+                        await Linking.openURL(webPlayStoreUrl);
                     }
-                });
+                } else {
+                    const appStoreUrl = 'itms-apps://itunes.apple.com/app/id6470000000'; // Replace with actual App ID when available
+                    const webAppStoreUrl = 'https://apps.apple.com/app/flyconnect';
+                    try {
+                        await Linking.openURL(appStoreUrl);
+                    } catch {
+                        await Linking.openURL(webAppStoreUrl);
+                    }
+                }
             }
         } catch (error) {
             console.error('Deep linking error:', error);
-            // Emergency fallback
-            (navigation as any).navigate('ChatRoom', {
-                chatUser: {
-                    _id: user._id,
-                    name: user.name,
-                    profileImage: user.profileImage,
-                    isOnline: user.isOnline || false
-                }
-            });
         }
     };
 
@@ -524,7 +521,7 @@ const UserProfile = () => {
     };
 
     const handlePdfView = (pdfUrl: string) => {
-        Linking.openURL(pdfUrl).catch((err) => {
+        openPdfLink(pdfUrl, isDark).catch(() => {
             Toast.show({
                 type: 'error',
                 text1: 'Failed to open PDF',
@@ -818,9 +815,19 @@ const UserProfile = () => {
                                         />
                                         <View style={styles.userInfoHeader}>
                                             <Text style={[styles.postUserName, isDark && { color: '#f8fafc' }]}>{postItem.userName || user.name}</Text>
-                                            <Text style={[styles.postTime, isDark && { color: '#94a3b8' }]}>
-                                                {postItem.date || formatDate(postItem.createdAt)} {postItem.time ? `at ${formatTime(postItem.time)}` : ''}
-                                            </Text>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                <Text style={[styles.postTime, isDark && { color: '#94a3b8' }]}>
+                                                    {postItem.date || formatDate(postItem.createdAt)} {postItem.time ? `at ${formatTime(postItem.time)}` : ''}
+                                                </Text>
+                                                {postItem.channelName ? (
+                                                    <View style={styles.channelBadge}>
+                                                        <Ionicons name="megaphone-outline" size={10} color={isDark ? '#14b8a6' : '#0D9488'} />
+                                                        <Text style={[styles.channelBadgeText, { color: isDark ? '#14b8a6' : '#0D9488' }]}>
+                                                            {'  #' + postItem.channelName}
+                                                        </Text>
+                                                    </View>
+                                                ) : null}
+                                            </View>
                                         </View>
                                     </View>
 
@@ -1615,6 +1622,19 @@ const styles = StyleSheet.create({
         width: '100%',
         marginBottom: 10,
         overflow: 'hidden',
+    },
+    channelBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(13,148,136,0.1)',
+        borderRadius: 6,
+        paddingHorizontal: 5,
+        paddingVertical: 2,
+        marginLeft: 6,
+    },
+    channelBadgeText: {
+        fontSize: 10.5,
+        fontWeight: '700',
     },
 });
 

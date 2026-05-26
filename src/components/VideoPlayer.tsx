@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import {
     View,
     TouchableOpacity,
@@ -6,10 +6,15 @@ import {
     Dimensions,
     Text,
     ActivityIndicator,
+    AppState,
+    AppStateStatus,
+    Modal,
+    StatusBar,
 } from 'react-native';
 import Video from 'react-native-video';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
+import { useIsFocused } from '@react-navigation/native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -36,6 +41,7 @@ const VideoPlayer: React.FC<Props> = ({
     borderRadius = 0,
 }) => {
     const videoRef = useRef<any>(null);
+    const isFocused = useIsFocused();
 
     const [paused, setPaused] = useState(!autoPlay);
     const [muted, setMuted] = useState(false);
@@ -45,8 +51,50 @@ const VideoPlayer: React.FC<Props> = ({
     const [showControls, setShowControls] = useState(true);
     const [ended, setEnded] = useState(false);
     const [error, setError] = useState(false);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const [trackWidth, setTrackWidth] = useState(0);
+    useEffect(() => {
+        return () => {
+            setPaused(true);
+        };
+    }, []);
+    const containerRef = useRef<any>(null);
+    const { height: windowHeight } = Dimensions.get('window');
+    // Periodically check if video component is visible in viewport
+    useEffect(() => {
+        const checkVisibility = () => {
+            if (!containerRef.current) return;
+            containerRef.current.measureInWindow((x: number, y: number, w: number, h: number) => {
+                // If component is completely outside the screen vertically, pause it
+                if (y + h < 0 || y > windowHeight) {
+                    setPaused(true);
+                }
+            });
+        };
+        const intervalId = setInterval(checkVisibility, 500);
+        return () => clearInterval(intervalId);
+    }, []);
 
     const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Pause when screen loses focus
+    useEffect(() => {
+        if (!isFocused) {
+            setPaused(true);
+        }
+    }, [isFocused]);
+
+    // Pause when app is backgrounded/minimized
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+            if (nextAppState !== 'active') {
+                setPaused(true);
+            }
+        });
+        return () => {
+            subscription.remove();
+        };
+    }, []);
 
     const scheduleHide = useCallback(() => {
         if (hideTimer.current) clearTimeout(hideTimer.current);
@@ -71,6 +119,16 @@ const VideoPlayer: React.FC<Props> = ({
         scheduleHide();
     };
 
+    const handleSeek = (event: any) => {
+        if (trackWidth <= 0 || duration <= 0) return;
+        const { locationX } = event.nativeEvent;
+        const ratio = Math.max(0, Math.min(locationX / trackWidth, 1));
+        const newTime = ratio * duration;
+        setCurrentTime(newTime);
+        videoRef.current?.seek(newTime);
+        scheduleHide();
+    };
+
     const progress = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
 
     if (error) {
@@ -84,21 +142,25 @@ const VideoPlayer: React.FC<Props> = ({
         );
     }
 
-    return (
-        <View style={[styles.container, { height, borderRadius, overflow: 'hidden' }]}>
+    const playerContent = (
+        <View ref={containerRef} style={isFullscreen ? styles.fullscreenWrapper : [styles.container, { height, borderRadius, overflow: 'hidden' }]}>
+            {isFullscreen && <StatusBar hidden={true} />}
 
             {/* ── The Video ── */}
             <Video
                 ref={videoRef}
                 source={{ uri }}
                 style={styles.video}
-                resizeMode="cover"
+                resizeMode={isFullscreen ? "contain" : "cover"}
                 paused={paused}
                 muted={muted}
                 controls={false}
                 onLoad={(data: any) => {
                     setDuration(data.duration || 0);
                     setLoading(false);
+                    if (currentTime > 0) {
+                        videoRef.current?.seek(currentTime);
+                    }
                 }}
                 onProgress={(data: any) => {
                     setCurrentTime(data.currentTime || 0);
@@ -156,11 +218,19 @@ const VideoPlayer: React.FC<Props> = ({
                             />
                         </TouchableOpacity>
 
-                        {onFullscreen && (
-                            <TouchableOpacity style={styles.smallBtn} onPress={onFullscreen}>
-                                <Ionicons name="expand" size={17} color="#fff" />
-                            </TouchableOpacity>
-                        )}
+                        <TouchableOpacity
+                            style={styles.smallBtn}
+                            onPress={() => {
+                                setIsFullscreen(prev => !prev);
+                                scheduleHide();
+                            }}
+                        >
+                            <Ionicons
+                                name={isFullscreen ? 'contract' : 'expand'}
+                                size={17}
+                                color="#fff"
+                            />
+                        </TouchableOpacity>
                     </View>
 
                     {/* Center play/pause */}
@@ -185,7 +255,12 @@ const VideoPlayer: React.FC<Props> = ({
                         <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
 
                         {/* Seekable progress bar */}
-                        <View style={styles.progressTrackWrapper}>
+                        <TouchableOpacity
+                            style={styles.progressTrackWrapper}
+                            activeOpacity={1}
+                            onPress={handleSeek}
+                            onLayout={(e) => setTrackWidth(e.nativeEvent.layout.width)}
+                        >
                             <View style={styles.progressTrack}>
                                 {/* Filled part */}
                                 <View
@@ -202,7 +277,7 @@ const VideoPlayer: React.FC<Props> = ({
                                     ]}
                                 />
                             </View>
-                        </View>
+                        </TouchableOpacity>
 
                         <Text style={styles.timeText}>{formatTime(duration)}</Text>
                     </View>
@@ -224,6 +299,22 @@ const VideoPlayer: React.FC<Props> = ({
             )}
         </View>
     );
+
+    if (isFullscreen) {
+        return (
+            <Modal
+                visible={isFullscreen}
+                transparent={false}
+                animationType="fade"
+                onRequestClose={() => setIsFullscreen(false)}
+                supportedOrientations={['portrait', 'landscape']}
+            >
+                {playerContent}
+            </Modal>
+        );
+    }
+
+    return playerContent;
 };
 
 const styles = StyleSheet.create({
@@ -231,6 +322,13 @@ const styles = StyleSheet.create({
         backgroundColor: '#000',
         width: '100%',
         overflow: 'hidden',
+    },
+    fullscreenWrapper: {
+        flex: 1,
+        backgroundColor: '#000',
+        width: '100%',
+        height: '100%',
+        justifyContent: 'center',
     },
     // Important: Video must have an absolute fill OR explicit dimensions
     video: {

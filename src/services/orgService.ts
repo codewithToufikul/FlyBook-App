@@ -208,8 +208,60 @@ export const addOrganization = async (
 };
 
 /**
- * Get favorite/social organizations for the current user
+ * Request event transfer for an activity
  */
-export const getSocialOrgStats = async () => {
-  // Add this if needed
+export const requestEventTransfer = async (
+  activityId: string,
+  orgId: string,
+): Promise<{ success: boolean; message?: string }> => {
+  try {
+    const response = await patch(`/api/v1/activities/${activityId}/transfer-request`, { orgId });
+    return { success: true, ...response };
+  } catch (error: any) {
+    console.error('Error requesting event transfer:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+/**
+ * Get pending event transfer requests (Admin only)
+ */
+export const getPendingEventTransfers = async (): Promise<any[]> => {
+  try {
+    const response = await get<{ success: boolean; data: any[] }>('/api/v1/admin/pending-event-transfers');
+    return response.success ? response.data : [];
+  } catch (error) {
+    console.error('Error fetching pending event transfers:', error);
+    return [];
+  }
+};
+
+/**
+ * Approve event transfer request (Admin only)
+ */
+export const approveEventTransfer = async (
+  activityId: string,
+): Promise<{ success: boolean; message?: string }> => {
+  try {
+    const response = await patch(`/api/v1/admin/approve-event-transfer/${activityId}`);
+    return { success: true, ...response };
+  } catch (error: any) {
+    console.error('Error approving event transfer:', error);
+    return { success: false, message: error.message };
+  }
+};
+
+/**
+ * Reject event transfer request (Admin only)
+ */
+export const rejectEventTransfer = async (
+  activityId: string,
+): Promise<{ success: boolean; message?: string }> => {
+  try {
+    const response = await patch(`/api/v1/admin/reject-event-transfer/${activityId}`);
+    return { success: true, ...response };
+  } catch (error: any) {
+    console.error('Error rejecting event transfer:', error);
+    return { success: false, message: error.message };
+  }
 };

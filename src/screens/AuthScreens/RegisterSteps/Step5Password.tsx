@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, Alert, StatusBar,
+  KeyboardAvoidingView, Platform, Alert, StatusBar, ScrollView,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -77,7 +77,7 @@ const Step5Password = () => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bg }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={bg} />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.content}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity style={[styles.backButton, { backgroundColor: backBtnBg }]} onPress={() => navigation.goBack()} disabled={loading}>
@@ -91,64 +91,71 @@ const Step5Password = () => {
           <View style={styles.placeholder} />
         </View>
 
-        {/* Content */}
-        <View style={styles.formContainer}>
-          <Text style={[styles.title, { color: titleColor }]}>Create a password</Text>
-          <Text style={[styles.subtitle, { color: subtitleColor }]}>Create a secure password with at least 6 characters</Text>
+        {/* Scrollable Content Container */}
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.formContainer}>
+            <Text style={[styles.title, { color: titleColor }]}>Create a password</Text>
+            <Text style={[styles.subtitle, { color: subtitleColor }]}>Create a secure password with at least 6 characters</Text>
 
-          {/* Password */}
-          <View style={styles.inputContainer}>
-            <Text style={[styles.label, { color: labelColor }]}>Password</Text>
-            <View style={[styles.inputWrapper, { backgroundColor: cardBg, borderColor: border }]}>
-              <TextInput
-                style={[styles.input, { color: inputColor }]}
-                placeholder="Enter password"
-                placeholderTextColor={isDark ? '#475569' : '#94A3B8'}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-                autoFocus
-                editable={!loading}
-              />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon} disabled={loading}>
-                <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color={eyeColor} />
-              </TouchableOpacity>
+            {/* Password */}
+            <View style={styles.inputContainer}>
+              <Text style={[styles.label, { color: labelColor }]}>Password</Text>
+              <View style={[styles.inputWrapper, { backgroundColor: cardBg, borderColor: border }]}>
+                <TextInput
+                  style={[styles.input, { color: inputColor }]}
+                  placeholder="Enter password"
+                  placeholderTextColor={isDark ? '#475569' : '#94A3B8'}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoFocus
+                  editable={!loading}
+                />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon} disabled={loading}>
+                  <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color={eyeColor} />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Confirm Password */}
+            <View style={styles.inputContainer}>
+              <Text style={[styles.label, { color: labelColor }]}>Confirm Password</Text>
+              <View style={[styles.inputWrapper, { backgroundColor: cardBg, borderColor: border }]}>
+                <TextInput
+                  style={[styles.input, { color: inputColor }]}
+                  placeholder="Re-enter password"
+                  placeholderTextColor={isDark ? '#475569' : '#94A3B8'}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry={!showConfirmPassword}
+                  autoCapitalize="none"
+                  editable={!loading}
+                />
+                <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon} disabled={loading}>
+                  <Ionicons name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color={eyeColor} />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Requirements */}
+            <View style={[styles.requirementsBox, { backgroundColor: requireBg }]}>
+              <View style={styles.requirement}>
+                <Ionicons name={passLengthMet ? 'checkmark-circle' : 'ellipse-outline'} size={20} color={passLengthMet ? '#10B981' : (isDark ? '#334155' : '#CBD5E1')} />
+                <Text style={[styles.requirementText, { color: passLengthMet ? '#10B981' : subtitleColor }]}>At least 6 characters</Text>
+              </View>
+              <View style={styles.requirement}>
+                <Ionicons name={passMatchMet ? 'checkmark-circle' : 'ellipse-outline'} size={20} color={passMatchMet ? '#10B981' : (isDark ? '#334155' : '#CBD5E1')} />
+                <Text style={[styles.requirementText, { color: passMatchMet ? '#10B981' : subtitleColor }]}>Passwords match</Text>
+              </View>
             </View>
           </View>
-
-          {/* Confirm Password */}
-          <View style={styles.inputContainer}>
-            <Text style={[styles.label, { color: labelColor }]}>Confirm Password</Text>
-            <View style={[styles.inputWrapper, { backgroundColor: cardBg, borderColor: border }]}>
-              <TextInput
-                style={[styles.input, { color: inputColor }]}
-                placeholder="Re-enter password"
-                placeholderTextColor={isDark ? '#475569' : '#94A3B8'}
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry={!showConfirmPassword}
-                autoCapitalize="none"
-                editable={!loading}
-              />
-              <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon} disabled={loading}>
-                <Ionicons name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color={eyeColor} />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Requirements */}
-          <View style={[styles.requirementsBox, { backgroundColor: requireBg }]}>
-            <View style={styles.requirement}>
-              <Ionicons name={passLengthMet ? 'checkmark-circle' : 'ellipse-outline'} size={20} color={passLengthMet ? '#10B981' : (isDark ? '#334155' : '#CBD5E1')} />
-              <Text style={[styles.requirementText, { color: passLengthMet ? '#10B981' : subtitleColor }]}>At least 6 characters</Text>
-            </View>
-            <View style={styles.requirement}>
-              <Ionicons name={passMatchMet ? 'checkmark-circle' : 'ellipse-outline'} size={20} color={passMatchMet ? '#10B981' : (isDark ? '#334155' : '#CBD5E1')} />
-              <Text style={[styles.requirementText, { color: passMatchMet ? '#10B981' : subtitleColor }]}>Passwords match</Text>
-            </View>
-          </View>
-        </View>
+        </ScrollView>
 
         {/* Footer */}
         <View style={styles.footer}>
@@ -173,7 +180,9 @@ const styles = StyleSheet.create({
   progressContainer: { flexDirection: 'row', gap: 8 },
   progressDot: { height: 8, borderRadius: 4 },
   placeholder: { width: 40 },
-  formContainer: { flex: 1, paddingHorizontal: 24, paddingTop: 20 },
+  scroll: { flex: 1 },
+  scrollContent: { flexGrow: 1 },
+  formContainer: { paddingHorizontal: 24, paddingTop: 20 },
   title: { fontSize: 28, fontWeight: 'bold', marginBottom: 8 },
   subtitle: { fontSize: 16, marginBottom: 32, lineHeight: 24 },
   inputContainer: { marginBottom: 20 },

@@ -31,6 +31,8 @@ import Clipboard from '@react-native-clipboard/clipboard';
 import TobNav from '../../components/TobNav';
 import PostSkeleton from '../../components/PostSkeleton';
 import VideoPlayer from '../../components/VideoPlayer';
+import { countryToLanguage } from '../../utils/countryToLanguage';
+import { openPdfLink } from '../../utils/openLink';
 
 const { width } = Dimensions.get('window');
 
@@ -51,6 +53,8 @@ interface Post {
     time: string;
     shares?: number;
     isShared?: boolean;
+    channelId?: string;
+    channelName?: string;
     originalPostData?: {
         postId: string;
         postType: 'opinion' | 'home';
@@ -203,6 +207,118 @@ const OpinionHome = () => {
     const queryClient = useQueryClient();
     const [sharePost, setSharePost] = useState<Post | null>(null);
 
+    const [translatedTexts, setTranslatedTexts] = useState<Record<string, string>>({});
+    const [showTranslatedMap, setShowTranslatedMap] = useState<Record<string, boolean>>({});
+    const [translatingMap, setTranslatingMap] = useState<Record<string, boolean>>({});
+
+    const handleTranslate = async (
+        postId: string,
+        originalText: string
+    ) => {
+
+        if (showTranslatedMap[postId]) {
+            setShowTranslatedMap(prev => ({
+                ...prev,
+                [postId]: false,
+            }));
+
+            return;
+        }
+
+        if (translatedTexts[postId]) {
+            setShowTranslatedMap(prev => ({
+                ...prev,
+                [postId]: true,
+            }));
+
+            return;
+        }
+
+        try {
+            setTranslatingMap(prev => ({
+                ...prev,
+                [postId]: true,
+            }));
+
+            // Detect current country
+            const geoResponse = await fetch(
+                'https://ipwho.is/'
+            );
+
+            if (!geoResponse.ok) {
+                throw new Error(
+                    'Failed to detect country'
+                );
+            }
+
+            const geoData = await geoResponse.json();
+
+            // Get target language
+            const targetLang =
+                countryToLanguage[
+                geoData.country_code as keyof typeof countryToLanguage
+                ] || 'en';
+
+            console.log(
+                targetLang,
+                'targetLang'
+            );
+
+            // Translate API call
+            const translateResponse =
+                await post<{ translation?: string }>(
+                    '/api/translate',
+                    {
+                        text: originalText,
+                        targetLang,
+                    }
+                );
+
+            if (translateResponse?.translation) {
+
+                setTranslatedTexts(prev => ({
+                    ...prev,
+                    [postId]: translateResponse.translation || '',
+                }));
+
+                setShowTranslatedMap(prev => ({
+                    ...prev,
+                    [postId]: true,
+                }));
+
+                Toast.show({
+                    type: 'success',
+                    text1:
+                        'Translated successfully!',
+                });
+
+            } else {
+                Toast.show({
+                    type: 'error',
+                    text1: 'Translation failed',
+                });
+            }
+
+        } catch (error) {
+            console.error(
+                'Translation error:',
+                error
+            );
+
+            Toast.show({
+                type: 'error',
+                text1:
+                    'Translation request failed',
+            });
+
+        } finally {
+            setTranslatingMap(prev => ({
+                ...prev,
+                [postId]: false,
+            }));
+        }
+    };
+
     const flatListRef = React.useRef<FlatList>(null);
     useScrollToTop(flatListRef);
 
@@ -247,7 +363,7 @@ const OpinionHome = () => {
 
     const fmtTime = (t: string) => t?.slice(0, -6) + t?.slice(-3);
     const truncate = (s: string, n = 220) => s?.length > n ? s.slice(0, n) + '…' : s;
-    const openPdf = (url: string) => Linking.openURL(url).catch(() => Toast.show({ type: 'error', text1: 'Cannot open PDF' }));
+    const openPdf = (url: string) => openPdfLink(url, isDark).catch(() => Toast.show({ type: 'error', text1: 'Cannot open PDF' }));
     const goProfile = (uid: string) => uid === user?._id ? navigation.navigate('Home', { screen: 'Profile' }) : navigation.navigate('UserProfile', { userId: uid });
     const goDetail = (p: Post) => navigation.navigate('OpinionDetails', { post: p });
 
@@ -279,6 +395,14 @@ const OpinionHome = () => {
                         <View style={styles.metaRow}>
                             <Ionicons name="earth-outline" size={11} color={textSecondary} />
                             <Text style={[styles.metaText, { color: textSecondary }]}>  {p.date}  ·  {fmtTime(p.time)}</Text>
+                            {p.channelName ? (
+                                <View style={styles.channelBadge}>
+                                    <Ionicons name="megaphone-outline" size={10} color={isDark ? '#14b8a6' : '#0D9488'} />
+                                    <Text style={[styles.channelBadgeText, { color: isDark ? '#14b8a6' : '#0D9488' }]}>
+                                        {'  #' + p.channelName}
+                                    </Text>
+                                </View>
+                            ) : null}
                         </View>
                     </View>
                     <TouchableOpacity style={[styles.moreBtn, { backgroundColor: inputBg }]}>
@@ -290,11 +414,34 @@ const OpinionHome = () => {
                 <TouchableOpacity onPress={() => goDetail(p)} activeOpacity={0.9} style={styles.bodyPad}>
                     {p.isShared && <Text style={[styles.sharedText, { color: textSecondary }]}><Ionicons name="repeat" size={14} /> Shared a post</Text>}
                     <Text style={[styles.bodyText, { color: isDark ? '#cbd5e1' : '#334155' }]}>
-                        {truncate(p.description)}
+                        {truncate(showTranslatedMap[p._id] && translatedTexts[p._id] ? translatedTexts[p._id] : p.description)}
                     </Text>
                     {p.description?.length > 220 && (
                         <Text style={[styles.seeMore, { color: isDark ? '#38bdf8' : '#0D9488' }]}>See more</Text>
                     )}
+
+                    {p.description ? (
+                        <TouchableOpacity
+                            onPress={(e) => {
+                                e.stopPropagation();
+                                handleTranslate(p._id, p.description!);
+                            }}
+                            disabled={translatingMap[p._id]}
+                            style={[
+                                styles.cardTranslateBtn,
+                                isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }
+                            ]}
+                        >
+                            {translatingMap[p._id] ? (
+                                <ActivityIndicator size="small" color="#0D9488" style={{ marginRight: 4 }} />
+                            ) : (
+                                <Ionicons name="language-outline" size={14} color="#0D9488" style={{ marginRight: 4 }} />
+                            )}
+                            <Text style={styles.cardTranslateBtnText}>
+                                {translatingMap[p._id] ? "Translating..." : showTranslatedMap[p._id] ? "Show Original" : "Translate"}
+                            </Text>
+                        </TouchableOpacity>
+                    ) : null}
                 </TouchableOpacity>
 
                 {/* ── Original Post Content (if Shared) ── */}
@@ -467,7 +614,7 @@ const OpinionHome = () => {
                 backgroundColor="transparent"
                 translucent
             />
-            <TobNav navigation={navigation} />
+            <TobNav />
 
             <FlatList
                 ref={flatListRef}
@@ -701,6 +848,19 @@ const styles = StyleSheet.create({
     metaText: {
         fontSize: 11.5,
         fontWeight: '600',
+    },
+    channelBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(13,148,136,0.1)',
+        borderRadius: 6,
+        paddingHorizontal: 5,
+        paddingVertical: 2,
+        marginLeft: 6,
+    },
+    channelBadgeText: {
+        fontSize: 10.5,
+        fontWeight: '700',
     },
     moreBtn: {
         width: 34,
@@ -976,6 +1136,23 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 15,
         fontWeight: '800',
+    },
+    cardTranslateBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'flex-start',
+        backgroundColor: '#F3F4F6',
+        paddingVertical: 4,
+        paddingHorizontal: 8,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        marginTop: 6,
+    },
+    cardTranslateBtnText: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#0D9488',
     },
 });
 

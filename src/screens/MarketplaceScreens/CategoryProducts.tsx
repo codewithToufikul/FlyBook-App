@@ -32,6 +32,7 @@ interface Product {
     category: string;
     rating?: number;
     reviews?: number;
+    maxCoinPercentage?: number;
 }
 
 const CategoryProducts = ({ route, navigation }: any) => {
@@ -89,6 +90,14 @@ const CategoryProducts = ({ route, navigation }: any) => {
                     {item.originalPrice && (
                         <Text style={styles.originalPriceText}>৳{item.originalPrice.toLocaleString()}</Text>
                     )}
+                </View>
+
+                {/* Coin Usage Badge */}
+                <View style={[styles.coinBadgeRow, isDark && styles.coinBadgeRowDark]}>
+                    <Text style={styles.coinIcon}>🪙</Text>
+                    <Text style={[styles.coinBadgeText, isDark && { color: '#FCD34D' }]}>
+                        {item.maxCoinPercentage ?? 20}% Coin Payable
+                    </Text>
                 </View>
             </View>
         </TouchableOpacity>
@@ -201,6 +210,11 @@ const styles = StyleSheet.create({
     priceRow: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
     priceText: { fontSize: 16, fontWeight: '900', color: '#0D9488' },
     originalPriceText: { fontSize: 11, color: '#9CA3AF', textDecorationLine: 'line-through', marginLeft: 6, fontWeight: '500' },
+
+    coinBadgeRow: { flexDirection: 'row', alignItems: 'center', marginTop: 7, backgroundColor: '#FFFBEB', paddingHorizontal: 7, paddingVertical: 4, borderRadius: 8, alignSelf: 'flex-start', gap: 3 },
+    coinBadgeRowDark: { backgroundColor: 'rgba(251, 191, 36, 0.12)' },
+    coinIcon: { fontSize: 11 },
+    coinBadgeText: { fontSize: 9, fontWeight: '800', color: '#B45309', letterSpacing: 0.2 },
 
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8FAFC' },
     emptyContainer: { flex: 1, paddingTop: 100, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 },

@@ -11,6 +11,7 @@ import CommunityStudentDashboard from '../../screens/CommunityScreens/CommunityS
 import CommunityExamRunner from '../../screens/CommunityScreens/CommunityExamRunner';
 import CommunityExamGrading from '../../screens/CommunityScreens/CommunityExamGrading';
 import SocialResponseScreen from '../../screens/CommunityScreens/SocialResponseScreen';
+import ExamInfoScreen from '../../screens/CommunityScreens/ExamInfoScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -29,6 +30,7 @@ const CommunityStack = () => {
             <Stack.Screen name="CommunityCourseDetails" component={CommunityCourseDetails} />
             <Stack.Screen name="CommunityCoursePlayer" component={CommunityCoursePlayer} />
             <Stack.Screen name="CommunityStudentDashboard" component={CommunityStudentDashboard} />
+            <Stack.Screen name="ExamInfo" component={ExamInfoScreen} />
             <Stack.Screen
                 name="CommunityExamRunner"
                 component={CommunityExamRunner}

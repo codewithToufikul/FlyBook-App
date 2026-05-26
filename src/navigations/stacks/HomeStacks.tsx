@@ -17,6 +17,7 @@ import ShopProductsScreen from '../../screens/HomeScreens/ShopProductsScreen';
 import ShopDetailsScreen from '../../screens/HomeScreens/ShopDetailsScreen';
 import WalletSupportScreen from '../../screens/HomeScreens/WalletSupportScreen';
 import AiAssistantScreen from '../../screens/HomeScreens/AiAssistantScreen';
+import EventTransferApprovalsScreen from '../../screens/OrganizationScreens/EventTransferApprovalsScreen';
 
 
 import PdfStack from './PdfStack';
@@ -53,6 +54,7 @@ export default function HomeStack() {
             <Stack.Screen name="ShopDetails" component={ShopDetailsScreen} />
             <Stack.Screen name="WalletSupport" component={WalletSupportScreen} />
             <Stack.Screen name="AiAssistant" component={AiAssistantScreen} />
+            <Stack.Screen name="EventTransferApprovals" component={EventTransferApprovalsScreen} />
 
             <Stack.Screen name="PdfStack" component={PdfStack} />
             <Stack.Screen name="Channels" component={ChannelStack} />

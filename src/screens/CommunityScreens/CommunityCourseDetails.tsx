@@ -18,6 +18,7 @@ import Video from 'react-native-video';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import { get, post } from '../../services/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { openLink } from '../../utils/openLink';
 
 const { width } = Dimensions.get('window');
 
@@ -36,6 +37,16 @@ const CommunityCourseDetails = ({ route, navigation }: any) => {
 
     // Player State
     const [playing, setPlaying] = useState(false);
+
+    // If returning from an exam, advance to nextChapter
+    useEffect(() => {
+        const nextIdx = route.params?.nextChapterIdx;
+        if (nextIdx !== undefined && nextIdx !== null) {
+            setActive({ chapterIdx: nextIdx, lessonIdx: 0 });
+            // Clear param to avoid re-triggering
+            navigation.setParams({ nextChapterIdx: undefined });
+        }
+    }, [route.params?.nextChapterIdx]);
 
     // Fetch Data
     const loadData = useCallback(async () => {
@@ -94,6 +105,14 @@ const CommunityCourseDetails = ({ route, navigation }: any) => {
     const isLessonCompleted = (lessonId: string) => {
         const ids = (progress.completedLessons || []).map((x: any) => x.toString());
         return ids.includes(lessonId.toString());
+    };
+
+    const hasAttempted = (examId: string) => {
+        const attempts = progress.attempts || [];
+        return attempts.some((a: any) => {
+            const aid = a.examId?.toString() || a.exam?.toString();
+            return aid === examId.toString();
+        });
     };
 
     const getLatestAttemptPassed = (examId: string) => {
@@ -170,15 +189,22 @@ const CommunityCourseDetails = ({ route, navigation }: any) => {
         const allLessonsDone = lessons.every((l: any) => isLessonCompleted(l.lessonId || l._id));
 
         if (ch.exam && allLessonsDone) {
-            // Check if passed
-            const passed = getLatestAttemptPassed(ch.exam.examId || ch.exam._id);
-            if (!passed) {
-                // Open Exam Modal
-                navigation.navigate('CommunityExamRunner', {
+            // Check if already attempted
+            const examId = ch.exam.examId || ch.exam._id;
+            const attempted = hasAttempted(examId);
+            const passed = getLatestAttemptPassed(examId);
+            if (!attempted) {
+                // Open Exam Info Screen with chapterIdx
+                navigation.navigate('ExamInfo', {
                     courseId,
-                    examId: ch.exam.examId || ch.exam._id,
-                    examType: ch.exam.type
+                    examId,
+                    examType: ch.exam.type,
+                    chapterIdx: chapterIdx
                 });
+                return;
+            }
+            if (!passed) {
+                Alert.alert('Exam Required', 'You need to pass this chapter exam to continue. Contact your instructor.');
                 return;
             }
         }
@@ -204,7 +230,7 @@ const CommunityCourseDetails = ({ route, navigation }: any) => {
             if (res.success) {
                 const url = res.certificateUrl;
                 Alert.alert('Certificate Issued', `Certificate ID: ${res.certificateNumber}`, [
-                    { text: 'View', onPress: () => url && Linking.openURL(url) },
+                    { text: 'View', onPress: () => url && openLink(url, isDark) },
                     { text: 'OK' }
                 ]);
             }
@@ -389,21 +415,38 @@ const CommunityCourseDetails = ({ route, navigation }: any) => {
                                 {ch.exam && (
                                     <View style={[styles.examRow, isDark && { backgroundColor: 'rgba(245, 158, 11, 0.05)' }]}>
                                         {(() => {
-                                            const passed = getLatestAttemptPassed(ch.exam.examId || ch.exam._id);
+                                            const examId = ch.exam.examId || ch.exam._id;
+                                            const attempted = hasAttempted(examId);
+                                            const passed = getLatestAttemptPassed(examId);
                                             return (
                                                 <TouchableOpacity
-                                                    style={styles.examBtn}
-                                                    onPress={() => navigation.navigate('CommunityExamRunner', {
-                                                        courseId,
-                                                        examId: ch.exam.examId || ch.exam._id,
-                                                        examType: ch.exam.type
-                                                    })}
+                                                    style={[styles.examBtn, attempted && { opacity: 0.6 }]}
+                                                    onPress={() => {
+                                                        if (attempted) {
+                                                            Alert.alert(
+                                                                passed ? 'Exam Passed ✓' : 'Already Attempted',
+                                                                passed
+                                                                    ? 'You have already passed this chapter exam.'
+                                                                    : 'You have already submitted this exam. Each exam can only be taken once.'
+                                                            );
+                                                            return;
+                                                        }
+                                                        navigation.navigate('ExamInfo', {
+                                                            courseId,
+                                                            examId,
+                                                            examType: ch.exam.type,
+                                                            chapterIdx: cIdx
+                                                        });
+                                                    }}
                                                 >
-                                                    <Ionicons name="document-text" size={18} color={isDark ? "#fbbf24" : "#D97706"} />
-                                                    <Text style={[styles.examText, isDark && { color: '#fbbf24' }]}>
-                                                        {ch.exam.type === 'quiz' ? 'Quiz' : 'Exam'}
+                                                    <Ionicons
+                                                        name={passed ? 'checkmark-circle' : attempted ? 'lock-closed' : 'document-text'}
+                                                        size={18}
+                                                        color={passed ? (isDark ? '#14b8a6' : '#059669') : (isDark ? '#fbbf24' : '#D97706')}
+                                                    />
+                                                    <Text style={[styles.examText, isDark && { color: '#fbbf24' }, passed && { color: isDark ? '#14b8a6' : '#059669' }]}>
+                                                        {passed ? 'Passed ✓' : attempted ? 'Attempted (Locked)' : (ch.exam.type === 'quiz' ? 'Take Quiz' : 'Take Exam')}
                                                     </Text>
-                                                    {passed && <Ionicons name="checkmark-circle" size={16} color={isDark ? "#14b8a6" : "#059669"} style={{ marginLeft: 'auto' }} />}
                                                 </TouchableOpacity>
                                             );
                                         })()}

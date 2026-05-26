@@ -39,6 +39,7 @@ interface Product {
     reviews?: number;
     stock: number;
     isFeatured?: boolean;
+    maxCoinPercentage?: number;
 }
 
 interface Category {
@@ -272,6 +273,14 @@ const Marketplace = ({ navigation }: any) => {
                     {item.originalPrice && (
                         <Text style={styles.originalPriceText}>৳{item.originalPrice.toLocaleString()}</Text>
                     )}
+                </View>
+
+                {/* Coin Usage Badge */}
+                <View style={[styles.coinBadgeRow, isDark && styles.coinBadgeRowDark]}>
+                    <Text style={styles.coinIcon}>🪙</Text>
+                    <Text style={[styles.coinBadgeText, isDark && { color: '#FCD34D' }]}>
+                        {item.maxCoinPercentage ?? 20}% Coin Payable
+                    </Text>
                 </View>
             </View>
         </TouchableOpacity>
@@ -576,6 +585,11 @@ const styles = StyleSheet.create({
     priceRow: { flexDirection: 'row', alignItems: 'center', marginTop: 12 },
     priceText: { fontSize: 18, fontWeight: '900', color: '#0D9488' },
     originalPriceText: { fontSize: 13, color: '#94A3B8', textDecorationLine: 'line-through', marginLeft: 8, fontWeight: '500' },
+
+    coinBadgeRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8, backgroundColor: '#FFFBEB', paddingHorizontal: 8, paddingVertical: 5, borderRadius: 10, alignSelf: 'flex-start', gap: 4 },
+    coinBadgeRowDark: { backgroundColor: 'rgba(251, 191, 36, 0.12)' },
+    coinIcon: { fontSize: 12 },
+    coinBadgeText: { fontSize: 10, fontWeight: '800', color: '#B45309', letterSpacing: 0.2 },
 
     gridContainer: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 11 },
     gridItem: { width: '50%', padding: 8 },

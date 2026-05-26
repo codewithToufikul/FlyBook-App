@@ -1,8 +1,8 @@
 import { Platform } from 'react-native';
 import { launchImageLibrary, Asset } from 'react-native-image-picker';
 
-const CLOUDINARY_CLOUD_NAME = 'dljmobi4k';
-const CLOUDINARY_UPLOAD_PRESET = 'flybook';
+const CLOUDINARY_CLOUD_NAME = 'duyrnfagi';
+const CLOUDINARY_UPLOAD_PRESET = 'flybook_video';
 
 /**
  * Pick video from gallery

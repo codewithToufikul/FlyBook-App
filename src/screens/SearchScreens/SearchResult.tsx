@@ -15,6 +15,7 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { get } from '../../services/api';
 import { useTheme } from '../../contexts/ThemeContext';
+import { openLink, openPdfLink } from '../../utils/openLink';
 
 const { width } = Dimensions.get('window');
 
@@ -165,7 +166,7 @@ const SearchResult = () => {
         <TouchableOpacity
           key={book._id || idx}
           style={[styles.bookRow, { backgroundColor: cardBg, borderBottomColor: borderColor }]}
-          onPress={() => book.pdf ? Linking.openURL(book.pdf) : null}
+          onPress={() => book.pdf ? openPdfLink(book.pdf, isDark) : null}
           activeOpacity={0.7}
         >
           <View style={[styles.bookIcon, { backgroundColor: book.pdf ? (isDark ? 'rgba(239,68,68,0.15)' : '#fef2f2') : (isDark ? 'rgba(59,130,246,0.15)' : '#eff6ff') }]}>
@@ -188,7 +189,7 @@ const SearchResult = () => {
         <TouchableOpacity
           key={idx}
           style={[styles.webCard, { backgroundColor: cardBg, borderColor }]}
-          onPress={() => Linking.openURL(item.link)}
+          onPress={() => openLink(item.link, isDark)}
           activeOpacity={0.7}
         >
           <Text style={[styles.webTitle, { color: isDark ? '#60a5fa' : '#2563eb' }]} numberOfLines={2}>{item.title}</Text>

@@ -8,6 +8,7 @@ import OrgActivities from '../../screens/OrganizationScreens/OrgActivitiesScreen
 import AddActivity from '../../screens/OrganizationScreens/AddActivityScreen';
 import ActivityDetails from '../../screens/OrganizationScreens/ActivityDetailsScreen';
 import EventsList from '../../screens/OrganizationScreens/EventsListScreen';
+import ScholarshipsList from '../../screens/OrganizationScreens/ScholarshipsListScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -22,6 +23,7 @@ const OrganizationStack = () => {
             <Stack.Screen name="AddActivity" component={AddActivity} />
             <Stack.Screen name="ActivityDetails" component={ActivityDetails} />
             <Stack.Screen name="EventsList" component={EventsList} />
+            <Stack.Screen name="ScholarshipsList" component={ScholarshipsList} />
         </Stack.Navigator>
     );
 };

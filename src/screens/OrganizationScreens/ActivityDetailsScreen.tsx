@@ -9,11 +9,13 @@ import {
     StatusBar,
     ActivityIndicator,
     Dimensions,
+    Alert,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
-import { getActivityDetails } from '../../services/orgService';
+import { getActivityDetails, requestEventTransfer } from '../../services/orgService';
+import { useAuth } from '../../contexts/AuthContext';
 
 const { width } = Dimensions.get('window');
 
@@ -21,8 +23,63 @@ const ActivityDetails = ({ route, navigation }: any) => {
     const { activityId } = route.params;
     const insets = useSafeAreaInsets();
     const { isDark } = useTheme();
+    const { user } = useAuth();
     const [activity, setActivity] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+
+    const handleOptionsPress = () => {
+        const isOwner = activity?.userId?.toString() === user?._id?.toString();
+        const isAdmin = user?.role === 'admin';
+
+        if (!isOwner && !isAdmin) {
+            Alert.alert('Permission Denied', 'Only the creator of this activity can request a transfer to Events.');
+            return;
+        }
+
+        const status = activity?.eventTransferStatus;
+
+        if (status === 'approved') {
+            Alert.alert('Already Published', 'This activity has already been approved and is visible in the Events section. ✅');
+            return;
+        }
+
+        if (status === 'pending') {
+            Alert.alert(
+                'Already Submitted ⏳',
+                'A transfer request for this activity is already pending admin review. You will be notified once it\'s approved.',
+                [{ text: 'OK' }]
+            );
+            return;
+        }
+
+        Alert.alert(
+            'Transfer to Event?',
+            'This will submit a request to the FlyBook admin team to publish this activity in the public Events section. Approval is required.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Submit Request 🚀',
+                    onPress: async () => {
+                        try {
+                            const res = await requestEventTransfer(activityId, activity.organizationId);
+                            if (res.success) {
+                                Alert.alert(
+                                    'Request Submitted! 🎉',
+                                    'Your event transfer request has been sent to the FlyBook admin team for review. It will appear in Events once approved.'
+                                );
+                                // Refresh the activity to show updated status
+                                fetchDetails();
+                            } else {
+                                Alert.alert('Error', res.message || 'Failed to submit transfer request.');
+                            }
+                        } catch (error) {
+                            Alert.alert('Error', 'An error occurred while submitting the request.');
+                        }
+                    }
+                }
+            ]
+        );
+    };
 
     useEffect(() => {
         fetchDetails();
@@ -78,8 +135,8 @@ const ActivityDetails = ({ route, navigation }: any) => {
                         >
                             <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.iconCircle}>
-                            <Ionicons name="share-social-outline" size={24} color="#FFFFFF" />
+                        <TouchableOpacity onPress={handleOptionsPress} style={styles.iconCircle}>
+                            <Ionicons name="ellipsis-horizontal" size={24} color="#FFFFFF" />
                         </TouchableOpacity>
                     </View>
                 </View>

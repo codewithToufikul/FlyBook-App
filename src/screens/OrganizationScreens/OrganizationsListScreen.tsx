@@ -115,9 +115,9 @@ const OrganizationsList = ({ navigation }: any) => {
                 <View style={styles.headerActions}>
                     <TouchableOpacity
                         style={[styles.iconButton, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}
-                        onPress={() => navigation.navigate('MyOrganizations')}
+                        onPress={() => navigation.navigate('ScholarshipsList')}
                     >
-                        <Ionicons name="business-outline" size={24} color={isDark ? "#f8fafc" : "#1F2937"} />
+                        <Ionicons name="school-outline" size={24} color={isDark ? "#f8fafc" : "#1F2937"} />
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={[styles.iconButton, styles.addBtn, isDark && { backgroundColor: '#14b8a6', borderColor: '#0d9488' }]}
@@ -168,6 +168,19 @@ const OrganizationsList = ({ navigation }: any) => {
                         />
                         <Text style={[styles.tabText, isDark && { color: '#64748b' }]}>
                             Events
+                        </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.tab, isDark && { backgroundColor: '#1e293b', borderColor: 'transparent' }]}
+                        onPress={() => navigation.navigate('MyOrganizations')}
+                    >
+                        <Ionicons
+                            name="business-outline"
+                            size={18}
+                            color={isDark ? '#14b8a6' : '#6B7280'}
+                        />
+                        <Text style={[styles.tabText, isDark && { color: '#cbd5e1' }]}>
+                            My Orgs
                         </Text>
                     </TouchableOpacity>
                 </ScrollView>

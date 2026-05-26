@@ -27,6 +27,7 @@ import {
     getCourseMapping,
     enrollInCourse,
     checkEnrollmentStatus,
+    pinPost,
     Community,
     CommunityPost
 } from '../../services/communityService';
@@ -39,6 +40,7 @@ const CommunityDetailsScreen = ({ route, navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { user } = useAuth();
     const { isDark } = useTheme();
+    const flatListRef = React.useRef<FlatList>(null);
 
     const [community, setCommunity] = useState<Community | null>(null);
     const [posts, setPosts] = useState<CommunityPost[]>([]);
@@ -162,6 +164,47 @@ const CommunityDetailsScreen = ({ route, navigation }: any) => {
         }
     };
 
+    const handlePostOptions = (item: CommunityPost) => {
+        const canPin = permissions.isMainAdmin || permissions.isAdmin || permissions.isEditor;
+        if (!canPin) return;
+
+        const isPinned = !!item.isPinned;
+        Alert.alert(
+            'Post Options',
+            'Select an action for this post.',
+            [
+                {
+                    text: isPinned ? 'Unpin Post' : 'Pin Post',
+                    onPress: async () => {
+                        try {
+                            const res = await pinPost(item._id, !isPinned);
+                            if (res.success) {
+                                setPosts(prev => {
+                                    const updated = prev.map(p => p._id === item._id ? { ...p, isPinned: !isPinned } : p);
+                                    return [...updated].sort((a, b) => {
+                                        const aPin = a.isPinned ? 1 : 0;
+                                        const bPin = b.isPinned ? 1 : 0;
+                                        if (aPin !== bPin) return bPin - aPin;
+                                        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+                                    });
+                                });
+                                Alert.alert('Success', isPinned ? 'Post unpinned successfully!' : 'Post pinned successfully!');
+                            } else {
+                                Alert.alert('Error', 'Failed to update post pin status.');
+                            }
+                        } catch (error) {
+                            Alert.alert('Error', 'Failed to pin/unpin post.');
+                        }
+                    }
+                },
+                {
+                    text: 'Cancel',
+                    style: 'cancel'
+                }
+            ]
+        );
+    };
+
     const getYoutubeId = (url: string) => {
         const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
         const match = url.match(regExp);
@@ -178,7 +221,17 @@ const CommunityDetailsScreen = ({ route, navigation }: any) => {
             : [];
 
         return (
-            <View style={[styles.postCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
+            <View style={[
+                styles.postCard,
+                isDark && { backgroundColor: '#1e293b', borderColor: '#334155' },
+                item.isPinned && { borderColor: '#EAB308', borderWidth: 1.5 }
+            ]}>
+                {item.isPinned && (
+                    <View style={styles.pinnedIndicatorRow}>
+                        <Ionicons name="pin" size={14} color="#EAB308" />
+                        <Text style={styles.pinnedIndicatorText}>PINNED POST</Text>
+                    </View>
+                )}
                 {/* Header - Matching Web */}
                 <View style={[styles.postHeader, { marginBottom: 8 }]}>
                     <View style={{ flex: 1 }}>
@@ -212,9 +265,11 @@ const CommunityDetailsScreen = ({ route, navigation }: any) => {
                             </Text>
                         </View>
                     </View>
-                    <TouchableOpacity>
-                        <Ionicons name="ellipsis-horizontal" size={20} color={isDark ? "#64748b" : "#9CA3AF"} />
-                    </TouchableOpacity>
+                    {(permissions.isMainAdmin || permissions.isAdmin || permissions.isEditor) && (
+                        <TouchableOpacity onPress={() => handlePostOptions(item)}>
+                            <Ionicons name="ellipsis-horizontal" size={20} color={isDark ? "#64748b" : "#9CA3AF"} />
+                        </TouchableOpacity>
+                    )}
                 </View>
 
                 {item.description ? <Text style={[styles.postDescription, isDark && { color: '#94a3b8' }]}>{item.description}</Text> : null}
@@ -425,6 +480,48 @@ const CommunityDetailsScreen = ({ route, navigation }: any) => {
                     <Ionicons name="image-outline" size={24} color={isDark ? "#14b8a6" : "#0D9488"} />
                 </TouchableOpacity>
             )}
+
+            {activeTab === 'Feed' && posts.filter(p => p.isPinned).length > 0 && (
+                <View style={[styles.pinnedSection, isDark && { backgroundColor: '#1e293b', borderBottomColor: '#334155' }]}>
+                    <View style={styles.pinnedHeader}>
+                        <Ionicons name="pin" size={16} color="#EAB308" />
+                        <Text style={[styles.pinnedTitle, isDark && { color: '#f8fafc' }]}>Pinned Posts</Text>
+                    </View>
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.pinnedScrollContent}
+                    >
+                        {posts.filter(p => p.isPinned).map(pinnedPost => (
+                            <TouchableOpacity
+                                key={`pinned-carousel-${pinnedPost._id}`}
+                                style={[styles.pinnedCard, isDark && { backgroundColor: '#0f172a', borderColor: '#334155' }]}
+                                onPress={() => {
+                                    const index = posts.findIndex(p => p._id === pinnedPost._id);
+                                    if (index !== -1 && flatListRef.current) {
+                                        flatListRef.current.scrollToIndex({ index, animated: true, viewPosition: 0 });
+                                    }
+                                }}
+                            >
+                                <View style={styles.pinnedCardHeader}>
+                                    <Text style={[styles.pinnedCardAuthor, isDark && { color: '#94a3b8' }]} numberOfLines={1}>
+                                        {pinnedPost.userName || 'Admin'}
+                                    </Text>
+                                    <View style={[styles.pinnedCardTypeBadge, (styles as any)[`${pinnedPost.type}Badge`] || styles.textBadge, isDark && { backgroundColor: 'rgba(59, 130, 246, 0.1)' }]}>
+                                        <Text style={[styles.pinnedCardTypeText, isDark && { color: '#3b82f6' }]}>{pinnedPost.type.toUpperCase()}</Text>
+                                    </View>
+                                </View>
+                                <Text style={[styles.pinnedCardTitle, isDark && { color: '#f8fafc' }]} numberOfLines={1}>
+                                    {pinnedPost.title || 'Pinned Announcement'}
+                                </Text>
+                                <Text style={[styles.pinnedCardDesc, isDark && { color: '#94a3b8' }]} numberOfLines={2}>
+                                    {pinnedPost.description || pinnedPost.content || ''}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                </View>
+            )}
         </View>
     );
 
@@ -441,12 +538,18 @@ const CommunityDetailsScreen = ({ route, navigation }: any) => {
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             <FlatList
+                ref={flatListRef}
                 data={activeTab === 'Feed' ? posts : []}
                 renderItem={renderPostItem}
                 keyExtractor={item => item._id}
                 ListHeaderComponent={renderHeader}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 40 }}
+                onScrollToIndexFailed={(info) => {
+                    setTimeout(() => {
+                        flatListRef.current?.scrollToIndex({ index: info.index, animated: true, viewPosition: 0 });
+                    }, 500);
+                }}
                 ListEmptyComponent={
                     activeTab === 'Feed' ? (
                         <View style={styles.emptyContainer}>
@@ -923,6 +1026,88 @@ const styles = StyleSheet.create({
         marginTop: 5,
         textAlign: 'center',
         paddingHorizontal: 40,
+    },
+    pinnedIndicatorRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 8,
+        backgroundColor: 'rgba(234, 179, 8, 0.1)',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 6,
+        alignSelf: 'flex-start',
+    },
+    pinnedIndicatorText: {
+        fontSize: 11,
+        color: '#EAB308',
+        fontWeight: 'bold',
+        marginLeft: 4,
+    },
+    pinnedSection: {
+        backgroundColor: '#FFFFFF',
+        paddingVertical: 15,
+        paddingHorizontal: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: '#E5E7EB',
+        marginBottom: 10,
+    },
+    pinnedHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    pinnedTitle: {
+        fontSize: 15,
+        fontWeight: 'bold',
+        color: '#1F2937',
+        marginLeft: 6,
+    },
+    pinnedScrollContent: {
+        paddingRight: 15,
+    },
+    pinnedCard: {
+        width: width * 0.7,
+        backgroundColor: '#F9FAFB',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        borderRadius: 12,
+        padding: 12,
+        marginRight: 12,
+    },
+    pinnedCardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 6,
+    },
+    pinnedCardAuthor: {
+        fontSize: 12,
+        color: '#6B7280',
+        fontWeight: '600',
+        flex: 1,
+        marginRight: 8,
+    },
+    pinnedCardTypeBadge: {
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
+        backgroundColor: '#E0F2FE',
+    },
+    pinnedCardTypeText: {
+        fontSize: 9,
+        fontWeight: 'bold',
+        color: '#0369A1',
+    },
+    pinnedCardTitle: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#111827',
+        marginBottom: 4,
+    },
+    pinnedCardDesc: {
+        fontSize: 12,
+        color: '#4B5563',
+        lineHeight: 16,
     },
 });
 

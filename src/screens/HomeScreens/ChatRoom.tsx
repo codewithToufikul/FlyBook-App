@@ -33,6 +33,7 @@ import {
 import { handleVideoUpload } from '../../utils/videoUpload';
 import { handlePdfUpload } from '../../utils/pdfupload';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { openLink } from '../../utils/openLink';
 
 interface Message {
     _id: string;
@@ -498,7 +499,7 @@ const ChatRoom = () => {
                                 if ((item.messageType as any) === 'video') {
                                     (navigation as any).navigate('VideoPlayer', { videoUrl: item.mediaUrl });
                                 } else if (item.mediaUrl) {
-                                    Linking.openURL(item.mediaUrl);
+                                    openLink(item.mediaUrl, isDark);
                                 }
                             }}
                             style={[styles.filePreview, { backgroundColor: isMe ? 'rgba(255,255,255,0.1)' : (isDark ? '#334155' : '#F3F4F6') }]}

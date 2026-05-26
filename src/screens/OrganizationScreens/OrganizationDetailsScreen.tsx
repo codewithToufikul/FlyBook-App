@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import Video from 'react-native-video';
 import { getOrganizationById, Organization } from '../../services/orgService';
+import { openLink } from '../../utils/openLink';
 
 const { width } = Dimensions.get('window');
 
@@ -51,7 +52,7 @@ const OrganizationDetails = ({ route, navigation }: any) => {
 
     const handleOpenLink = (url?: string) => {
         if (url) {
-            Linking.openURL(url).catch(err => console.error("Couldn't load page", err));
+            openLink(url, isDark);
         }
     };
 

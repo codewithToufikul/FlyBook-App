@@ -41,7 +41,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         id: userData._id || (userData as any).id
       });
       console.log('📦 Keychain Data String:', keychainData);
-      
+
       await Keychain.setGenericPassword('flybook_auth', keychainData);
       console.log('✅ Keychain.setGenericPassword Success');
     } catch (e) {
@@ -88,7 +88,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const handleDeepLink = async (event: { url: string }) => {
       const { url } = event;
       console.log('🔗 [SSO] Incoming Link:', url);
-      
+
       if (url.includes('flybook://sso-auth')) {
         // Extract target screen if provided (e.g. flybook://sso-auth?callback=flyconnect&target=chat:123)
         const targetMatch = url.match(/target=([^&]*)/);
@@ -105,7 +105,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             };
             const encodedData = encodeURIComponent(JSON.stringify(ssoDataRaw));
             const redirectUrl = `flyconnect://auth?data=${encodedData}`;
-            
+
             console.log(`🚀 [SSO] Redirecting back to FlyConnect${target ? ' with target: ' + target : ''}...`);
             await Linking.openURL(redirectUrl);
           } catch (err) {
@@ -119,7 +119,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     // Handle background launch
     Linking.getInitialURL().then(url => {
-        if (url) handleDeepLink({ url });
+      if (url) handleDeepLink({ url });
     });
 
     const subscription = Linking.addEventListener('url', handleDeepLink);

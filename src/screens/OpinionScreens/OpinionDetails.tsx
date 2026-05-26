@@ -28,6 +28,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import LinearGradient from 'react-native-linear-gradient';
 import VideoPlayer from '../../components/VideoPlayer';
+import DeviceInfo from 'react-native-device-info';
+import { countryToLanguage } from '../../utils/countryToLanguage';
+import { openLink, openPdfLink } from '../../utils/openLink';
+import ParsedText from 'react-native-parsed-text';
 
 const { width } = Dimensions.get('window');
 
@@ -70,6 +74,8 @@ interface Post {
     date?: string;
     time?: string;
     createdAt?: string;
+    channelId?: string;
+    channelName?: string;
 }
 
 const ShareSheet = ({
@@ -139,8 +145,8 @@ const ShareSheet = ({
             action: () => {
                 Alert.alert('Block User', 'Are you sure you want to block this user?', [
                     { text: 'Cancel', style: 'cancel' },
-                    { 
-                        text: 'Block', 
+                    {
+                        text: 'Block',
                         style: 'destructive',
                         onPress: () => {
                             Alert.alert('User Blocked', 'You will no longer see content from this user.');
@@ -215,6 +221,86 @@ const OpinionDetails = () => {
     const [isLiking, setIsLiking] = useState(false);
     const [isShareSheetVisible, setShareSheetVisible] = useState(false);
 
+    const [translatedText, setTranslatedText] = useState('');
+    const [showTranslated, setShowTranslated] = useState(false);
+    const [isTranslating, setIsTranslating] = useState(false);
+
+    const handleTranslate = async () => {
+        if (!postData) return;
+
+        if (showTranslated) {
+            setShowTranslated(false);
+            return;
+        }
+
+        if (translatedText) {
+            setShowTranslated(true);
+            return;
+        }
+
+        const originalText =
+            postData.description || postData.postText;
+
+        if (!originalText) return;
+
+        try {
+            setIsTranslating(true);
+
+            const geoResponse = await fetch('https://ipwho.is/');
+
+            const data = await geoResponse.json();
+
+            const targetLang =
+                countryToLanguage[
+                data.country_code as keyof typeof countryToLanguage
+                ] || 'en';
+
+            console.log(targetLang);
+
+            const translateResponse =
+                await post<{ translation?: string }>(
+                    '/api/translate',
+                    {
+                        text: originalText,
+                        targetLang,
+                    }
+                );
+
+            if (translateResponse?.translation) {
+                setTranslatedText(
+                    translateResponse.translation
+                );
+
+                setShowTranslated(true);
+
+                Toast.show({
+                    type: 'success',
+                    text1: 'Translated successfully!',
+                });
+
+            } else {
+                Toast.show({
+                    type: 'error',
+                    text1: 'Translation failed',
+                });
+            }
+
+        } catch (error) {
+            console.error(
+                'Translation error:',
+                error
+            );
+
+            Toast.show({
+                type: 'error',
+                text1: 'Translation request failed',
+            });
+
+        } finally {
+            setIsTranslating(false);
+        }
+    };
+
     const handleLike = async () => {
         if (!user || isLiking || !postData) return;
 
@@ -267,7 +353,7 @@ const OpinionDetails = () => {
     };
 
     const handlePdfView = (pdfUrl: string) => {
-        Linking.openURL(pdfUrl).catch(() => {
+        openPdfLink(pdfUrl, isDark).catch(() => {
             Toast.show({ type: 'error', text1: 'Could not open PDF' });
         });
     };
@@ -343,6 +429,14 @@ const OpinionDetails = () => {
                                         {postData.date || formatTimeAgo(postData.createdAt)}
                                         {postData.time ? ` • ${postData.time}` : ''}
                                     </Text>
+                                    {postData.channelName ? (
+                                        <View style={styles.channelBadge}>
+                                            <Ionicons name="megaphone-outline" size={10} color={isDark ? '#14b8a6' : '#0D9488'} />
+                                            <Text style={[styles.channelBadgeText, { color: isDark ? '#14b8a6' : '#0D9488' }]}>
+                                                {'  #' + postData.channelName}
+                                            </Text>
+                                        </View>
+                                    ) : null}
                                 </View>
                             </View>
                             <View style={[styles.followBadge, isDark && { backgroundColor: '#0f172a' }]}>
@@ -352,9 +446,47 @@ const OpinionDetails = () => {
 
                         {/* Content Section */}
                         <View style={[styles.contentCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
-                            <Text style={[styles.description, isDark && { color: '#cbd5e1' }]}>
-                                {postData.description || postData.postText}
-                            </Text>
+                            {/* Translation Button */}
+                            <TouchableOpacity
+                                onPress={handleTranslate}
+                                disabled={isTranslating}
+                                style={[
+                                    styles.translateButton,
+                                    isDark && { backgroundColor: '#0f172a', borderColor: '#334155' }
+                                ]}
+                            >
+                                {isTranslating ? (
+                                    <ActivityIndicator size="small" color="#0D9488" style={{ marginRight: 6 }} />
+                                ) : (
+                                    <Ionicons name="language-outline" size={18} color="#0D9488" style={{ marginRight: 6 }} />
+                                )}
+                                <Text style={[styles.translateButtonText, isDark && { color: '#14b8a6' }]}>
+                                    {isTranslating ? "Translating..." : showTranslated ? "Show Original" : "Translate Post"}
+                                </Text>
+                            </TouchableOpacity>
+
+                            <ParsedText
+                                style={[
+                                    styles.description,
+                                    isDark && { color: '#cbd5e1' }
+                                ]}
+                                parse={[
+                                    {
+                                        type: 'url',
+                                        style: {
+                                            color: '#3B82F6',
+                                            textDecorationLine: 'underline',
+                                        },
+                                        onPress: (url: string) => {
+                                            openLink(url, isDark);
+                                        },
+                                    },
+                                ]}
+                            >
+                                {showTranslated && translatedText
+                                    ? translatedText
+                                    : (postData.description || postData.postText || '')}
+                            </ParsedText>
 
                             {postData.pdf && (
                                 <TouchableOpacity
@@ -1144,6 +1276,37 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 12,
         fontWeight: '800',
+    },
+    translateButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'flex-start',
+        backgroundColor: '#F3F4F6',
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        marginTop: 10,
+        marginBottom: 10,
+    },
+    translateButtonText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#0D9488',
+    },
+    channelBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(13,148,136,0.1)',
+        borderRadius: 6,
+        paddingHorizontal: 5,
+        paddingVertical: 2,
+        marginLeft: 6,
+    },
+    channelBadgeText: {
+        fontSize: 10.5,
+        fontWeight: '700',
     },
 });
 

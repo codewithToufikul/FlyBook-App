@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
     View,
     Text,
@@ -8,6 +8,9 @@ import {
     ActivityIndicator,
     Image,
     Dimensions,
+    TextInput,
+    Alert,
+    Linking,
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -15,6 +18,7 @@ import { get } from '../../services/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
 import { StatusBar } from 'react-native';
+import { downloadAnswerSheet } from '../../services/communityService';
 
 const fetchStudentDashboard = async (courseId: string) => {
     // This calls the existing endpoint: /courses/:courseId/student-dashboard
@@ -28,6 +32,9 @@ const CommunityStudentDashboard = ({ route, navigation }: any) => {
     const { isDark } = useTheme();
     const { courseId } = route.params;
     const [searchQuery, setSearchQuery] = useState('');
+    const [sortBy, setSortBy] = useState<'serial' | 'name' | 'score'>('serial');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+    const [isDownloadingReport, setIsDownloadingReport] = useState(false);
 
     const { data: dashboardData, isLoading, error } = useQuery({
         queryKey: ['student-dashboard', courseId],
@@ -55,13 +62,76 @@ const CommunityStudentDashboard = ({ route, navigation }: any) => {
         );
     }
 
-    const { overallStats, students } = dashboardData;
+        const { overallStats, students } = dashboardData;
+
+    const handleSort = (type: 'serial' | 'name' | 'score') => {
+        if (sortBy === type) {
+            setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortBy(type);
+            setSortOrder('asc');
+        }
+    };
+
+    const handleDownloadAnswerSheet = async (attemptId: string) => {
+        try {
+            const res = await downloadAnswerSheet(attemptId);
+            if (res.success && res.pdfUrl) {
+                Linking.openURL(res.pdfUrl).catch(err => {
+                    Alert.alert('Error', 'Failed to open direct PDF download link.');
+                });
+            } else {
+                Alert.alert('Error', 'Failed to generate answer sheet PDF.');
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Failed to download answer sheet.');
+        }
+    };
+
+    const handleDownloadResultSheet = async () => {
+        setIsDownloadingReport(true);
+        try {
+            const res = await get<any>(`/courses/${courseId}/result-sheet`);
+            if (res.success && res.pdfUrl) {
+                Linking.openURL(res.pdfUrl).catch(err => {
+                    Alert.alert('Error', 'Failed to open direct PDF download link.');
+                });
+            } else {
+                Alert.alert('Error', res.message || 'Failed to generate result sheet PDF.');
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Failed to download result sheet.');
+        } finally {
+            setIsDownloadingReport(false);
+        }
+    };
 
     // Filter students based on search
     const filteredStudents = students.filter((s: any) =>
         s.student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (s.student.identityNumber && s.student.identityNumber.toLowerCase().includes(searchQuery.toLowerCase())) ||
         s.student.number.includes(searchQuery)
     );
+
+    // Sort students
+    const sortedStudents = [...filteredStudents].sort((a: any, b: any) => {
+        let valA, valB;
+        if (sortBy === 'name') {
+            valA = a.student.name.toLowerCase();
+            valB = b.student.name.toLowerCase();
+        } else if (sortBy === 'score') {
+            valA = a.statistics.averageScore ?? -1;
+            valB = b.statistics.averageScore ?? -1;
+        } else {
+            // 'serial' - original array index
+            valA = students.indexOf(a);
+            valB = students.indexOf(b);
+        }
+
+        if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+        if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+        return 0;
+    });
 
     return (
         <View style={{ flex: 1, backgroundColor: isDark ? '#0f172a' : '#FFFFFF', paddingTop: insets.top }}>
@@ -71,8 +141,55 @@ const CommunityStudentDashboard = ({ route, navigation }: any) => {
                     <Ionicons name="arrow-back" size={24} color={isDark ? "#f8fafc" : "#1F2937"} />
                 </TouchableOpacity>
                 <Text style={[styles.headerTitle, isDark && { color: '#f8fafc' }]}>Student Dashboard</Text>
-                <View style={{ width: 40 }} />
+                <TouchableOpacity onPress={handleDownloadResultSheet} style={styles.downloadHeaderBtn} disabled={isDownloadingReport}>
+                    {isDownloadingReport ? (
+                        <ActivityIndicator size="small" color={isDark ? "#14b8a6" : "#4F46E5"} />
+                    ) : (
+                        <Ionicons name="cloud-download-outline" size={24} color={isDark ? "#14b8a6" : "#4F46E5"} />
+                    )}
+                </TouchableOpacity>
             </View>
+
+            {/* Search Input Box */}
+            <View style={[styles.searchContainer, isDark && { backgroundColor: '#1e293b', borderBottomColor: '#334155' }]}>
+                <Ionicons name="search" size={20} color={isDark ? "#94a3b8" : "#9CA3AF"} style={{ marginRight: 8 }} />
+                <TextInput
+                    style={[styles.searchInput, isDark && { color: '#f8fafc' }]}
+                    placeholder="Search by student name or Roll/ID..."
+                    placeholderTextColor={isDark ? "#64748b" : "#9CA3AF"}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                />
+                {searchQuery !== '' && (
+                    <TouchableOpacity onPress={() => setSearchQuery('')}>
+                        <Ionicons name="close-circle" size={18} color={isDark ? "#94a3b8" : "#9CA3AF"} />
+                    </TouchableOpacity>
+                )}
+            </View>
+
+            {/* Sorting Toggles */}
+            <View style={[styles.sortingContainer, isDark && { backgroundColor: '#1e293b', borderBottomColor: '#334155' }]}>
+                <Text style={[styles.sortLabel, isDark && { color: '#94a3b8' }]}>Sort by:</Text>
+                <TouchableOpacity onPress={() => handleSort('serial')} style={[styles.sortBtn, sortBy === 'serial' && styles.activeSortBtn, isDark && sortBy === 'serial' && { backgroundColor: '#14b8a6', borderColor: '#14b8a6' }]}>
+                    <Text style={[styles.sortBtnText, sortBy === 'serial' && styles.activeSortBtnText, isDark && { color: '#94a3b8' }, isDark && sortBy === 'serial' && { color: '#ffffff' }]}>Serial</Text>
+                    {sortBy === 'serial' && (
+                        <Ionicons name={sortOrder === 'asc' ? "arrow-up" : "arrow-down"} size={12} color={sortBy === 'serial' ? (isDark ? "#ffffff" : "#4F46E5") : "#6B7280"} style={{ marginLeft: 4 }} />
+                    )}
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleSort('name')} style={[styles.sortBtn, sortBy === 'name' && styles.activeSortBtn, isDark && sortBy === 'name' && { backgroundColor: '#14b8a6', borderColor: '#14b8a6' }]}>
+                    <Text style={[styles.sortBtnText, sortBy === 'name' && styles.activeSortBtnText, isDark && { color: '#94a3b8' }, isDark && sortBy === 'name' && { color: '#ffffff' }]}>Name</Text>
+                    {sortBy === 'name' && (
+                        <Ionicons name={sortOrder === 'asc' ? "arrow-up" : "arrow-down"} size={12} color={sortBy === 'name' ? (isDark ? "#ffffff" : "#4F46E5") : "#6B7280"} style={{ marginLeft: 4 }} />
+                    )}
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleSort('score')} style={[styles.sortBtn, sortBy === 'score' && styles.activeSortBtn, isDark && sortBy === 'score' && { backgroundColor: '#14b8a6', borderColor: '#14b8a6' }]}>
+                    <Text style={[styles.sortBtnText, sortBy === 'score' && styles.activeSortBtnText, isDark && { color: '#94a3b8' }, isDark && sortBy === 'score' && { color: '#ffffff' }]}>Score</Text>
+                    {sortBy === 'score' && (
+                        <Ionicons name={sortOrder === 'asc' ? "arrow-up" : "arrow-down"} size={12} color={sortBy === 'score' ? (isDark ? "#ffffff" : "#4F46E5") : "#6B7280"} style={{ marginLeft: 4 }} />
+                    )}
+                </TouchableOpacity>
+            </View>
+
             <ScrollView style={[styles.container, isDark && { backgroundColor: '#0f172a' }, { paddingBottom: insets.bottom + 16 }]} showsVerticalScrollIndicator={false}>
                 {/* Header Stats */}
                 <View style={[styles.statsContainer, isDark && { backgroundColor: '#0f172a' }]}>
@@ -107,13 +224,19 @@ const CommunityStudentDashboard = ({ route, navigation }: any) => {
 
                 {/* Student List */}
                 <View style={[styles.studentListContainer, isDark && { backgroundColor: '#0f172a' }]}>
-                    <Text style={[styles.sectionTitle, isDark && { color: '#f8fafc' }]}>Enrolled Students ({filteredStudents.length})</Text>
+                    <Text style={[styles.sectionTitle, isDark && { color: '#f8fafc' }]}>Enrolled Students ({sortedStudents.length})</Text>
 
-                    {filteredStudents.map((studentItem: any, index: number) => (
-                        <StudentCard key={index} studentData={studentItem} navigation={navigation} />
+                    {sortedStudents.map((studentItem: any, index: number) => (
+                        <StudentCard
+                            key={studentItem.student.id || index}
+                            studentData={studentItem}
+                            navigation={navigation}
+                            index={index}
+                            onDownload={handleDownloadAnswerSheet}
+                        />
                     ))}
 
-                    {filteredStudents.length === 0 && (
+                    {sortedStudents.length === 0 && (
                         <Text style={styles.emptyText}>No students found.</Text>
                     )}
                 </View>
@@ -135,10 +258,17 @@ const StatCard = ({ title, value, icon, color }: any) => {
     );
 };
 
-const StudentCard = ({ studentData, navigation }: any) => {
+const StudentCard = ({ studentData, navigation, index, onDownload }: any) => {
     const { student, statistics } = studentData;
     const [expanded, setExpanded] = useState(false);
     const { isDark } = useTheme();
+
+    const toBengaliNumber = (num: number) => {
+        const banglaDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+        return num.toString().split('').map(digit => banglaDigits[parseInt(digit, 10)] || digit).join('');
+    };
+
+    const serialNum = toBengaliNumber(index + 1);
 
     return (
         <View style={[styles.studentCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
@@ -146,13 +276,21 @@ const StudentCard = ({ studentData, navigation }: any) => {
                 style={styles.studentHeader}
                 onPress={() => setExpanded(!expanded)}
             >
+                <View style={styles.serialBox}>
+                    <Text style={[styles.serialText, isDark && { color: '#94a3b8' }]}>{serialNum}</Text>
+                </View>
                 <Image
                     source={{ uri: student.profileImage || 'https://via.placeholder.com/50' }}
                     style={[styles.avatar, isDark && { backgroundColor: '#0f172a' }]}
                 />
                 <View style={styles.studentInfo}>
                     <Text style={[styles.studentName, isDark && { color: '#f8fafc' }]}>{student.name}</Text>
-                    <Text style={[styles.studentNumber, isDark && { color: '#64748b' }]}>{student.number}</Text>
+                    <View style={styles.studentSubRow}>
+                        <Text style={[styles.studentNumber, isDark && { color: '#64748b' }]}>{student.number}</Text>
+                        {student.identityNumber ? (
+                            <Text style={[styles.studentIdentity, isDark && { color: '#fbbf24' }]}> • ID: {student.identityNumber}</Text>
+                        ) : null}
+                    </View>
                 </View>
                 <View style={[styles.progressBadge, isDark && { backgroundColor: 'rgba(20, 184, 166, 0.1)' }]}>
                     <Text style={[styles.progressText, isDark && { color: '#14b8a6' }]}>
@@ -187,17 +325,28 @@ const StudentCard = ({ studentData, navigation }: any) => {
                                 <View key={idx} style={styles.examItem}>
                                     <View style={{ flex: 1 }}>
                                         <Text style={[styles.examName, isDark && { color: '#94a3b8' }]} numberOfLines={1}>{exam.chapterTitle}</Text>
-                                        {exam.latestAttempt && exam.latestAttempt.graded === false && (
-                                            <TouchableOpacity
-                                                style={[styles.gradeBadge, isDark && { backgroundColor: 'rgba(59, 130, 246, 0.1)', borderColor: '#3b82f6' }]}
-                                                onPress={() => navigation.navigate('CommunityExamGrading', {
-                                                    attempt: exam.latestAttempt,
-                                                    studentName: student.name
-                                                })}
-                                            >
-                                                <Text style={[styles.gradeBadgeText, isDark && { color: '#3b82f6' }]}>Grade Now</Text>
-                                            </TouchableOpacity>
-                                        )}
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                                            {exam.latestAttempt && exam.latestAttempt.graded === false && (
+                                                <TouchableOpacity
+                                                    style={[styles.gradeBadge, isDark && { backgroundColor: 'rgba(59, 130, 246, 0.1)', borderColor: '#3b82f6' }]}
+                                                    onPress={() => navigation.navigate('CommunityExamGrading', {
+                                                        attempt: exam.latestAttempt,
+                                                        studentName: student.name
+                                                    })}
+                                                >
+                                                    <Text style={[styles.gradeBadgeText, isDark && { color: '#3b82f6' }]}>Grade Now</Text>
+                                                </TouchableOpacity>
+                                            )}
+                                            {exam.latestAttempt && exam.latestAttempt.graded === true && (
+                                                <TouchableOpacity
+                                                    style={[styles.downloadBtn, isDark && { backgroundColor: 'rgba(16, 185, 129, 0.1)', borderColor: '#10B981' }]}
+                                                    onPress={() => onDownload(exam.latestAttempt.attemptId)}
+                                                >
+                                                    <Ionicons name="download-outline" size={10} color="#10B981" />
+                                                    <Text style={styles.downloadBtnText}>Answer Sheet</Text>
+                                                </TouchableOpacity>
+                                            )}
+                                        </View>
                                     </View>
                                     <Text style={[
                                         styles.examScore,
@@ -427,6 +576,103 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: '700',
         color: '#111827',
+    },
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+        borderBottomWidth: 1,
+        borderBottomColor: '#E5E7EB',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+    },
+    searchInput: {
+        flex: 1,
+        height: 38,
+        fontSize: 14,
+        color: '#1F2937',
+        padding: 0,
+    },
+    sortingContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F9FAFB',
+        borderBottomWidth: 1,
+        borderBottomColor: '#E5E7EB',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+    },
+    sortLabel: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#6B7280',
+        marginRight: 10,
+    },
+    sortBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        borderRadius: 16,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        marginRight: 8,
+    },
+    activeSortBtn: {
+        borderColor: '#4F46E5',
+        backgroundColor: '#EEF2FF',
+    },
+    sortBtnText: {
+        fontSize: 11,
+        color: '#4B5563',
+        fontWeight: '500',
+    },
+    activeSortBtnText: {
+        color: '#4F46E5',
+        fontWeight: '700',
+    },
+    serialBox: {
+        width: 24,
+        height: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 6,
+    },
+    serialText: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#4B5563',
+    },
+    studentSubRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    studentIdentity: {
+        fontSize: 12,
+        color: '#fbbf24',
+        fontWeight: '600',
+    },
+    downloadBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#ECFDF5',
+        borderWidth: 1,
+        borderColor: '#10B981',
+        borderRadius: 4,
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        marginTop: 4,
+        alignSelf: 'flex-start',
+    },
+    downloadBtnText: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: '#10B981',
+        marginLeft: 4,
+    },
+    downloadHeaderBtn: {
+        padding: 6,
     },
 });
 

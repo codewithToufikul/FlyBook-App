@@ -76,5 +76,9 @@
 		<string>fetch</string>
 		<string>remote-notification</string>
 	</array>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>flyconnect</string>
+	</array>
 </dict>
 </plist>

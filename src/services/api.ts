@@ -23,17 +23,17 @@ import { Platform } from 'react-native';
 
 const PRODUCTION_URL = 'https://api.flybook.com.bd';
 
+// Set this to false when building APK for production
+const USE_LOCAL = true;
+
 // For local development - automatically detects platform
 const LOCAL_URL = Platform.select({
-  android: 'http://192.168.1.195:3000',
+  android: 'http://localhost:3000',
   ios: 'http://localhost:3000',
-  default: 'http://192.168.1.195:3000',
+  default: 'http://localhost:3000',
 });
 
-// IMPORTANT: If testing on physical device, replace with your computer's IP:
-// const LOCAL_URL = 'http://192.168.8.191:3000'; // Replace with your IP
-
-export const BASE_URL = __DEV__ ? LOCAL_URL : PRODUCTION_URL;
+export const BASE_URL = USE_LOCAL ? LOCAL_URL : PRODUCTION_URL;
 
 // Storage keys
 const TOKEN_KEY = '@flybook_token';

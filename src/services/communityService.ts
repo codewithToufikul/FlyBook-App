@@ -29,6 +29,7 @@ export interface CommunityPost {
   content: string; // or URLs for video
   visibility: 'public' | 'private';
   accessCode?: string;
+  isPinned?: boolean;
   media?: {
     type: 'image' | 'video';
     url: string;
@@ -263,5 +264,41 @@ export const checkEnrollmentStatus = async (
       error,
     );
     return false;
+  }
+};
+
+/**
+ * Pin or unpin a post in community
+ */
+export const pinPost = async (
+  postId: string,
+  pin: boolean,
+): Promise<{ success: boolean; isPinned: boolean }> => {
+  try {
+    const response = await post<{ success: boolean; isPinned: boolean }>(
+      `/posts/${postId}/pin`,
+      { pin },
+    );
+    return response;
+  } catch (error) {
+    console.error(`Error pinning/unpinning post ${postId}:`, error);
+    return { success: false, isPinned: false };
+  }
+};
+
+/**
+ * Generate and download answer sheet for an attempt
+ */
+export const downloadAnswerSheet = async (
+  attemptId: string,
+): Promise<{ success: boolean; pdfUrl: string }> => {
+  try {
+    const response = await get<{ success: boolean; pdfUrl: string }>(
+      `/exams/attempts/${attemptId}/answer-sheet`,
+    );
+    return response;
+  } catch (error) {
+    console.error(`Error downloading answer sheet for attempt ${attemptId}:`, error);
+    return { success: false, pdfUrl: '' };
   }
 };

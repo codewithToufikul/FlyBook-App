@@ -8,6 +8,8 @@ import {
     Platform,
     StatusBar,
     LayoutAnimation,
+    Linking,
+    Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -55,6 +57,18 @@ const HelpCenter = () => {
     const toggleFaq = (id: number) => {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setExpandedFaq(expandedFaq === id ? null : id);
+    };
+
+    const handleEmailPress = () => {
+        Linking.openURL('mailto:support@flybook.com.bd').catch(() => {
+            Alert.alert('Error', 'Could not open mail client');
+        });
+    };
+
+    const handleWhatsAppPress = () => {
+        Linking.openURL('https://wa.me/8801401214109').catch(() => {
+            Alert.alert('Error', 'Could not open WhatsApp');
+        });
     };
 
     return (
@@ -174,18 +188,22 @@ const HelpCenter = () => {
                         </Text>
                     </View>
 
-                    <TouchableOpacity className="bg-blue-500 py-4 rounded-2xl flex-row items-center justify-center mb-3">
+                    <TouchableOpacity
+                        onPress={handleEmailPress}
+                        className="bg-blue-500 py-4 rounded-2xl flex-row items-center justify-center mb-3"
+                    >
                         <Ionicons name="mail" size={20} color="#FFFFFF" />
-                        <Text className="text-white font-bold text-base ml-2">Contact via Email</Text>
+                        <Text className="text-white font-bold text-base ml-2">Email: support@flybook.com.bd</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
+                        onPress={handleWhatsAppPress}
                         className="bg-white py-4 rounded-2xl flex-row items-center justify-center border border-blue-100"
                         style={[isDark && { backgroundColor: 'transparent', borderColor: '#334155' }]}
                     >
                         <Ionicons name="logo-whatsapp" size={20} color="#10b981" />
                         <Text className="text-gray-700 font-bold text-base ml-2" style={[isDark && { color: '#f8fafc' }]}>
-                            Live Chat on WhatsApp
+                            WhatsApp: +880 1401-214109
                         </Text>
                     </TouchableOpacity>
                 </View>

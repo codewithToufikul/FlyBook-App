@@ -67,6 +67,7 @@ const ChannelChat = ({ route, navigation }: any) => {
         const newMessage = {
             senderId: user?._id,
             senderName: user?.name,
+            senderProfileImage: user?.profileImage || null,
             text: messageText.trim(),
             timestamp: new Date().toISOString(),
         };

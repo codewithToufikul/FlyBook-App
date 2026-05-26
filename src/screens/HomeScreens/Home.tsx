@@ -27,6 +27,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { get, post } from '../../services/api';
 import { useTheme } from '../../contexts/ThemeContext';
 import Toast from 'react-native-toast-message';
+import { countryToLanguage } from '../../utils/countryToLanguage';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -407,6 +408,102 @@ const PostCard = ({
   const isLiked = currentUserId && item.likedBy?.includes(currentUserId);
   const commentCount = item.comments?.length || 0;
 
+  const [translatedText, setTranslatedText] = useState('');
+  const [showTranslated, setShowTranslated] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
+
+  const handleTranslate = async (e: any) => {
+    e.stopPropagation();
+
+    if (showTranslated) {
+      setShowTranslated(false);
+      return;
+    }
+
+    if (translatedText) {
+      setShowTranslated(true);
+      return;
+    }
+
+    const originalText =
+      item.postText || item.message;
+
+    if (!originalText) return;
+
+    try {
+      setIsTranslating(true);
+
+      // Detect current country
+      const geoResponse = await fetch(
+        'https://ipwho.is/'
+      );
+
+      if (!geoResponse.ok) {
+        throw new Error(
+          'Failed to detect country'
+        );
+      }
+
+      const geoData = await geoResponse.json();
+
+      // Get target language
+      const targetLang =
+        countryToLanguage[
+        geoData.country_code as keyof typeof countryToLanguage
+        ] || 'en';
+
+      console.log(
+        targetLang,
+        'targetLang'
+      );
+
+      // Translate API call
+      const translateResponse =
+        await post<{ translation?: string }>(
+          '/api/translate',
+          {
+            text: originalText,
+            targetLang,
+          }
+        );
+
+      if (translateResponse?.translation) {
+        setTranslatedText(
+          translateResponse.translation
+        );
+
+        setShowTranslated(true);
+
+        Toast.show({
+          type: 'success',
+          text1:
+            'Translated successfully!',
+        });
+
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Translation failed',
+        });
+      }
+
+    } catch (error) {
+      console.error(
+        'Translation error:',
+        error
+      );
+
+      Toast.show({
+        type: 'error',
+        text1:
+          'Translation request failed',
+      });
+
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
   return (
     <TouchableOpacity
       activeOpacity={0.92}
@@ -429,9 +526,28 @@ const PostCard = ({
       </Text>
 
       {(item.postText || item.message) ? (
-        <Text style={[styles.body, isDark && { color: '#94a3b8' }]} numberOfLines={3}>
-          {item.postText || item.message}
-        </Text>
+        <View style={{ marginBottom: 10 }}>
+          <Text style={[styles.body, isDark && { color: '#94a3b8' }, { marginBottom: 4 }]} numberOfLines={3}>
+            {showTranslated && translatedText ? translatedText : (item.postText || item.message)}
+          </Text>
+          <TouchableOpacity
+            onPress={handleTranslate}
+            disabled={isTranslating}
+            style={[
+              styles.cardTranslateBtn,
+              isDark && { backgroundColor: '#334155', borderColor: '#475569' }
+            ]}
+          >
+            {isTranslating ? (
+              <ActivityIndicator size="small" color="#6C63FF" style={{ marginRight: 4 }} />
+            ) : (
+              <Ionicons name="language-outline" size={14} color="#6C63FF" style={{ marginRight: 4 }} />
+            )}
+            <Text style={styles.cardTranslateBtnText}>
+              {isTranslating ? "Translating..." : showTranslated ? "Show Original" : "Translate"}
+            </Text>
+          </TouchableOpacity>
+        </View>
       ) : null}
 
       {imageSource ? (
@@ -683,7 +799,7 @@ const Home = () => {
         style={{ zIndex: 20, elevation: 20 }}
         onLayout={(e) => setTobNavHeight(e.nativeEvent.layout.height)}
       >
-        <TobNav navigation={navigation} />
+        <TobNav />
       </View>
 
       {/* ── Filter bar: absolutely positioned floating over content ── */}
@@ -832,4 +948,21 @@ const styles = StyleSheet.create({
   loadingText: { marginTop: 12, fontSize: 14, color: '#888' },
   retryButton: { backgroundColor: '#6C63FF', paddingHorizontal: 28, paddingVertical: 12, borderRadius: 24 },
   retryButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  cardTranslateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: '#F3F4F6',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginTop: 6,
+  },
+  cardTranslateBtnText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#6C63FF',
+  },
 });

@@ -16,46 +16,40 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { colorScheme, setColorScheme } = useColorScheme();
-    const [themeMode, setThemeMode] = useState<ThemeMode>('system');
+    const [themeMode, setThemeMode] = useState<ThemeMode>('dark');
 
     useEffect(() => {
-        loadTheme();
+        setColorScheme('dark');
     }, []);
 
     const loadTheme = async () => {
         try {
-            const savedTheme = await AsyncStorage.getItem(THEME_STORAGE_KEY) as ThemeMode | null;
-            if (savedTheme) {
-                setThemeMode(savedTheme);
-                applyTheme(savedTheme);
-            }
+            // Always enforce dark
+            setColorScheme('dark');
+            setThemeMode('dark');
         } catch (error) {
             console.error('Error loading theme:', error);
         }
     };
 
     const applyTheme = (mode: ThemeMode) => {
-        if (mode === 'system') {
-            setColorScheme('system');
-        } else {
-            setColorScheme(mode);
-        }
+        setColorScheme('dark');
     };
 
     const setTheme = async (mode: ThemeMode) => {
         try {
-            setThemeMode(mode);
-            applyTheme(mode);
-            await AsyncStorage.setItem(THEME_STORAGE_KEY, mode);
+            setThemeMode('dark');
+            setColorScheme('dark');
+            await AsyncStorage.setItem(THEME_STORAGE_KEY, 'dark');
         } catch (error) {
             console.error('Error saving theme:', error);
         }
     };
 
-    const isDark = colorScheme === 'dark';
+    const isDark = true;
 
     return (
-        <ThemeContext.Provider value={{ theme: themeMode, setTheme, isDark }}>
+        <ThemeContext.Provider value={{ theme: 'dark', setTheme, isDark }}>
             {children}
         </ThemeContext.Provider>
     );

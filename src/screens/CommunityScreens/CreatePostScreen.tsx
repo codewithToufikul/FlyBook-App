@@ -18,7 +18,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createCommunityPost } from '../../services/communityService';
 import { handleImageUpload } from '../../utils/imageUpload';
-import { handleVideoUpload } from '../../utils/videoUpload';
+import { handleVideoUpload, pickVideoFromGallery, uploadVideoToCloudinary } from '../../utils/videoUpload';
 
 const CreatePostScreen = ({ navigation, route }: any) => {
     const { communityId, communityName } = route.params;
@@ -35,10 +35,11 @@ const CreatePostScreen = ({ navigation, route }: any) => {
     const [content, setContent] = useState('');
     const [media, setMedia] = useState<{ type: 'image' | 'video', url: string }[]>([]);
     const [uploadingMedia, setUploadingMedia] = useState(false);
+    const [uploadingVideoIdx, setUploadingVideoIdx] = useState<number | null>(null);
 
     // Course specific state
-    const [chapters, setChapters] = useState([
-        { title: 'Chapter 1', videos: [''] }
+    const [chapters, setChapters] = useState<any[]>([
+        { title: 'Chapter 1', videos: [''], exam: null }
     ]);
 
     const handlePickMedia = async () => {
@@ -76,8 +77,32 @@ const CreatePostScreen = ({ navigation, route }: any) => {
         }
     };
 
+    // Direct video upload for a chapter
+    const handleChapterVideoUpload = async (idx: number) => {
+        try {
+            setUploadingVideoIdx(idx);
+            const selectedVideo = await pickVideoFromGallery();
+            if (!selectedVideo.uri) {
+                Alert.alert('Error', 'No video selected');
+                return;
+            }
+            Alert.alert('Uploading', 'Video is uploading to Cloudinary, please wait...');
+            const url = await uploadVideoToCloudinary(selectedVideo.uri);
+            const newChapters = [...chapters];
+            newChapters[idx].videos = [url];
+            setChapters(newChapters);
+            Alert.alert('Success', 'Video uploaded successfully!');
+        } catch (error: any) {
+            if (error.message !== 'User cancelled video picker') {
+                Alert.alert('Upload Failed', error.message || 'Failed to upload video');
+            }
+        } finally {
+            setUploadingVideoIdx(null);
+        }
+    };
+
     const handleAddChapter = () => {
-        setChapters(prev => [...prev, { title: `Chapter ${prev.length + 1}`, videos: [''] }]);
+        setChapters(prev => [...prev, { title: `Chapter ${prev.length + 1}`, videos: [''], exam: null }]);
     };
 
     const handleUpdateChapter = (idx: number, field: string, value: any) => {
@@ -86,10 +111,143 @@ const CreatePostScreen = ({ navigation, route }: any) => {
         setChapters(newChapters);
     };
 
+    // Exam specific handlers
+    const handleAddExam = (idx: number) => {
+        const newChapters = [...chapters];
+        newChapters[idx].exam = {
+            type: 'quiz',
+            passingScore: 80,
+            timeLimitMinutes: 30,
+            questions: [
+                { question: '', options: ['', ''], answer: '' }
+            ]
+        };
+        setChapters(newChapters);
+    };
+
+    const handleRemoveExam = (idx: number) => {
+        const newChapters = [...chapters];
+        newChapters[idx].exam = null;
+        setChapters(newChapters);
+    };
+
+    const handleUpdateExam = (idx: number, field: string, value: any) => {
+        const newChapters = [...chapters];
+        if (newChapters[idx].exam) {
+            newChapters[idx].exam = {
+                ...newChapters[idx].exam,
+                [field]: value
+            };
+        }
+        setChapters(newChapters);
+    };
+
+    const handleAddQuestion = (idx: number) => {
+        const newChapters = [...chapters];
+        const exam = newChapters[idx].exam;
+        if (exam) {
+            const newQuestion = exam.type === 'quiz' 
+                ? { question: '', options: ['', ''], answer: '' } 
+                : { question: '' };
+            exam.questions = [...exam.questions, newQuestion];
+        }
+        setChapters(newChapters);
+    };
+
+    const handleRemoveQuestion = (chIdx: number, qIdx: number) => {
+        const newChapters = [...chapters];
+        const exam = newChapters[chIdx].exam;
+        if (exam) {
+            exam.questions = exam.questions.filter((_: any, i: number) => i !== qIdx);
+        }
+        setChapters(newChapters);
+    };
+
+    const handleUpdateQuestion = (chIdx: number, qIdx: number, field: string, value: any) => {
+        const newChapters = [...chapters];
+        const exam = newChapters[chIdx].exam;
+        if (exam && exam.questions[qIdx]) {
+            exam.questions[qIdx] = {
+                ...exam.questions[qIdx],
+                [field]: value
+            };
+        }
+        setChapters(newChapters);
+    };
+
+    const handleAddOption = (chIdx: number, qIdx: number) => {
+        const newChapters = [...chapters];
+        const exam = newChapters[chIdx].exam;
+        if (exam && exam.questions[qIdx]) {
+            exam.questions[qIdx].options = [...exam.questions[qIdx].options, ''];
+        }
+        setChapters(newChapters);
+    };
+
+    const handleRemoveOption = (chIdx: number, qIdx: number, oIdx: number) => {
+        const newChapters = [...chapters];
+        const exam = newChapters[chIdx].exam;
+        if (exam && exam.questions[qIdx]) {
+            const opt = exam.questions[qIdx].options[oIdx];
+            exam.questions[qIdx].options = exam.questions[qIdx].options.filter((_: any, i: number) => i !== oIdx);
+            if (exam.questions[qIdx].answer === opt) {
+                exam.questions[qIdx].answer = '';
+            }
+        }
+        setChapters(newChapters);
+    };
+
+    const handleUpdateOption = (chIdx: number, qIdx: number, oIdx: number, value: string) => {
+        const newChapters = [...chapters];
+        const exam = newChapters[chIdx].exam;
+        if (exam && exam.questions[qIdx]) {
+            const oldOpt = exam.questions[qIdx].options[oIdx];
+            exam.questions[qIdx].options[oIdx] = value;
+            if (exam.questions[qIdx].answer === oldOpt) {
+                exam.questions[qIdx].answer = value;
+            }
+        }
+        setChapters(newChapters);
+    };
+
     const handleSubmit = async () => {
         if (!title.trim()) {
             Alert.alert('Error', 'Please enter a title');
             return;
+        }
+
+        if (type === 'course') {
+            // Validate exams if present
+            for (let i = 0; i < chapters.length; i++) {
+                const ch = chapters[i];
+                if (ch.exam) {
+                    if (!ch.exam.questions || ch.exam.questions.length === 0) {
+                        Alert.alert('Error', `Please add at least one question to the exam in Chapter ${i + 1}`);
+                        return;
+                    }
+                    for (let j = 0; j < ch.exam.questions.length; j++) {
+                        const q = ch.exam.questions[j];
+                        if (!q.question.trim()) {
+                            Alert.alert('Error', `Question ${j + 1} in Chapter ${i + 1} cannot be empty`);
+                            return;
+                        }
+                        if (ch.exam.type === 'quiz') {
+                            if (!q.options || q.options.length < 2) {
+                                Alert.alert('Error', `Question ${j + 1} in Chapter ${i + 1} must have at least 2 options`);
+                                return;
+                            }
+                            if (q.options.some((opt: string) => !opt.trim())) {
+                                Alert.alert('Error', `Options for Question ${j + 1} in Chapter ${i + 1} cannot be empty`);
+                                return;
+                            }
+                            if (!q.answer) {
+                                Alert.alert('Error', `Please select the correct answer for Question ${j + 1} in Chapter ${i + 1}`);
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         try {
@@ -308,7 +466,7 @@ const CreatePostScreen = ({ navigation, route }: any) => {
                 {type === 'course' && (
                     <View style={styles.courseContentArea}>
                         <View style={styles.sectionHeader}>
-                            <Text style={styles.sectionLabel}>Course Chapters</Text>
+                            <Text style={[styles.sectionLabel, isDark && { color: '#f8fafc' }]}>Course Chapters</Text>
                             <TouchableOpacity style={styles.addChapterBtn} onPress={handleAddChapter}>
                                 <Ionicons name="add" size={20} color="#0D9488" />
                                 <Text style={styles.addChapterText}>Add Chapter</Text>
@@ -316,9 +474,9 @@ const CreatePostScreen = ({ navigation, route }: any) => {
                         </View>
 
                         {chapters.map((ch, idx) => (
-                            <View key={idx} style={styles.chapterCard}>
+                            <View key={idx} style={[styles.chapterCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
                                 <View style={styles.chapterHeader}>
-                                    <Text style={styles.chapterTitle}>Chapter {idx + 1}</Text>
+                                    <Text style={[styles.chapterTitle, isDark && { color: '#f8fafc' }]}>Chapter {idx + 1}</Text>
                                     {chapters.length > 1 && (
                                         <TouchableOpacity onPress={() => setChapters(prev => prev.filter((_, i) => i !== idx))}>
                                             <Ionicons name="trash-outline" size={20} color="#EF4444" />
@@ -326,20 +484,241 @@ const CreatePostScreen = ({ navigation, route }: any) => {
                                     )}
                                 </View>
                                 <TextInput
-                                    style={styles.chapterInput}
+                                    style={[styles.chapterInput, isDark && { backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc' }]}
                                     placeholder="Chapter Title"
+                                    placeholderTextColor={isDark ? '#64748b' : '#9CA3AF'}
                                     value={ch.title}
                                     onChangeText={val => handleUpdateChapter(idx, 'title', val)}
                                 />
-                                <TextInput
-                                    style={[styles.chapterInput, styles.chapterVideoInput]}
-                                    placeholder="Video URL"
-                                    value={ch.videos[0]}
-                                    onChangeText={val => {
-                                        const newVids = [val];
-                                        handleUpdateChapter(idx, 'videos', newVids);
-                                    }}
-                                />
+                                {/* Video Upload Section */}
+                                <View style={[styles.videoUploadSection, isDark && { borderColor: '#334155' }]}>
+                                    <Text style={[styles.videoSectionLabel, isDark && { color: '#94a3b8' }]}>Chapter Video</Text>
+
+                                    {/* Upload Button */}
+                                    {uploadingVideoIdx === idx ? (
+                                        <View style={[styles.uploadingIndicator, isDark && { backgroundColor: 'rgba(20,184,166,0.08)', borderColor: '#14b8a6' }]}>
+                                            <ActivityIndicator size="small" color={isDark ? '#14b8a6' : '#0D9488'} />
+                                            <Text style={[styles.uploadingText, isDark && { color: '#14b8a6' }]}>Uploading video…</Text>
+                                        </View>
+                                    ) : (
+                                        <TouchableOpacity
+                                            style={[styles.videoPickerBtn, isDark && { backgroundColor: 'rgba(20,184,166,0.06)', borderColor: '#14b8a6' }]}
+                                            onPress={() => handleChapterVideoUpload(idx)}
+                                        >
+                                            <Ionicons name="cloud-upload-outline" size={20} color={isDark ? '#14b8a6' : '#0D9488'} />
+                                            <Text style={[styles.videoPickerText, isDark && { color: '#14b8a6' }]}>
+                                                {ch.videos[0] && ch.videos[0].startsWith('http') ? 'Replace Video' : 'Upload from Gallery'}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    )}
+
+                                    {/* Uploaded URL preview */}
+                                    {ch.videos[0] && ch.videos[0].startsWith('http') && (
+                                        <View style={[styles.videoPreviewRow, isDark && { backgroundColor: 'rgba(20,184,166,0.05)', borderColor: '#334155' }]}>
+                                            <Ionicons name="checkmark-circle" size={18} color="#10B981" />
+                                            <Text style={[styles.videoPreviewText, isDark && { color: '#94a3b8' }]} numberOfLines={1}>
+                                                {ch.videos[0]}
+                                            </Text>
+                                            <TouchableOpacity onPress={() => handleUpdateChapter(idx, 'videos', [''])}>
+                                                <Ionicons name="close-circle-outline" size={18} color="#EF4444" />
+                                            </TouchableOpacity>
+                                        </View>
+                                    )}
+
+                                    {/* OR divider */}
+                                    <View style={styles.orDividerRow}>
+                                        <View style={[styles.orLine, isDark && { backgroundColor: '#334155' }]} />
+                                        <Text style={[styles.orDividerText, isDark && { color: '#64748b' }]}>OR paste URL</Text>
+                                        <View style={[styles.orLine, isDark && { backgroundColor: '#334155' }]} />
+                                    </View>
+
+                                    {/* URL Input */}
+                                    <TextInput
+                                        style={[styles.chapterInput, { marginBottom: 0 }, isDark && { backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc' }]}
+                                        placeholder="Video URL (YouTube, Vimeo, Cloudinary…)"
+                                        placeholderTextColor={isDark ? '#64748b' : '#9CA3AF'}
+                                        value={ch.videos[0]}
+                                        onChangeText={val => {
+                                            const newVids = [val];
+                                            handleUpdateChapter(idx, 'videos', newVids);
+                                        }}
+                                    />
+                                </View>
+
+                                {/* Exam Section */}
+                                <View style={styles.examContainer}>
+                                    {!ch.exam ? (
+                                        <TouchableOpacity 
+                                            style={[styles.addExamBtn, isDark && { backgroundColor: 'rgba(20, 184, 166, 0.05)', borderColor: '#14b8a6' }]} 
+                                            onPress={() => handleAddExam(idx)}
+                                        >
+                                            <Ionicons name="document-text-outline" size={18} color={isDark ? '#14b8a6' : '#0D9488'} />
+                                            <Text style={[styles.addExamText, isDark && { color: '#14b8a6' }]}>Add Exam to Chapter</Text>
+                                        </TouchableOpacity>
+                                    ) : (
+                                        <View style={[styles.examCard, isDark && { backgroundColor: '#0f172a', borderColor: '#1e293b' }]}>
+                                            <View style={styles.examHeader}>
+                                                <View style={styles.examTitleRow}>
+                                                    <Ionicons name="document-text" size={18} color={isDark ? '#14b8a6' : '#0D9488'} />
+                                                    <Text style={[styles.examCardTitle, isDark && { color: '#f8fafc' }]}>Chapter Exam</Text>
+                                                </View>
+                                                <TouchableOpacity onPress={() => handleRemoveExam(idx)} style={styles.removeExamBtn}>
+                                                    <Ionicons name="trash-outline" size={16} color="#EF4444" />
+                                                    <Text style={styles.removeExamText}>Remove</Text>
+                                                </TouchableOpacity>
+                                            </View>
+
+                                            {/* Exam Type Selection */}
+                                            <Text style={[styles.examSubLabel, isDark && { color: '#94a3b8' }]}>Exam Type</Text>
+                                            <View style={styles.examTypeRow}>
+                                                {(['quiz', 'written', 'listening'] as const).map((eType) => (
+                                                    <TouchableOpacity
+                                                        key={eType}
+                                                        style={[
+                                                            styles.examTypeChip,
+                                                            ch.exam.type === eType && styles.activeExamTypeChip,
+                                                            isDark && { backgroundColor: '#1e293b', borderColor: '#334155' },
+                                                            ch.exam.type === eType && isDark && { backgroundColor: '#14b8a6', borderColor: '#14b8a6' }
+                                                        ]}
+                                                        onPress={() => {
+                                                            const updatedQuestions = ch.exam.questions.map((q: any) => {
+                                                                if (eType === 'quiz') {
+                                                                    return { question: q.question, options: q.options || ['', ''], answer: q.answer || '' };
+                                                                } else {
+                                                                    return { question: q.question };
+                                                                }
+                                                            });
+                                                            handleUpdateExam(idx, 'type', eType);
+                                                            handleUpdateExam(idx, 'questions', updatedQuestions);
+                                                        }}
+                                                    >
+                                                        <Text style={[
+                                                            styles.examTypeText,
+                                                            ch.exam.type === eType && styles.activeExamTypeText,
+                                                            isDark && { color: '#94a3b8' }
+                                                        ]}>
+                                                            {eType === 'quiz' ? 'Quiz (MCQ)' : eType === 'written' ? 'Written' : 'Listening'}
+                                                        </Text>
+                                                    </TouchableOpacity>
+                                                ))}
+                                            </View>
+
+                                            {/* Numeric settings */}
+                                            <View style={styles.examSettingsRow}>
+                                                <View style={styles.settingCol}>
+                                                    <Text style={[styles.examSubLabel, isDark && { color: '#94a3b8' }]}>Passing Score (%)</Text>
+                                                    <TextInput
+                                                        style={[styles.examSettingInput, isDark && { backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc' }]}
+                                                        keyboardType="numeric"
+                                                        placeholder="80"
+                                                        placeholderTextColor={isDark ? '#64748b' : '#9CA3AF'}
+                                                        value={String(ch.exam.passingScore || '')}
+                                                        onChangeText={(val) => handleUpdateExam(idx, 'passingScore', Number(val) || 0)}
+                                                    />
+                                                </View>
+                                                <View style={styles.settingCol}>
+                                                    <Text style={[styles.examSubLabel, isDark && { color: '#94a3b8' }]}>Time Limit (Mins)</Text>
+                                                    <TextInput
+                                                        style={[styles.examSettingInput, isDark && { backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc' }]}
+                                                        keyboardType="numeric"
+                                                        placeholder="30"
+                                                        placeholderTextColor={isDark ? '#64748b' : '#9CA3AF'}
+                                                        value={String(ch.exam.timeLimitMinutes || '')}
+                                                        onChangeText={(val) => handleUpdateExam(idx, 'timeLimitMinutes', Number(val) || 0)}
+                                                    />
+                                                </View>
+                                            </View>
+
+                                            {/* Questions Manager */}
+                                            <View style={styles.questionsHeaderRow}>
+                                                <Text style={[styles.examSubLabel, { marginBottom: 0 }, isDark && { color: '#f8fafc' }]}>
+                                                    Questions ({ch.exam.questions?.length || 0})
+                                                </Text>
+                                                <TouchableOpacity 
+                                                    style={styles.addQuestionBtnSmall} 
+                                                    onPress={() => handleAddQuestion(idx)}
+                                                >
+                                                    <Ionicons name="add-circle-outline" size={16} color={isDark ? '#14b8a6' : '#0D9488'} />
+                                                    <Text style={[styles.addQuestionTextSmall, isDark && { color: '#14b8a6' }]}>Add Question</Text>
+                                                </TouchableOpacity>
+                                            </View>
+
+                                            {ch.exam.questions?.map((q: any, qIdx: number) => (
+                                                <View key={qIdx} style={[styles.questionEditorCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
+                                                    <View style={styles.questionEditorHeader}>
+                                                        <Text style={[styles.questionEditorTitle, isDark && { color: '#94a3b8' }]}>Q{qIdx + 1}</Text>
+                                                        <TouchableOpacity onPress={() => handleRemoveQuestion(idx, qIdx)}>
+                                                            <Ionicons name="close-outline" size={18} color="#EF4444" />
+                                                        </TouchableOpacity>
+                                                    </View>
+
+                                                    <TextInput
+                                                        style={[styles.chapterInput, { marginBottom: 8 }, isDark && { backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc' }]}
+                                                        placeholder={`Question ${qIdx + 1} prompt`}
+                                                        placeholderTextColor={isDark ? '#64748b' : '#9CA3AF'}
+                                                        value={q.question}
+                                                        onChangeText={(val) => handleUpdateQuestion(idx, qIdx, 'question', val)}
+                                                    />
+
+                                                    {/* MCQ Options */}
+                                                    {ch.exam.type === 'quiz' && (
+                                                        <View style={styles.optionsEditorContainer}>
+                                                            <Text style={[styles.optionsLabel, isDark && { color: '#94a3b8' }]}>Options & Correct Answer</Text>
+                                                            {q.options?.map((opt: string, oIdx: number) => {
+                                                                const isCorrect = q.answer === opt && opt !== '';
+                                                                return (
+                                                                    <View key={oIdx} style={styles.optionInputRow}>
+                                                                        <TouchableOpacity 
+                                                                            style={[
+                                                                                styles.correctIndicatorCircle,
+                                                                                isCorrect && styles.correctIndicatorCircleActive,
+                                                                                isDark && { borderColor: '#334155' },
+                                                                                isCorrect && isDark && { borderColor: '#14b8a6', backgroundColor: '#14b8a6' }
+                                                                            ]}
+                                                                            onPress={() => {
+                                                                                if (opt.trim()) {
+                                                                                    handleUpdateQuestion(idx, qIdx, 'answer', opt);
+                                                                                } else {
+                                                                                    Alert.alert('Info', 'Please enter option text first before setting it as correct.');
+                                                                                }
+                                                                            }}
+                                                                        >
+                                                                            {isCorrect && <Ionicons name="checkmark" size={12} color="#FFFFFF" />}
+                                                                        </TouchableOpacity>
+                                                                        <TextInput
+                                                                            style={[
+                                                                                styles.optionInput, 
+                                                                                isDark && { backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc' },
+                                                                                isCorrect && { borderColor: '#0D9488' },
+                                                                                isCorrect && isDark && { borderColor: '#14b8a6' }
+                                                                            ]}
+                                                                            placeholder={`Option ${oIdx + 1}`}
+                                                                            placeholderTextColor={isDark ? '#64748b' : '#9CA3AF'}
+                                                                            value={opt}
+                                                                            onChangeText={(val) => handleUpdateOption(idx, qIdx, oIdx, val)}
+                                                                        />
+                                                                        {q.options.length > 2 && (
+                                                                            <TouchableOpacity onPress={() => handleRemoveOption(idx, qIdx, oIdx)}>
+                                                                                <Ionicons name="remove-circle-outline" size={20} color="#EF4444" />
+                                                                            </TouchableOpacity>
+                                                                        )}
+                                                                    </View>
+                                                                );
+                                                            })}
+                                                            <TouchableOpacity 
+                                                                style={styles.addOptionBtn}
+                                                                onPress={() => handleAddOption(idx, qIdx)}
+                                                            >
+                                                                <Ionicons name="add" size={16} color={isDark ? '#14b8a6' : '#0D9488'} />
+                                                                <Text style={[styles.addOptionText, isDark && { color: '#14b8a6' }]}>Add Option</Text>
+                                                            </TouchableOpacity>
+                                                        </View>
+                                                    )}
+                                                </View>
+                                            ))}
+                                        </View>
+                                    )}
+                                </View>
                             </View>
                         ))}
                     </View>
@@ -606,6 +985,85 @@ const styles = StyleSheet.create({
     chapterVideoInput: {
         marginBottom: 0,
     },
+    videoUploadSection: {
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        borderRadius: 10,
+        padding: 12,
+        marginBottom: 10,
+        gap: 8,
+    },
+    videoSectionLabel: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#64748b',
+        marginBottom: 4,
+    },
+    videoPickerBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        backgroundColor: '#F0FDFA',
+        borderWidth: 1.5,
+        borderColor: '#0D9488',
+        borderStyle: 'dashed',
+        borderRadius: 8,
+        paddingVertical: 12,
+    },
+    videoPickerText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#0D9488',
+    },
+    uploadingIndicator: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+        backgroundColor: '#F0FDFA',
+        borderWidth: 1,
+        borderColor: '#0D9488',
+        borderRadius: 8,
+        paddingVertical: 12,
+    },
+    uploadingText: {
+        fontSize: 13,
+        color: '#0D9488',
+        fontWeight: '500',
+    },
+    videoPreviewRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        backgroundColor: '#F0FDFA',
+        borderWidth: 1,
+        borderColor: '#D1FAE5',
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+    },
+    videoPreviewText: {
+        flex: 1,
+        fontSize: 12,
+        color: '#475569',
+    },
+    orDividerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginVertical: 2,
+    },
+    orLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: '#E2E8F0',
+    },
+    orDividerText: {
+        fontSize: 11,
+        color: '#94A3B8',
+        fontWeight: '500',
+    },
     textContentArea: {
         marginTop: 5,
     },
@@ -649,6 +1107,209 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: '#9CA3AF',
         marginTop: 15,
+    },
+    examContainer: {
+        marginTop: 15,
+        borderTopWidth: 1,
+        borderTopColor: '#E5E7EB',
+        paddingTop: 15,
+    },
+    addExamBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#F0FDFA',
+        borderWidth: 1,
+        borderColor: '#0D9488',
+        borderStyle: 'dashed',
+        borderRadius: 12,
+        paddingVertical: 10,
+    },
+    addExamText: {
+        color: '#0D9488',
+        fontWeight: '700',
+        marginLeft: 8,
+        fontSize: 13,
+    },
+    examCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 12,
+        padding: 12,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+    },
+    examHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 12,
+    },
+    examTitleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    examCardTitle: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#111827',
+        marginLeft: 6,
+    },
+    removeExamBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FEF2F2',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 6,
+    },
+    removeExamText: {
+        color: '#EF4444',
+        fontSize: 11,
+        fontWeight: '700',
+        marginLeft: 4,
+    },
+    examSubLabel: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#4B5563',
+        marginBottom: 6,
+    },
+    examTypeRow: {
+        flexDirection: 'row',
+        gap: 8,
+        marginBottom: 12,
+    },
+    examTypeChip: {
+        flex: 1,
+        alignItems: 'center',
+        paddingVertical: 6,
+        borderRadius: 8,
+        backgroundColor: '#F3F4F6',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+    },
+    activeExamTypeChip: {
+        backgroundColor: '#0D9488',
+        borderColor: '#0D9488',
+    },
+    examTypeText: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: '#4B5563',
+    },
+    activeExamTypeText: {
+        color: '#FFFFFF',
+    },
+    examSettingsRow: {
+        flexDirection: 'row',
+        gap: 12,
+        marginBottom: 12,
+    },
+    settingCol: {
+        flex: 1,
+    },
+    examSettingInput: {
+        backgroundColor: '#F9FAFB',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        fontSize: 13,
+        color: '#111827',
+    },
+    questionsHeaderRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: 4,
+        marginBottom: 10,
+    },
+    addQuestionBtnSmall: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F0FDFA',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 6,
+    },
+    addQuestionTextSmall: {
+        color: '#0D9488',
+        fontSize: 11,
+        fontWeight: '700',
+        marginLeft: 4,
+    },
+    questionEditorCard: {
+        backgroundColor: '#F9FAFB',
+        borderRadius: 10,
+        padding: 10,
+        marginBottom: 10,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+    },
+    questionEditorHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 6,
+    },
+    questionEditorTitle: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#4B5563',
+    },
+    optionsEditorContainer: {
+        marginTop: 4,
+    },
+    optionsLabel: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: '#6B7280',
+        marginBottom: 6,
+    },
+    optionInputRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 6,
+    },
+    correctIndicatorCircle: {
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        borderWidth: 1.5,
+        borderColor: '#D1D5DB',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    correctIndicatorCircleActive: {
+        backgroundColor: '#0D9488',
+        borderColor: '#0D9488',
+    },
+    optionInput: {
+        flex: 1,
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        fontSize: 12,
+        color: '#111827',
+    },
+    addOptionBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'flex-start',
+        marginTop: 4,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+    },
+    addOptionText: {
+        color: '#0D9488',
+        fontSize: 11,
+        fontWeight: '700',
+        marginLeft: 4,
     },
 });
 

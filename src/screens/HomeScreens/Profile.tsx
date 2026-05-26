@@ -27,6 +27,7 @@ import Clipboard from '@react-native-clipboard/clipboard';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTheme } from '../../contexts/ThemeContext';
 import VideoPlayer from '../../components/VideoPlayer';
+import { openPdfLink } from '../../utils/openLink';
 
 const { width } = Dimensions.get('window');
 
@@ -61,6 +62,8 @@ interface Post {
   createdAt: string;
   date?: string;
   time?: string;
+  channelId?: string;
+  channelName?: string;
 }
 
 interface Friend {
@@ -386,7 +389,7 @@ const Profile = () => {
   };
 
   const handlePdfView = (pdfUrl: string) => {
-    Linking.openURL(pdfUrl).catch((err) => {
+    openPdfLink(pdfUrl, isDark).catch(() => {
       Toast.show({
         type: 'error',
         text1: 'Failed to open PDF',
@@ -632,9 +635,19 @@ const Profile = () => {
                         />
                         <View style={styles.userInfo}>
                           <Text style={[styles.userName, isDark && { color: '#f8fafc' }]}>{postItem.userName || user.name}</Text>
-                          <Text style={[styles.postTime, isDark && { color: '#94a3b8' }]}>
-                            {postItem.date || formatDate(postItem.createdAt)} {postItem.time ? `at ${formatTime(postItem.time)}` : ''}
-                          </Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Text style={[styles.postTime, isDark && { color: '#94a3b8' }, { marginBottom: 0 }]}>
+                              {postItem.date || formatDate(postItem.createdAt)} {postItem.time ? `at ${formatTime(postItem.time)}` : ''}
+                            </Text>
+                            {postItem.channelName ? (
+                              <View style={styles.channelBadge}>
+                                <Ionicons name="megaphone-outline" size={10} color={isDark ? '#14b8a6' : '#0D9488'} />
+                                <Text style={[styles.channelBadgeText, { color: isDark ? '#14b8a6' : '#0D9488' }]}>
+                                  {'  #' + postItem.channelName}
+                                </Text>
+                              </View>
+                            ) : null}
+                          </View>
                         </View>
                         <TouchableOpacity
                           onPress={() => handlePostOptions(postItem)}
@@ -1214,6 +1227,19 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 11,
     fontWeight: '800',
+  },
+  channelBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(13,148,136,0.1)',
+    borderRadius: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    marginLeft: 6,
+  },
+  channelBadgeText: {
+    fontSize: 10.5,
+    fontWeight: '700',
   },
 });
 

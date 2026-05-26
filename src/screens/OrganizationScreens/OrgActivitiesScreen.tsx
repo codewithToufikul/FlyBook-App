@@ -45,31 +45,54 @@ const OrgActivities = ({ route, navigation }: any) => {
         fetchActivities();
     }, [fetchActivities]);
 
-    const renderActivityItem = ({ item }: { item: any }) => (
-        <TouchableOpacity
-            style={[styles.activityCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}
-            onPress={() => navigation.navigate('ActivityDetails', { activityId: item._id })}
-        >
-            <Image
-                source={{ uri: item.image || 'https://via.placeholder.com/400x200' }}
-                style={styles.activityImage}
-            />
-            <View style={styles.activityInfo}>
-                <Text style={[styles.activityTitle, isDark && { color: '#f8fafc' }]}>{item.title}</Text>
-                <Text style={[styles.activityDate, isDark && { color: '#14b8a6' }]}>
-                    {item.date || new Date(item.createdAt).toLocaleDateString()}
-                    {item.place ? ` • ${item.place}` : ''}
-                </Text>
-                <Text style={[styles.activityDetails, isDark && { color: '#94a3b8' }]} numberOfLines={3}>
-                    {item.details || item.content}
-                </Text>
-                <View style={[styles.cardFooter, isDark && { borderTopColor: '#334155' }]}>
-                    <Text style={[styles.readMore, isDark && { color: '#14b8a6' }]}>View Details</Text>
-                    <Ionicons name="arrow-forward" size={16} color={isDark ? "#14b8a6" : "#6366F1"} />
+    const getStatusBadge = (status: string) => {
+        switch (status) {
+            case 'approved':
+                return { label: '✅ Published in Events', bg: '#D1FAE5', text: '#065F46', icon: 'checkmark-circle' };
+            case 'pending':
+                return { label: '⏳ Pending Admin Approval', bg: '#FEF3C7', text: '#92400E', icon: 'time-outline' };
+            case 'rejected':
+                return { label: '❌ Request Rejected', bg: '#FEE2E2', text: '#991B1B', icon: 'close-circle' };
+            default:
+                return { label: '📋 Not Yet Transferred', bg: isDark ? '#1e293b' : '#F3F4F6', text: isDark ? '#94a3b8' : '#6B7280', icon: 'ellipse-outline' };
+        }
+    };
+
+    const renderActivityItem = ({ item }: { item: any }) => {
+        const badge = getStatusBadge(item.eventTransferStatus);
+        return (
+            <TouchableOpacity
+                style={[styles.activityCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}
+                onPress={() => navigation.navigate('ActivityDetails', { activityId: item._id })}
+            >
+                <Image
+                    source={{ uri: item.image || 'https://via.placeholder.com/400x200' }}
+                    style={styles.activityImage}
+                />
+                <View style={styles.activityInfo}>
+                    <Text style={[styles.activityTitle, isDark && { color: '#f8fafc' }]}>{item.title}</Text>
+                    <Text style={[styles.activityDate, isDark && { color: '#14b8a6' }]}>
+                        {item.date || new Date(item.createdAt).toLocaleDateString()}
+                        {item.place ? ` • ${item.place}` : ''}
+                    </Text>
+                    <Text style={[styles.activityDetails, isDark && { color: '#94a3b8' }]} numberOfLines={3}>
+                        {item.details || item.content}
+                    </Text>
+
+                    {/* Event Transfer Status Badge */}
+                    <View style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
+                        <Ionicons name={badge.icon as any} size={13} color={badge.text} />
+                        <Text style={[styles.statusBadgeText, { color: badge.text }]}>{badge.label}</Text>
+                    </View>
+
+                    <View style={[styles.cardFooter, isDark && { borderTopColor: '#334155' }]}>
+                        <Text style={[styles.readMore, isDark && { color: '#14b8a6' }]}>View Details</Text>
+                        <Ionicons name="arrow-forward" size={16} color={isDark ? "#14b8a6" : "#6366F1"} />
+                    </View>
                 </View>
-            </View>
-        </TouchableOpacity>
-    );
+            </TouchableOpacity>
+        );
+    };
 
     return (
         <View style={[styles.container, isDark && { backgroundColor: '#0f172a' }, { paddingTop: insets.top }]}>
@@ -204,6 +227,20 @@ const styles = StyleSheet.create({
         color: '#6B7280',
         lineHeight: 20,
         marginBottom: 16,
+    },
+    statusBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 8,
+        marginBottom: 12,
+        alignSelf: 'flex-start',
+    },
+    statusBadgeText: {
+        fontSize: 12,
+        fontWeight: '700',
     },
     cardFooter: {
         flexDirection: 'row',
