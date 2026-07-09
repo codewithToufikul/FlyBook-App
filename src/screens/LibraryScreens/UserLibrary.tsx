@@ -28,6 +28,8 @@ import {
   cancelBookRequest,
   Book,
 } from '../../services/libraryService';
+import { FaceCaptureScreen } from './FaceCaptureScreen';
+import { uploadToImgBB, compressImage } from '../../utils/imageUpload';
 
 const { width } = Dimensions.get('window');
 
@@ -40,6 +42,9 @@ const UserLibrary = () => {
   const { socket } = useSocket();
   const queryClient = useQueryClient();
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  const [showFaceCapture, setShowFaceCapture] = useState(false);
+  const [pendingBookForRequest, setPendingBookForRequest] = useState<Book | null>(null);
+  const [isUploadingFace, setIsUploadingFace] = useState(false);
 
   const { data: allBooks = [], isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['allBooks'],
@@ -75,13 +80,46 @@ const UserLibrary = () => {
       return;
     }
 
+    setPendingBookForRequest(book);
+    setShowFaceCapture(true);
+  };
+
+  const handleFaceCaptured = async (photoPath: string) => {
+    if (!pendingBookForRequest) return;
+
+    setShowFaceCapture(false);
+    setIsUploadingFace(true);
+
     try {
-      await requestBook(book._id);
-      Toast.show({ type: 'success', text1: 'Book request sent!' });
+      // 1. Compress face image
+      const compressedUri = await compressImage(photoPath, {
+        maxWidth: 500,
+        maxHeight: 500,
+        quality: 75,
+      });
+
+      // 2. Upload to ImgBB
+      const uploadedFaceUrl = await uploadToImgBB(compressedUri);
+
+      if (!uploadedFaceUrl) {
+        throw new Error('Face image upload failed');
+      }
+
+      // 3. Send book request with face image URL to server
+      await requestBook(pendingBookForRequest._id, uploadedFaceUrl);
+
+      Toast.show({ type: 'success', text1: 'Face verified & Book request sent!' });
       emitNotification('bookReq', 'Send a Book Request');
       queryClient.invalidateQueries({ queryKey: ['allBooks'] });
     } catch (error: any) {
-      Toast.show({ type: 'error', text1: 'Request failed', text2: error?.message });
+      Toast.show({
+        type: 'error',
+        text1: 'Face Verification failed',
+        text2: error?.message || 'Could not complete request.',
+      });
+    } finally {
+      setIsUploadingFace(false);
+      setPendingBookForRequest(null);
     }
   };
 
@@ -340,6 +378,25 @@ const UserLibrary = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Face Capture Modal */}
+      <Modal visible={showFaceCapture} transparent={false} animationType="slide">
+        <FaceCaptureScreen
+          onCapture={handleFaceCaptured}
+          onClose={() => {
+            setShowFaceCapture(false);
+            setPendingBookForRequest(null);
+          }}
+        />
+      </Modal>
+
+      {/* Uploading Face Loader */}
+      {isUploadingFace && (
+        <View style={styles.uploadingOverlay}>
+          <ActivityIndicator size="large" color="#14b8a6" />
+          <Text style={styles.uploadingText}>Verifying Face & Sending Request...</Text>
+        </View>
+      )}
     </View>
   );
 };
@@ -646,6 +703,20 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: '900',
+  },
+  uploadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(15, 23, 42, 0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
+  },
+  uploadingText: {
+    marginTop: 16,
+    color: '#f8fafc',
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
   },
 });
 

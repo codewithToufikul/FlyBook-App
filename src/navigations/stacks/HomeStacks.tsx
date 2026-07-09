@@ -30,6 +30,7 @@ import JobStack from './JobStack';
 import OrganizationStack from './OrganizationStack';
 import CommunityStack from './CommunityStack';
 import LibraryStack from './LibraryStack';
+import OnindoStack from './OnindoStack';
 import UserLibrary from '../../screens/LibraryScreens/UserLibrary';
 
 const Stack = createNativeStackNavigator();
@@ -66,6 +67,7 @@ export default function HomeStack() {
             <Stack.Screen name="Organizations" component={OrganizationStack} />
             <Stack.Screen name="Communities" component={CommunityStack} />
             <Stack.Screen name="Library" component={LibraryStack} />
+            <Stack.Screen name="Onindo" component={OnindoStack} />
             <Stack.Screen name="UserLibrary" component={UserLibrary} />
 
         </Stack.Navigator>

@@ -33,7 +33,8 @@ export {
   requestPasswordReset,
   resetPassword,
   verifyEmail,
-  checkEmailExists,
+  findUserByPhone,
+  resetPasswordWithFirebaseToken,
   refreshToken,
   deleteAccount,
 } from './authServices';

@@ -9,6 +9,8 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { countries, Country } from '../../../utils/countries';
+import auth from '@react-native-firebase/auth';
+import { ButtonLoader } from '../../../components/common';
 
 const Step4Phone = () => {
   const navigation = useNavigation();
@@ -19,26 +21,45 @@ const Step4Phone = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [selectedCountry, setSelectedCountry] = useState<Country>(countries[0]);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleNext = () => {
+  const handleNext = async () => {
     let cleanPhone = phoneNumber.trim().replace(/^0+/, '');
 
-    // If phone is provided, validate it. If not, just proceed.
-    if (cleanPhone) {
-      if (cleanPhone.length < 6 || cleanPhone.length > 15) {
-        Alert.alert('Invalid Phone Number', 'Please enter a valid phone number');
-        return;
-      }
+    if (!cleanPhone) {
+      Alert.alert('Phone Number Required', 'Please enter your phone number to receive a verification code.');
+      return;
     }
 
-    const fullPhoneNumber = cleanPhone ? `${selectedCountry.dialCode}${cleanPhone}` : '';
+    if (cleanPhone.length < 6 || cleanPhone.length > 15) {
+      Alert.alert('Invalid Phone Number', 'Please enter a valid phone number');
+      return;
+    }
 
-    (navigation as any).navigate('Step4bAffiliate', {
-      firstName,
-      lastName,
-      email,
-      phone: fullPhoneNumber
-    });
+    const fullPhoneNumber = `${selectedCountry.dialCode}${cleanPhone}`;
+    setLoading(true);
+
+    try {
+      // Send verification code using Firebase
+      const confirmation = await auth().signInWithPhoneNumber(fullPhoneNumber);
+
+      // Navigate to Step3Verify to enter the code
+      (navigation as any).navigate('Step3Verify', {
+        firstName,
+        lastName,
+        email,
+        phone: fullPhoneNumber,
+        confirmation, // Pass confirmation object
+      });
+    } catch (error: any) {
+      console.error('Firebase Phone Auth Error:', error);
+      Alert.alert(
+        'Verification Failed',
+        error.message || 'Could not send verification code. Please check the phone number and try again.'
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const bg = isDark ? '#0f172a' : '#FFFFFF';
@@ -122,10 +143,15 @@ const Step4Phone = () => {
         {/* Footer */}
         <View style={styles.footer}>
           <TouchableOpacity
-            style={styles.nextButton}
+            style={[styles.nextButton, (!phoneNumber.trim() || loading) && styles.nextButtonDisabled]}
             onPress={handleNext}
+            disabled={!phoneNumber.trim() || loading}
           >
-            <Text style={styles.nextButtonText}>{phoneNumber.trim() ? 'Next' : 'Skip for now'}</Text>
+            {loading ? (
+              <ButtonLoader color="#FFFFFF" size="medium" />
+            ) : (
+              <Text style={styles.nextButtonText}>Send Code</Text>
+            )}
           </TouchableOpacity>
         </View>
 

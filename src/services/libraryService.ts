@@ -19,6 +19,7 @@ export interface Book {
   transferTo?: string;
   requestBy?: string;
   requestName?: string;
+  requestFaceUrl?: string;
 }
 
 export interface TransferRecord {
@@ -61,8 +62,8 @@ export const deleteBook = async (bookId: string) => {
   return del(`/books/delete/${bookId}`);
 };
 
-export const requestBook = async (bookId: string) => {
-  return post('/books/request', { bookId });
+export const requestBook = async (bookId: string, requestFaceUrl?: string) => {
+  return post('/books/request', { bookId, requestFaceUrl });
 };
 
 export const cancelBookRequest = async (bookId: string) => {
@@ -97,3 +98,87 @@ export const returnBook = async (
 export const fetchTransferHistory = async (): Promise<{ success: boolean; data: TransferRecord[] }> => {
   return get('/books/trans');
 };
+
+// ─── Onindo Library ────────────────────────────────────────────────────────
+
+export interface OnindoBook {
+  _id: string;
+  userId: string;
+  bookName: string;
+  writer: string;
+  details: string;
+  imageUrl: string;
+  currentDate: string;
+  currentTime: string;
+  owner: string;
+  requestBy?: string;
+  requestName?: string;
+  transferTo?: string;
+}
+
+export interface AddOnindoBookData {
+  bookName: string;
+  writer: string;
+  details: string;
+  imageUrl: string;
+  userId: string;
+  currentDate: string;
+  currentTime: string;
+}
+
+export const fetchAllOnindoBooks = async (): Promise<OnindoBook[]> => {
+  return get<OnindoBook[]>('/all-onindo-books');
+};
+
+export const addOnindoBook = async (bookAllData: AddOnindoBookData) => {
+  return post('/books/onindo/add', { bookAllData });
+};
+
+export const deleteOnindoBook = async (bookId: string) => {
+  return del(`/onindo/delete/${bookId}`);
+};
+
+export const requestOnindoBook = async (bookId: string, requestFaceUrl?: string) => {
+  return post('/onindo/books/request', { bookId, requestFaceUrl });
+};
+
+export const cancelOnindoBookRequest = async (bookId: string) => {
+  return post('/onindo/books/request/cancel', { bookId });
+};
+
+export const transferOnindoBook = async (
+  bookId: string,
+  requestBy: string,
+  requestName: string,
+) => {
+  const date = new Date().toLocaleDateString();
+  const time = new Date().toLocaleTimeString();
+  return post('/onindo/books/request/trans', { bookId, requestBy, requestName, date, time });
+};
+
+// ─── Breach of Contract / Defaulters ──────────────────────────────────────────
+
+export interface Defaulter {
+  bookId: string;
+  bookName: string;
+  writer: string;
+  imageUrl: string;
+  transferredAt: string;
+  dueDate: string;
+  daysOverdue: number;
+  ownerName: string;
+  ownerId: string;
+  defaulterId: string;
+  defaulterName: string;
+  defaulterPhone: string;
+  faceVerificationUrl: string;
+  location: {
+    type: string;
+    coordinates: [number, number]; // [lng, lat]
+  } | null;
+}
+
+export const fetchDefaulters = async (): Promise<{ success: boolean; data: Defaulter[] }> => {
+  return get('/books/defaulters');
+};
+

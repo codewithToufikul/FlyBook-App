@@ -11,13 +11,17 @@ import {
     Platform,
     ScrollView,
     StatusBar,
+    Modal,
+    FlatList,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { ButtonLoader } from '../../components/common';
 import { useTheme } from '../../contexts/ThemeContext';
-import { findUserByEmail, sendForgotPasswordOTP, resetPasswordWithOTP } from '../../services/authServices';
+import { findUserByPhone, resetPasswordWithFirebaseToken } from '../../services/authServices';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { countries, Country } from '../../utils/countries';
+import auth from '@react-native-firebase/auth';
 
 type Step = 'SEARCH' | 'VERIFY' | 'OTP' | 'PASSWORD';
 
@@ -26,27 +30,33 @@ const ForgotPassword = () => {
     const { isDark } = useTheme();
 
     const [step, setStep] = useState<Step>('SEARCH');
-    const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
+    const [selectedCountry, setSelectedCountry] = useState<Country>(countries[0]);
+    const [showCountryPicker, setShowCountryPicker] = useState(false);
     const [foundUser, setFoundUser] = useState<any>(null);
     const [otp, setOtp] = useState('');
+    const [confirmObj, setConfirmObj] = useState<any>(null);
+    const [firebaseToken, setFirebaseToken] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
     const handleSearch = async () => {
-        if (!email.trim() || !email.includes('@')) {
-            Alert.alert('Error', 'Please enter a valid email address');
+        let cleanPhone = phone.trim().replace(/^0+/, '');
+        if (!cleanPhone) {
+            Alert.alert('Error', 'Please enter your phone number');
             return;
         }
+        const fullPhoneNumber = `${selectedCountry.dialCode}${cleanPhone}`;
         setLoading(true);
         try {
-            const response = await findUserByEmail(email.trim());
+            const response = await findUserByPhone(fullPhoneNumber);
             if (response.success && response.user) {
                 setFoundUser(response.user);
                 setStep('VERIFY');
             } else {
-                Alert.alert('Not Found', response.message || 'No account found with this email');
+                Alert.alert('Not Found', response.message || 'No account found with this phone number');
             }
         } catch (error: any) {
             Alert.alert('Error', error.message || 'Failed to search for user');
@@ -57,27 +67,67 @@ const ForgotPassword = () => {
 
     const handleSendOTP = async () => {
         setLoading(true);
+        // Build E.164 format: +{countryCode}{number without leading zero}
+        // foundUser.fullPhone could be "01615685428" or "8801615685428" or "+8801615685428"
+        let rawPhone = foundUser?.fullPhone || phone.trim();
+        // Remove all non-digit characters except leading +
+        rawPhone = rawPhone.replace(/[^\d+]/g, '');
+        // If already starts with +, use as-is; if starts with country digits (880), add +; else add dialCode
+        let targetPhone: string;
+        if (rawPhone.startsWith('+')) {
+            targetPhone = rawPhone;
+        } else if (rawPhone.startsWith('880') && rawPhone.length >= 12) {
+            targetPhone = `+${rawPhone}`;
+        } else {
+            // Local format like 01615685428 → strip leading 0 → +880 1615685428
+            const stripped = rawPhone.replace(/^0+/, '');
+            const dialCode = selectedCountry.dialCode; // e.g. "+880"
+            targetPhone = `${dialCode}${stripped}`;
+        }
+        console.log('[ForgotPassword] Sending OTP to:', targetPhone);
         try {
-            const response = await sendForgotPasswordOTP(email.trim());
-            if (response.success) {
-                Alert.alert('Code Sent', 'A 6-digit verification code has been sent to your email.');
-                setStep('OTP');
-            } else {
-                Alert.alert('Error', response.message || 'Failed to send code');
-            }
+            const confirmation = await auth().signInWithPhoneNumber(targetPhone);
+            setConfirmObj(confirmation);
+            Alert.alert('Code Sent', 'A verification code has been sent to your phone.');
+            setStep('OTP');
         } catch (error: any) {
-            Alert.alert('Error', error.message || 'Something went wrong');
+            console.error('Firebase Forgot Password SMS send failed:', error);
+            Alert.alert('Error', error.message || 'Failed to send verification code. Please try again.');
         } finally {
             setLoading(false);
         }
     };
 
-    const handleVerifyOTP = () => {
+    const handleVerifyOTP = async () => {
         if (otp.length !== 6) {
             Alert.alert('Error', 'Please enter the 6-digit code');
             return;
         }
-        setStep('PASSWORD');
+        setLoading(true);
+        try {
+            if (!confirmObj) {
+                Alert.alert('Error', 'Session expired. Please try again.');
+                setStep('SEARCH');
+                return;
+            }
+            const userCredential = await confirmObj.confirm(otp);
+            if (userCredential) {
+                const token = await auth().currentUser?.getIdToken();
+                if (token) {
+                    setFirebaseToken(token);
+                    setStep('PASSWORD');
+                } else {
+                    Alert.alert('Error', 'Failed to retrieve verification token');
+                }
+            } else {
+                Alert.alert('Error', 'Verification failed. Please check the code.');
+            }
+        } catch (error: any) {
+            console.error('Firebase Forgot Password OTP verify failed:', error);
+            Alert.alert('Error', error.message || 'Invalid or expired code. Please try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleResetPassword = async () => {
@@ -91,7 +141,7 @@ const ForgotPassword = () => {
         }
         setLoading(true);
         try {
-            const response = await resetPasswordWithOTP(email.trim(), otp, newPassword);
+            const response = await resetPasswordWithFirebaseToken(firebaseToken, newPassword);
             if (response.success) {
                 Alert.alert('Success', 'Your password has been reset successfully. You can now login with your new password.', [
                     { text: 'Login Now', onPress: () => navigation.navigate('Login' as never) }
@@ -115,32 +165,54 @@ const ForgotPassword = () => {
     const inputColor = isDark ? '#f1f5f9' : '#1E293B';
     const iconColor = isDark ? '#475569' : '#64748B';
 
+    const renderCountryItem = ({ item }: { item: Country }) => (
+        <TouchableOpacity
+            style={[styles.countryItem, { borderBottomColor: border }]}
+            onPress={() => {
+                setSelectedCountry(item);
+                setShowCountryPicker(false);
+            }}
+        >
+            <Text style={styles.countryFlag}>{item.flag}</Text>
+            <Text style={[styles.countryName, { color: titleColor }]}>{item.name}</Text>
+            <Text style={[styles.countryDialCode, { color: subtitleColor }]}>{item.dialCode}</Text>
+        </TouchableOpacity>
+    );
+
     const renderStepContent = () => {
         switch (step) {
             case 'SEARCH':
                 return (
                     <View style={styles.stepContainer}>
                         <Text style={[styles.title, { color: titleColor }]}>Find Your Account</Text>
-                        <Text style={[styles.subtitle, { color: subtitleColor }]}>Enter your email to search for your FlyBook account</Text>
+                        <Text style={[styles.subtitle, { color: subtitleColor }]}>Enter your phone number to search for your FlyBook account</Text>
 
                         <View style={styles.inputContainer}>
-                            <Text style={[styles.label, { color: labelColor }]}>Email Address</Text>
-                            <View style={[styles.inputWrapper, { backgroundColor: cardBg, borderColor: border, paddingLeft: 12 }]}>
-                                <Ionicons name="mail-outline" size={20} color={iconColor} />
+                            <Text style={[styles.label, { color: labelColor }]}>Phone Number</Text>
+                            <View style={[styles.phoneInputWrapper, { backgroundColor: cardBg, borderColor: border }]}>
+                                <TouchableOpacity
+                                    style={[styles.countryCode, { borderRightColor: border }]}
+                                    onPress={() => setShowCountryPicker(true)}
+                                >
+                                    <Text style={[styles.countryCodeText, { color: inputColor }]}>
+                                        {selectedCountry.flag} {selectedCountry.dialCode}
+                                    </Text>
+                                    <Ionicons name="chevron-down" size={14} color={iconColor} style={{ marginLeft: 4 }} />
+                                </TouchableOpacity>
                                 <TextInput
-                                    style={[styles.input, { color: inputColor }]}
-                                    placeholder="name@example.com"
+                                    style={[styles.phoneInput, { color: inputColor }]}
+                                    placeholder="Phone number"
                                     placeholderTextColor={isDark ? '#475569' : '#94A3B8'}
-                                    value={email}
-                                    onChangeText={setEmail}
-                                    keyboardType="email-address"
-                                    autoCapitalize="none"
+                                    value={phone}
+                                    onChangeText={setPhone}
+                                    keyboardType="phone-pad"
                                     editable={!loading}
+                                    autoFocus
                                 />
                             </View>
                         </View>
 
-                        <TouchableOpacity style={styles.primaryButton} onPress={handleSearch} disabled={loading}>
+                        <TouchableOpacity style={styles.primaryButton} onPress={handleSearch} disabled={loading || !phone.trim()}>
                             {loading ? <ButtonLoader color="#FFFFFF" size="medium" /> : <Text style={styles.buttonText}>Search Account</Text>}
                         </TouchableOpacity>
                     </View>
@@ -150,7 +222,7 @@ const ForgotPassword = () => {
                 return (
                     <View style={styles.stepContainer}>
                         <Text style={[styles.title, { color: titleColor }]}>Is this you?</Text>
-                        <Text style={[styles.subtitle, { color: subtitleColor }]}>We found this account associated with your email</Text>
+                        <Text style={[styles.subtitle, { color: subtitleColor }]}>We found this account associated with your phone number</Text>
 
                         <View style={[styles.userCard, { backgroundColor: cardBg, borderColor: border }]}>
                             <Image
@@ -181,7 +253,7 @@ const ForgotPassword = () => {
                 return (
                     <View style={styles.stepContainer}>
                         <Text style={[styles.title, { color: titleColor }]}>Verify Identity</Text>
-                        <Text style={[styles.subtitle, { color: subtitleColor }]}>Enter the 6-digit code sent to {email}</Text>
+                        <Text style={[styles.subtitle, { color: subtitleColor }]}>Enter the 6-digit code sent to {foundUser?.phone || phone}</Text>
 
                         <View style={styles.inputContainer}>
                             <Text style={[styles.label, { color: labelColor }]}>Verification Code</Text>
@@ -196,12 +268,13 @@ const ForgotPassword = () => {
                                     maxLength={6}
                                     keyboardType="number-pad"
                                     editable={!loading}
+                                    autoFocus
                                 />
                             </View>
                         </View>
 
-                        <TouchableOpacity style={styles.primaryButton} onPress={handleVerifyOTP} disabled={loading}>
-                            <Text style={styles.buttonText}>Verify Code</Text>
+                        <TouchableOpacity style={styles.primaryButton} onPress={handleVerifyOTP} disabled={loading || otp.length !== 6}>
+                            {loading ? <ButtonLoader color="#FFFFFF" size="medium" /> : <Text style={styles.buttonText}>Verify Code</Text>}
                         </TouchableOpacity>
 
                         <TouchableOpacity style={styles.secondaryButton} onPress={handleSendOTP} disabled={loading}>
@@ -229,6 +302,7 @@ const ForgotPassword = () => {
                                     secureTextEntry={!showPassword}
                                     autoCapitalize="none"
                                     editable={!loading}
+                                    autoFocus
                                 />
                                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
                                     <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color={iconColor} />
@@ -253,7 +327,7 @@ const ForgotPassword = () => {
                             </View>
                         </View>
 
-                        <TouchableOpacity style={styles.primaryButton} onPress={handleResetPassword} disabled={loading}>
+                        <TouchableOpacity style={styles.primaryButton} onPress={handleResetPassword} disabled={loading || newPassword.length < 6 || newPassword !== confirmPassword}>
                             {loading ? <ButtonLoader color="#FFFFFF" size="medium" /> : <Text style={styles.buttonText}>Reset Password</Text>}
                         </TouchableOpacity>
                     </View>
@@ -266,7 +340,7 @@ const ForgotPassword = () => {
             <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={bg} />
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardView}>
                 <View style={styles.header}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} disabled={loading}>
                         <Ionicons name="arrow-back" size={24} color={titleColor} />
                     </TouchableOpacity>
                 </View>
@@ -274,6 +348,27 @@ const ForgotPassword = () => {
                 <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
                     {renderStepContent()}
                 </ScrollView>
+
+                {/* Country Picker Modal */}
+                <Modal visible={showCountryPicker} animationType="slide" transparent={true}>
+                    <View style={styles.modalOverlay}>
+                        <View style={[styles.modalContent, { backgroundColor: bg }]}>
+                            <View style={[styles.modalHeader, { borderBottomColor: border }]}>
+                                <Text style={[styles.modalTitle, { color: titleColor }]}>Select Country</Text>
+                                <TouchableOpacity onPress={() => setShowCountryPicker(false)}>
+                                    <Ionicons name="close" size={28} color={titleColor} />
+                                </TouchableOpacity>
+                            </View>
+                            <FlatList
+                                data={countries}
+                                renderItem={renderCountryItem}
+                                keyExtractor={(item) => item.code}
+                                contentContainerStyle={styles.countryList}
+                                showsVerticalScrollIndicator={false}
+                            />
+                        </View>
+                    </View>
+                </Modal>
             </KeyboardAvoidingView>
         </SafeAreaView>
     );
@@ -293,6 +388,10 @@ const styles = StyleSheet.create({
     inputWrapper: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 12, overflow: 'hidden' },
     input: { flex: 1, paddingVertical: 14, paddingHorizontal: 12, fontSize: 16 },
     eyeIcon: { padding: 12 },
+    phoneInputWrapper: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 12, overflow: 'hidden' },
+    countryCode: { paddingHorizontal: 12, paddingVertical: 16, borderRightWidth: 1, flexDirection: 'row', alignItems: 'center' },
+    countryCodeText: { fontSize: 16, fontWeight: '500' },
+    phoneInput: { flex: 1, paddingHorizontal: 16, paddingVertical: 16, fontSize: 16 },
     primaryButton: {
         backgroundColor: '#3B82F6', paddingVertical: 16, borderRadius: 12,
         alignItems: 'center', justifyContent: 'center', marginTop: 8,
@@ -309,6 +408,15 @@ const styles = StyleSheet.create({
     userInfo: { flex: 1 },
     userName: { fontSize: 18, fontWeight: 'bold', marginBottom: 4 },
     userPhone: { fontSize: 14 },
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+    modalContent: { height: '70%', borderTopLeftRadius: 24, borderTopRightRadius: 24 },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1 },
+    modalTitle: { fontSize: 20, fontWeight: 'bold' },
+    countryList: { paddingHorizontal: 20 },
+    countryItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1 },
+    countryFlag: { fontSize: 24, marginRight: 16 },
+    countryName: { flex: 1, fontSize: 16, fontWeight: '500' },
+    countryDialCode: { fontSize: 16 },
 });
 
 export default ForgotPassword;

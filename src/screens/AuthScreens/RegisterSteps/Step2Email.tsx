@@ -20,12 +20,29 @@ const Step2Email = () => {
   const [loading, setLoading] = useState(false);
 
   const handleNext = async () => {
+    const cleanEmail = email.trim();
+    if (!cleanEmail) {
+      // User chose to skip email registration
+      (navigation as any).navigate('Step4Phone', { 
+        firstName, 
+        lastName, 
+        email: '', 
+        otpVerified: false 
+      });
+      return;
+    }
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email.trim() || !emailRegex.test(email)) {
+    if (!emailRegex.test(cleanEmail)) {
       Alert.alert('Error', 'Please enter a valid email address');
       return;
     }
-    (navigation as any).navigate('Step4Phone', { firstName, lastName, email: email.trim().toLowerCase(), otpVerified: true });
+    (navigation as any).navigate('Step4Phone', { 
+      firstName, 
+      lastName, 
+      email: cleanEmail.toLowerCase(), 
+      otpVerified: true 
+    });
   };
 
   const bg = isDark ? '#0f172a' : '#FFFFFF';
@@ -67,7 +84,7 @@ const Step2Email = () => {
           <View style={styles.inputContainer}>
             <TextInput
               style={[styles.input, { backgroundColor: cardBg, borderColor: border, color: inputColor }]}
-              placeholder="Email address"
+              placeholder="Email address (Optional)"
               placeholderTextColor={isDark ? '#475569' : '#94A3B8'}
               value={email}
               onChangeText={setEmail}
@@ -78,17 +95,27 @@ const Step2Email = () => {
             />
           </View>
  
-          <Text style={[styles.hint, { color: subtitleColor }]}>💡 Make sure you have access to this email</Text>
+          <Text style={[styles.hint, { color: subtitleColor }]}>
+            {email.trim() 
+              ? '💡 Make sure you have access to this email' 
+              : '💡 This step is optional. You can skip it if you prefer.'}
+          </Text>
         </View>
  
         {/* Footer */}
         <View style={styles.footer}>
           <TouchableOpacity
-            style={[styles.nextButton, !email.trim() && styles.nextButtonDisabled]}
+            style={styles.nextButton}
             onPress={handleNext}
-            disabled={!email.trim() || loading}
+            disabled={loading}
           >
-            {loading ? <ButtonLoader color="#FFFFFF" size="medium" /> : <Text style={styles.nextButtonText}>Next</Text>}
+            {loading ? (
+              <ButtonLoader color="#FFFFFF" size="medium" />
+            ) : (
+              <Text style={styles.nextButtonText}>
+                {email.trim() ? 'Next' : 'Skip'}
+              </Text>
+            )}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

@@ -20,6 +20,7 @@ export interface RegisterData {
     longitude: number;
   };
   referrerUsername?: string;
+  firebaseToken?: string;
 }
 
 export interface AuthResponse {
@@ -468,6 +469,50 @@ export const resetPasswordWithOTP = async (
     return response;
   } catch (error: any) {
     console.error('Reset password with OTP error:', error);
+    throw {
+      success: false,
+      message: error.message || 'Failed to reset password.',
+    };
+  }
+};
+
+/**
+ * Find user by phone (for forgot password)
+ */
+export const findUserByPhone = async (
+  phone: string,
+): Promise<{ success: boolean; user: any; message?: string }> => {
+  try {
+    console.log('Find user by phone:', phone);
+    const response = await get<any>(
+      `/api/user/find-by-phone?phone=${encodeURIComponent(phone)}`,
+    );
+    console.log('Find user by phone response:', response);
+    return response;
+  } catch (error: any) {
+    console.error('Find user by phone error:', error);
+    throw {
+      success: false,
+      message: error.message || 'Failed to find user.',
+    };
+  }
+};
+
+/**
+ * Reset password with Firebase Phone Auth Token
+ */
+export const resetPasswordWithFirebaseToken = async (
+  firebaseToken: string,
+  newPassword: string,
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response = await post<any>('/api/user/reset-password-firebase', {
+      firebaseToken,
+      newPassword,
+    });
+    return response;
+  } catch (error: any) {
+    console.error('Reset password with firebase token error:', error);
     throw {
       success: false,
       message: error.message || 'Failed to reset password.',

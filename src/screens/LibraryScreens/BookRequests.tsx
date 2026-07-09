@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Alert,
   RefreshControl,
+  Modal,
 } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigation } from '@react-navigation/native';
@@ -32,6 +33,7 @@ const BookRequests = () => {
   const { socket } = useSocket();
   const queryClient = useQueryClient();
   const navigation = useNavigation<any>();
+  const [viewFaceUrl, setViewFaceUrl] = React.useState<string | null>(null);
 
   const { data: allBooks = [], isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['allBooks'],
@@ -160,6 +162,17 @@ const BookRequests = () => {
           <Ionicons name="chevron-forward" size={12} color={isDark ? "#475569" : "#94A3B8"} style={{ marginLeft: 'auto' }} />
         </TouchableOpacity>
 
+        {item.requestFaceUrl ? (
+          <TouchableOpacity
+            style={[styles.verifyFaceBtn, isDark && { backgroundColor: '#0f172a', borderColor: '#334155' }]}
+            onPress={() => setViewFaceUrl(item.requestFaceUrl || null)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="scan-circle" size={16} color="#10b981" />
+            <Text style={styles.verifyFaceText}>Verify Requester Face</Text>
+          </TouchableOpacity>
+        ) : null}
+
         <View style={[styles.statusBadge, isDark && { backgroundColor: '#0f172a' }]}>
           <View style={[styles.statusDot, item.transfer === 'pending' ? styles.dotPending : styles.dotAccepted]} />
           <Text style={[styles.statusText, isDark && { color: '#94a3b8' }]}>
@@ -222,26 +235,77 @@ const BookRequests = () => {
   );
 
   return (
-    <FlatList
-      data={requestBooks}
-      renderItem={renderBook}
-      keyExtractor={item => item._id}
-      contentContainerStyle={styles.listContainer}
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl
-          refreshing={isRefetching}
-          onRefresh={refetch}
-          colors={[isDark ? "#14b8a6" : '#0D9488']}
-          tintColor={isDark ? "#14b8a6" : '#0D9488'}
-        />
-      }
-      ListHeaderComponent={
-        <View style={styles.listHeader}>
-          <Text style={[styles.sectionTitle, isDark && { color: '#cbd5e1' }]}>Incoming Requests ({requestBooks.length})</Text>
+    <View style={{ flex: 1 }}>
+      <FlatList
+        data={requestBooks}
+        renderItem={renderBook}
+        keyExtractor={item => item._id}
+        contentContainerStyle={styles.listContainer}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={refetch}
+            colors={[isDark ? "#14b8a6" : '#0D9488']}
+            tintColor={isDark ? "#14b8a6" : '#0D9488'}
+          />
+        }
+        ListHeaderComponent={
+          <View style={styles.listHeader}>
+            <Text style={[styles.sectionTitle, isDark && { color: '#cbd5e1' }]}>Incoming Requests ({requestBooks.length})</Text>
+          </View>
+        }
+      />
+
+      {/* Face Image Preview Modal */}
+      <Modal visible={!!viewFaceUrl} transparent={true} animationType="fade">
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            onPress={() => setViewFaceUrl(null)}
+            activeOpacity={1}
+          />
+          <View style={[styles.modalContent, isDark && { backgroundColor: '#1e293b' }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, isDark && { color: '#f8fafc' }]}>Requester Identity</Text>
+              <TouchableOpacity
+                onPress={() => setViewFaceUrl(null)}
+                style={[styles.modalCloseBtn, isDark && { backgroundColor: '#334155' }]}
+              >
+                <Ionicons name="close" size={20} color={isDark ? "#f8fafc" : "#6B7280"} />
+              </TouchableOpacity>
+            </View>
+
+            {viewFaceUrl && (
+              <Image
+                source={{ uri: viewFaceUrl }}
+                style={styles.previewFaceImage}
+                resizeMode="cover"
+              />
+            )}
+
+            <View style={styles.verificationBadge}>
+              <Ionicons name="checkmark-seal" size={20} color="#10b981" />
+              <Text style={styles.verificationText}>On-Device Face Verified</Text>
+            </View>
+
+            <TouchableOpacity
+              onPress={() => setViewFaceUrl(null)}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={['#10B981', '#059669']}
+                style={styles.closeModalBtn}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                <Text style={styles.closeModalBtnText}>Close</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
         </View>
-      }
-    />
+      </Modal>
+    </View>
   );
 };
 
@@ -424,6 +488,98 @@ const styles = StyleSheet.create({
   actionBtnText: {
     color: '#fff',
     fontSize: 13,
+    fontWeight: '800',
+  },
+  verifyFaceBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+    backgroundColor: '#F0FDFA',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#CCFBF1',
+  },
+  verifyFaceText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0D9488',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 20,
+    width: '100%',
+    maxWidth: 340,
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 15,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#0F172A',
+  },
+  modalCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F1F5F9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  previewFaceImage: {
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    borderWidth: 4,
+    borderColor: '#10b981',
+    marginBottom: 16,
+  },
+  verificationBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#F0FDFA',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginBottom: 20,
+  },
+  verificationText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0D9488',
+  },
+  closeModalBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeModalBtnText: {
+    color: '#fff',
+    fontSize: 14,
     fontWeight: '800',
   },
 });

@@ -25,6 +25,9 @@ import WalletIcon from '../icons/WalletIcon';
 function WalletIconWrapper({ size, color }: { size: number; color: string }) {
   return <WalletIcon size={size} color={color} />;
 }
+function BreachIconWrapper({ size, color }: { size: number; color: string }) {
+  return <Ionicons name="shield" size={size} color={color} />;
+}
 const MENU_SECTIONS = [
   {
     title: 'Main',
@@ -37,6 +40,20 @@ const MENU_SECTIONS = [
         params: { screen: 'Home', params: { screen: 'Peoples' } }
       },
       { label: 'Library', icon: LibraryIcon, route: 'Library' },
+      {
+        label: 'Breach of Contract',
+        icon: BreachIconWrapper,
+        route: 'MainTabs',
+        params: {
+          screen: 'Home',
+          params: {
+            screen: 'Library',
+            params: {
+              screen: 'BreachOfContract'
+            }
+          }
+        }
+      },
       {
         label: 'Channels',
         icon: ChannelThinIcon,

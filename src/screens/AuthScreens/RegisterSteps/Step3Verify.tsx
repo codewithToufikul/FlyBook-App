@@ -6,19 +6,20 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { ButtonLoader } from '../../../components/common';
-import { post } from '../../../services/api';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../../contexts/ThemeContext';
+import auth from '@react-native-firebase/auth';
 
 const Step3Verify = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { firstName, lastName, email } = route.params as any;
+  const { firstName, lastName, email, phone, confirmation } = route.params as any;
   const { isDark } = useTheme();
 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
+  const [confirmObj, setConfirmObj] = useState(confirmation);
   const inputRefs = useRef<Array<TextInput | null>>([]);
 
   const handleOtpChange = (value: string, index: number) => {
@@ -46,16 +47,31 @@ const Step3Verify = () => {
     if (otpCode.length !== 6) { Alert.alert('Error', 'Please enter the complete 6-digit code'); return; }
     setLoading(true);
     try {
-      const response = await post('/users/verify-otp', { email, otp: otpCode });
-      if (response.success) {
-        (navigation as any).navigate('Step4Phone', { firstName, lastName, email, otpVerified: true });
+      if (!confirmObj) {
+        Alert.alert('Error', 'Verification session expired. Please go back and try again.');
+        return;
+      }
+
+      const userCredential = await confirmObj.confirm(otpCode);
+      if (userCredential) {
+        // Retrieve Firebase ID Token
+        const firebaseToken = await auth().currentUser?.getIdToken();
+
+        (navigation as any).navigate('Step4bAffiliate', {
+          firstName,
+          lastName,
+          email,
+          phone,
+          firebaseToken
+        });
       } else {
-        Alert.alert('Error', response.message || 'Invalid verification code');
+        Alert.alert('Error', 'Verification failed. Please check the code.');
         setOtp(['', '', '', '', '', '']);
         inputRefs.current[0]?.focus();
       }
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Verification failed');
+      console.error('Firebase confirm error:', error);
+      Alert.alert('Error', error.message || 'Verification failed. Please try again.');
       setOtp(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
     } finally {
@@ -66,11 +82,17 @@ const Step3Verify = () => {
   const handleResend = async () => {
     setResending(true);
     try {
-      const response = await post('/users/send-otp', { email });
-      if (response.success) { Alert.alert('Success', 'Verification code sent again!'); setOtp(['', '', '', '', '', '']); inputRefs.current[0]?.focus(); }
-      else Alert.alert('Error', response.message || 'Failed to resend code');
-    } catch (error: any) { Alert.alert('Error', error.message || 'Failed to resend code'); }
-    finally { setResending(false); }
+      const newConfirmation = await auth().signInWithPhoneNumber(phone);
+      setConfirmObj(newConfirmation);
+      Alert.alert('Success', 'Verification code sent again!');
+      setOtp(['', '', '', '', '', '']);
+      inputRefs.current[0]?.focus();
+    } catch (error: any) {
+      console.error('Firebase resend error:', error);
+      Alert.alert('Error', error.message || 'Failed to resend code');
+    } finally {
+      setResending(false);
+    }
   };
 
   const bg = isDark ? '#0f172a' : '#FFFFFF';
@@ -104,7 +126,7 @@ const Step3Verify = () => {
           <Text style={[styles.title, { color: titleColor }]}>Enter verification code</Text>
           <Text style={[styles.subtitle, { color: subtitleColor }]}>
             We sent a 6-digit code to{'\n'}
-            <Text style={styles.email}>{email}</Text>
+            <Text style={styles.email}>{phone}</Text>
           </Text>
 
           {/* OTP Inputs */}

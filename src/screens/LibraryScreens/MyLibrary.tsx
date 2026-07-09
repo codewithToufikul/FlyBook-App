@@ -94,6 +94,21 @@ const MyLibrary = () => {
           </View>
 
           <TouchableOpacity
+            onPress={() => navigation.navigate('Onindo')}
+            style={[styles.onindoBtn, isDark && { backgroundColor: 'rgba(124,58,237,0.15)' }]}
+          >
+            <Ionicons name="infinite" size={20} color="#7c3aed" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => navigation.navigate('BreachOfContract')}
+            style={[styles.breachBtn, isDark && { backgroundColor: 'rgba(239,68,68,0.15)' }]}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="shield" size={20} color="#ef4444" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
             onPress={() => navigation.navigate('AddBook')}
             style={[styles.addBtn, isDark && { backgroundColor: '#1e293b' }]}
           >
@@ -210,6 +225,22 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     backgroundColor: '#F1F5F9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  onindoBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(124,58,237,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  breachBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
