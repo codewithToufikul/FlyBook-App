@@ -45,7 +45,7 @@ const BookRequests = () => {
     .filter(
       (book: Book) =>
         book.userId === user?._id &&
-        (book.transfer === 'pending' || book.transfer === 'accept'),
+        (book.transfer === 'pending' || book.transfer === 'accept' || book.transfer === 'transfer_pending'),
     )
     .reverse();
 
@@ -77,16 +77,16 @@ const BookRequests = () => {
   const handleTransfer = async (book: Book) => {
     Alert.alert(
       'Transfer Book',
-      `Are you sure you want to transfer "${book.bookName}" to ${book.requestName}?`,
+      `Are you sure you want to send "${book.bookName}" to ${book.requestName}? They will need to confirm receipt.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Transfer',
+          text: 'Send Transfer Request',
           onPress: async () => {
             try {
               await transferBook(book._id, book.requestBy || '', book.requestName || '');
-              Toast.show({ type: 'success', text1: 'Book transferred successfully!' });
-              emitNotification(book.requestBy || '', 'bookReqAc', 'Transfer your Book');
+              Toast.show({ type: 'success', text1: 'Transfer request sent!', text2: `Waiting for ${book.requestName} to confirm receipt.` });
+              emitNotification(book.requestBy || '', 'bookTransferReq', 'Book Transfer Request');
               queryClient.invalidateQueries({ queryKey: ['allBooks'] });
             } catch (error: any) {
               Toast.show({ type: 'error', text1: 'Transfer failed', text2: error?.message });
@@ -174,9 +174,18 @@ const BookRequests = () => {
         ) : null}
 
         <View style={[styles.statusBadge, isDark && { backgroundColor: '#0f172a' }]}>
-          <View style={[styles.statusDot, item.transfer === 'pending' ? styles.dotPending : styles.dotAccepted]} />
+          <View style={[styles.statusDot,
+            item.transfer === 'pending' ? styles.dotPending :
+            item.transfer === 'transfer_pending' ? styles.dotTransferPending :
+            styles.dotAccepted
+          ]} />
           <Text style={[styles.statusText, isDark && { color: '#94a3b8' }]}>
-            {item.transfer === 'pending' ? 'Waiting for your approval' : 'Accepted - Tap to Transfer'}
+            {item.transfer === 'pending'
+              ? 'Waiting for your approval'
+              : item.transfer === 'transfer_pending'
+              ? 'Transfer sent — waiting for receiver'
+              : 'Accepted — Tap to Transfer'
+            }
           </Text>
         </View>
 
@@ -197,6 +206,14 @@ const BookRequests = () => {
                 <Text style={styles.actionBtnText}>Accept</Text>
               </LinearGradient>
             </TouchableOpacity>
+          ) : item.transfer === 'transfer_pending' ? (
+            // Transfer sent, waiting for receiver — show disabled state
+            <View style={[styles.actionBtnWrapper, { flex: 1 }]}>
+              <View style={[styles.actionBtn, { backgroundColor: '#7C3AED', opacity: 0.7 }]}>
+                <Ionicons name="hourglass" size={16} color="#fff" />
+                <Text style={styles.actionBtnText}>Awaiting Confirmation...</Text>
+              </View>
+            </View>
           ) : (
             <TouchableOpacity
               style={styles.actionBtnWrapper}
@@ -214,21 +231,23 @@ const BookRequests = () => {
               </LinearGradient>
             </TouchableOpacity>
           )}
-          <TouchableOpacity
-            onPress={() => handleCancel(item)}
-            activeOpacity={0.8}
-            style={styles.actionBtnWrapper}
-          >
-            <LinearGradient
-              colors={['#EF4444', '#B91C1C']}
-              style={styles.actionBtn}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
+          {item.transfer !== 'transfer_pending' && (
+            <TouchableOpacity
+              onPress={() => handleCancel(item)}
+              activeOpacity={0.8}
+              style={styles.actionBtnWrapper}
             >
-              <Ionicons name="close-circle" size={16} color="#fff" />
-              <Text style={styles.actionBtnText}>Decline</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+              <LinearGradient
+                colors={['#EF4444', '#B91C1C']}
+                style={styles.actionBtn}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                <Ionicons name="close-circle" size={16} color="#fff" />
+                <Text style={styles.actionBtnText}>Decline</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </View>
@@ -463,6 +482,9 @@ const styles = StyleSheet.create({
   },
   dotAccepted: {
     backgroundColor: '#10B981',
+  },
+  dotTransferPending: {
+    backgroundColor: '#7C3AED',
   },
   statusText: {
     fontSize: 12,

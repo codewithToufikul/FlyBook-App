@@ -98,8 +98,8 @@ const TopNav = () => {
                         await Linking.openURL(webPlayStoreUrl);
                       }
                     } else {
-                      const appStoreUrl = 'itms-apps://itunes.apple.com/app/id6470000000'; // Replace with actual App ID when available
-                      const webAppStoreUrl = 'https://apps.apple.com/app/flyconnect';
+                      const appStoreUrl = 'itms-apps://itunes.apple.com/app/id6761704543';
+                      const webAppStoreUrl = 'https://apps.apple.com/us/app/flyconnect-chat-call/id6761704543';
                       try {
                         await Linking.openURL(appStoreUrl);
                       } catch {

@@ -304,18 +304,30 @@ const SocialResponseScreen = ({ navigation, route }: any) => {
         }
         try {
             const target = `chat:${profUserId}`;
-            // canCall: false means patient cannot call the professional
             const data = encodeURIComponent(JSON.stringify({ target, canCall: false }));
             const url = `flyconnect://auth?data=${data}`;
-            const supported = await Linking.canOpenURL(url);
+            const supported = await Linking.canOpenURL('flyconnect://');
 
             if (supported) {
                 await Linking.openURL(url);
             } else {
-                Alert.alert(
-                    'Installation Required',
-                    'Please install FlyConnect app to chat with professionals.',
-                );
+                if (Platform.OS === 'android') {
+                    const playStoreUrl = 'market://details?id=com.flyconnect';
+                    const webPlayStoreUrl = 'https://play.google.com/store/apps/details?id=com.flyconnect';
+                    try {
+                        await Linking.openURL(playStoreUrl);
+                    } catch {
+                        await Linking.openURL(webPlayStoreUrl);
+                    }
+                } else {
+                    const appStoreUrl = 'itms-apps://itunes.apple.com/app/id6761704543';
+                    const webAppStoreUrl = 'https://apps.apple.com/us/app/flyconnect-chat-call/id6761704543';
+                    try {
+                        await Linking.openURL(appStoreUrl);
+                    } catch {
+                        await Linking.openURL(webAppStoreUrl);
+                    }
+                }
             }
         } catch {
             Alert.alert('Error', 'Could not open chat application');
@@ -332,11 +344,27 @@ const SocialResponseScreen = ({ navigation, route }: any) => {
             // canCall: true means professional CAN call the patient
             const data = encodeURIComponent(JSON.stringify({ target, canCall: true }));
             const url = `flyconnect://auth?data=${data}`;
-            const supported = await Linking.canOpenURL(url);
+            const supported = await Linking.canOpenURL('flyconnect://');
             if (supported) {
                 await Linking.openURL(url);
             } else {
-                Alert.alert('Installation Required', 'Please install FlyConnect app to chat with patients.');
+                if (Platform.OS === 'android') {
+                    const playStoreUrl = 'market://details?id=com.flyconnect';
+                    const webPlayStoreUrl = 'https://play.google.com/store/apps/details?id=com.flyconnect';
+                    try {
+                        await Linking.openURL(playStoreUrl);
+                    } catch {
+                        await Linking.openURL(webPlayStoreUrl);
+                    }
+                } else {
+                    const appStoreUrl = 'itms-apps://itunes.apple.com/app/id6761704543';
+                    const webAppStoreUrl = 'https://apps.apple.com/us/app/flyconnect-chat-call/id6761704543';
+                    try {
+                        await Linking.openURL(appStoreUrl);
+                    } catch {
+                        await Linking.openURL(webAppStoreUrl);
+                    }
+                }
             }
         } catch {
             Alert.alert('Error', 'Could not open chat application');

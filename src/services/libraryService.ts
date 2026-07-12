@@ -20,6 +20,7 @@ export interface Book {
   requestBy?: string;
   requestName?: string;
   requestFaceUrl?: string;
+  conditionPhotos?: string[];
 }
 
 export interface TransferRecord {
@@ -36,6 +37,7 @@ export interface TransferRecord {
   transTime: string;
   transfer?: string;
   return?: string;
+  conditionPhotos?: string[];
 }
 
 export interface AddBookData {
@@ -82,6 +84,14 @@ export const transferBook = async (
   const date = new Date().toLocaleDateString();
   const time = new Date().toLocaleTimeString();
   return post('/books/request/trans', { bookId, requestBy, requestName, date, time });
+};
+
+export const confirmBookTransfer = async (
+  bookId: string,
+  conditionPhotos: string[],
+  location: { type: string; coordinates: [number, number]; locationName: string } | null,
+): Promise<{ message: string; conditionPhotos: string[] }> => {
+  return post('/books/request/confirm', { bookId, conditionPhotos, location });
 };
 
 export const returnBook = async (
@@ -176,6 +186,7 @@ export interface Defaulter {
     type: string;
     coordinates: [number, number]; // [lng, lat]
   } | null;
+  conditionPhotos?: string[];
 }
 
 export const fetchDefaulters = async (): Promise<{ success: boolean; data: Defaulter[] }> => {

@@ -88,6 +88,13 @@ const MyRequests = () => {
           icon: 'checkmark-circle' as const,
           bgColor: isDark ? 'rgba(59, 130, 246, 0.1)' : '#EFF6FF'
         };
+      case 'transfer_pending':
+        return {
+          label: 'Book Incoming - Tap to Accept',
+          color: '#8B5CF6',
+          icon: 'swap-horizontal' as const,
+          bgColor: isDark ? 'rgba(139, 92, 246, 0.1)' : '#F5F3FF'
+        };
       case 'success':
         return {
           label: 'Currently with you',
@@ -196,6 +203,21 @@ const MyRequests = () => {
                 <Ionicons name="hourglass" size={16} color="#F59E0B" />
                 <Text style={[styles.pendingInfoText, isDark && { color: '#F59E0B' }]}>Waiting for owner approval</Text>
               </View>
+            ) : item.transfer === 'transfer_pending' ? (
+              <TouchableOpacity
+                onPress={() => navigation.navigate('BookConditionCamera', { bookId: item._id, bookName: item.bookName })}
+                activeOpacity={0.8}
+              >
+                <LinearGradient
+                  colors={['#8B5CF6', '#7C3AED']}
+                  style={styles.returnBtn}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                >
+                  <Ionicons name="camera" size={18} color="#fff" />
+                  <Text style={styles.returnBtnText}>Accept & Take Photos</Text>
+                </LinearGradient>
+              </TouchableOpacity>
             ) : (
               <View style={[styles.transferSoonInfo, isDark && { backgroundColor: 'rgba(59, 130, 246, 0.05)', borderColor: 'rgba(59, 130, 246, 0.2)' }]}>
                 <Ionicons name="swap-horizontal" size={16} color="#3B82F6" />

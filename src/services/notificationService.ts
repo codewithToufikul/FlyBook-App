@@ -121,6 +121,11 @@ class NotificationService {
         this.navigateToLibraryTab('myRequests');
         break;
 
+      case 'bookTransferReq':
+        // Receiver gets this when sender initiates a transfer — navigate to myRequests
+        this.navigateToLibraryTab('myRequests');
+        break;
+
       case 'bookReturn':
         this.navigateToLibraryTab('myBooks');
         break;
@@ -185,6 +190,7 @@ class NotificationService {
           'bookReqCl',
           'bookReqAc',
           'bookReturn',
+          'bookTransferReq',
         ].includes(type || '');
 
         let toastType = 'socialNotification';

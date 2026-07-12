@@ -394,6 +394,20 @@ const BreachOfContract = () => {
                 </View>
               </View>
 
+              {selectedDefaulter.conditionPhotos && selectedDefaulter.conditionPhotos.length > 0 && (
+                <>
+                  <View style={styles.divider} />
+                  <View style={styles.conditionPhotosSection}>
+                    <Text style={styles.sectionHeader}>Borrowing Condition Photos</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.conditionPhotosContainer}>
+                      {selectedDefaulter.conditionPhotos.map((photoUrl, index) => (
+                        <Image key={index} source={{ uri: photoUrl }} style={styles.conditionPhoto} />
+                      ))}
+                    </ScrollView>
+                  </View>
+                </>
+              )}
+
               <View style={styles.divider} />
 
               <View style={styles.metaInfoSection}>
@@ -805,6 +819,21 @@ const styles = StyleSheet.create({
   },
   suggestionTextDark: {
     color: '#CBD5E1',
+  },
+  conditionPhotosSection: {
+    gap: 8,
+  },
+  conditionPhotosContainer: {
+    gap: 12,
+    paddingVertical: 4,
+  },
+  conditionPhoto: {
+    width: 100,
+    height: 140,
+    borderRadius: 8,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
 });
 
