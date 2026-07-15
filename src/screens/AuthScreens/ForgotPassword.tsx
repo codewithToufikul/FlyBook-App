@@ -52,6 +52,7 @@ const ForgotPassword = () => {
         setLoading(true);
         try {
             const response = await findUserByPhone(fullPhoneNumber);
+            console.log('User Found:', response);
             if (response.success && response.user) {
                 setFoundUser(response.user);
                 setStep('VERIFY');
@@ -66,35 +67,20 @@ const ForgotPassword = () => {
     };
 
     const handleSendOTP = async () => {
-        setLoading(true);
-        // Build E.164 format: +{countryCode}{number without leading zero}
-        // foundUser.fullPhone could be "01615685428" or "8801615685428" or "+8801615685428"
-        let rawPhone = foundUser?.fullPhone || phone.trim();
-        // Remove all non-digit characters except leading +
-        rawPhone = rawPhone.replace(/[^\d+]/g, '');
-        // If already starts with +, use as-is; if starts with country digits (880), add +; else add dialCode
-        let targetPhone: string;
-        if (rawPhone.startsWith('+')) {
-            targetPhone = rawPhone;
-        } else if (rawPhone.startsWith('880') && rawPhone.length >= 12) {
-            targetPhone = `+${rawPhone}`;
-        } else {
-            // Local format like 01615685428 → strip leading 0 → +880 1615685428
-            const stripped = rawPhone.replace(/^0+/, '');
-            const dialCode = selectedCountry.dialCode; // e.g. "+880"
-            targetPhone = `${dialCode}${stripped}`;
-        }
-        console.log('[ForgotPassword] Sending OTP to:', targetPhone);
         try {
-            const confirmation = await auth().signInWithPhoneNumber(targetPhone);
-            setConfirmObj(confirmation);
-            Alert.alert('Code Sent', 'A verification code has been sent to your phone.');
-            setStep('OTP');
+            console.log("Sending OTP...");
+
+            const confirmation = await auth().signInWithPhoneNumber(
+                "+8801474835285"
+            );
+
+            console.log("SUCCESS");
+            console.log(confirmation);
+
         } catch (error: any) {
-            console.error('Firebase Forgot Password SMS send failed:', error);
-            Alert.alert('Error', error.message || 'Failed to send verification code. Please try again.');
-        } finally {
-            setLoading(false);
+            console.log("ERROR CODE:", error.code);
+            console.log("ERROR MESSAGE:", error.message);
+            console.log("FULL ERROR:", error);
         }
     };
 
