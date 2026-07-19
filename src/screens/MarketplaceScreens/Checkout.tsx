@@ -248,9 +248,11 @@ const Checkout = () => {
                         </View>
                     </View>
 
-                    <LinearGradient
-                        colors={isDark ? ['#1e293b', '#0f172a'] : ['#F8FAFC', '#F1F5F9']}
-                        style={styles.coinBalanceRow}
+                    <View
+                        style={[
+                            styles.coinBalanceRow,
+                            { backgroundColor: isDark ? '#1e293b' : '#F1F5F9' }
+                        ]}
                     >
                         <View style={styles.balanceItem}>
                             <Text style={styles.balanceLabel}>Your Balance</Text>
@@ -260,7 +262,7 @@ const Checkout = () => {
                             <Text style={styles.balanceLabel}>Usable Points</Text>
                             <Text style={[styles.balanceValue, { color: '#F59E0B' }]}>🪙 {calculations.maxUsable.toFixed(2)}</Text>
                         </View>
-                    </LinearGradient>
+                    </View>
 
                     {calculations.maxUsable > 0 && (
                         <View style={styles.coinInputWrapper}>

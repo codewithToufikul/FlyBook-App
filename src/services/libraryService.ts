@@ -3,6 +3,7 @@ import { get, post, del } from './api';
 export interface Book {
   _id: string;
   userId: string;
+  uploaderId?: string;
   bookName: string;
   writer: string;
   details: string;
@@ -11,6 +12,8 @@ export interface Book {
   currentTime: string;
   returnTime: string;
   owner: string;
+  transfer?: string;
+  transferredAt?: string;
   location?: {
     type: string;
     coordinates: [number, number];
@@ -114,6 +117,7 @@ export const fetchTransferHistory = async (): Promise<{ success: boolean; data: 
 export interface OnindoBook {
   _id: string;
   userId: string;
+  uploaderId?: string;
   bookName: string;
   writer: string;
   details: string;
@@ -124,6 +128,8 @@ export interface OnindoBook {
   requestBy?: string;
   requestName?: string;
   transferTo?: string;
+  transfer?: string;
+  transferredAt?: string;
 }
 
 export interface AddOnindoBookData {
@@ -134,10 +140,15 @@ export interface AddOnindoBookData {
   userId: string;
   currentDate: string;
   currentTime: string;
+  location: { type: string; coordinates: [number, number] } | null;
 }
 
 export const fetchAllOnindoBooks = async (): Promise<OnindoBook[]> => {
   return get<OnindoBook[]>('/all-onindo-books');
+};
+
+export const fetchUserOnindoBooks = async (userId: string): Promise<{ success: boolean; data: OnindoBook[] }> => {
+  return get(`/books/onindo/user/${userId}`);
 };
 
 export const addOnindoBook = async (bookAllData: AddOnindoBookData) => {

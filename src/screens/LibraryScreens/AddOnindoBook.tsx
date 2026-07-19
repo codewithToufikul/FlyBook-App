@@ -18,6 +18,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
 import Toast from 'react-native-toast-message';
+import Geolocation from '@react-native-community/geolocation';
+import { PermissionsAndroid } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { addOnindoBook } from '../../services/libraryService';
@@ -72,6 +74,39 @@ const AddOnindoBook = () => {
     }
   };
 
+  const getLocation = (): Promise<{ type: string; coordinates: [number, number] } | null> => {
+    return new Promise(resolve => {
+      const requestAndGet = async () => {
+        if (Platform.OS === 'android') {
+          try {
+            const granted = await PermissionsAndroid.request(
+              PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+            );
+            if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+              resolve(null);
+              return;
+            }
+          } catch {
+            resolve(null);
+            return;
+          }
+        } else {
+          Geolocation.requestAuthorization();
+        }
+
+        Geolocation.getCurrentPosition(
+          position => {
+            const { latitude, longitude } = position.coords;
+            resolve({ type: 'Point', coordinates: [longitude, latitude] });
+          },
+          () => resolve(null),
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 },
+        );
+      };
+      requestAndGet();
+    });
+  };
+
   const handleSubmit = async () => {
     if (!bookName.trim() || !writer.trim() || !details.trim() || !imageUri) {
       Toast.show({ type: 'error', text1: 'Please fill all fields and add an image' });
@@ -80,6 +115,9 @@ const AddOnindoBook = () => {
 
     setIsSubmitting(true);
     try {
+      Toast.show({ type: 'info', text1: 'Getting your location...' });
+      const locationInfo = await getLocation();
+
       Toast.show({ type: 'info', text1: 'Uploading book image...' });
       const imageUrl = await uploadToImgBB(imageUri);
 
@@ -91,6 +129,7 @@ const AddOnindoBook = () => {
         userId: user?._id || '',
         currentDate: new Date().toLocaleDateString(),
         currentTime: new Date().toLocaleTimeString(),
+        location: locationInfo,
       };
 
       await addOnindoBook(bookData);
@@ -197,26 +236,22 @@ const AddOnindoBook = () => {
           <TouchableOpacity
             onPress={handleSubmit}
             disabled={isSubmitting}
-            style={styles.submitBtn}
+            style={[
+              styles.submitBtn,
+              { backgroundColor: isSubmitting ? '#94a3b8' : '#7c3aed' }
+            ]}
           >
-            <LinearGradient
-              colors={isSubmitting ? ['#94a3b8', '#94a3b8'] : ['#7c3aed', '#a78bfa']}
-              style={styles.submitGrad}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-            >
-              {isSubmitting ? (
-                <>
-                  <ActivityIndicator color="#fff" size="small" />
-                  <Text style={styles.submitText}>Uploading...</Text>
-                </>
-              ) : (
-                <>
-                  <Ionicons name="infinite" size={20} color="#fff" />
-                  <Text style={styles.submitText}>Share to Onindo</Text>
-                </>
-              )}
-            </LinearGradient>
+            {isSubmitting ? (
+              <>
+                <ActivityIndicator color="#fff" size="small" />
+                <Text style={styles.submitText}>Uploading...</Text>
+              </>
+            ) : (
+              <>
+                <Ionicons name="infinite" size={20} color="#fff" />
+                <Text style={styles.submitText}>Share to Onindo</Text>
+              </>
+            )}
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -289,8 +324,9 @@ const styles = StyleSheet.create({
   },
   imagePickerText: { fontSize: 15, fontWeight: '700' },
   imagePickerSub: { fontSize: 13 },
-  submitBtn: { marginTop: 20, borderRadius: 14, overflow: 'hidden' },
-  submitGrad: {
+  submitBtn: {
+    marginTop: 20,
+    borderRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

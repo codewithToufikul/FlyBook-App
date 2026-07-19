@@ -70,9 +70,31 @@ export const pickImageFromGallery = async (): Promise<any> => {
 };
 
 /**
- * Take photo using camera
+ * Take photo using camera (with runtime permission check)
  */
 export const takePhotoWithCamera = async (): Promise<any> => {
+  // Request camera permission on Android at runtime
+  if (Platform.OS === 'android') {
+    try {
+      const { PermissionsAndroid } = require('react-native');
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.CAMERA,
+        {
+          title: 'Camera Permission',
+          message: 'This app needs access to your camera to take photos.',
+          buttonNeutral: 'Ask Me Later',
+          buttonNegative: 'Cancel',
+          buttonPositive: 'OK',
+        },
+      );
+      if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+        throw new Error('Camera permission denied');
+      }
+    } catch (err) {
+      throw new Error('Camera permission denied');
+    }
+  }
+
   return new Promise((resolve, reject) => {
     const options: ImagePickerOptions = {
       mediaType: 'photo',

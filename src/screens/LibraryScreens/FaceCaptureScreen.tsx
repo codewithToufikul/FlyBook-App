@@ -197,32 +197,31 @@ export const FaceCaptureScreen: React.FC<FaceCaptureScreenProps> = ({
           {/* Manual capture button — iOS only fallback */}
           {Platform.OS === 'ios' && (
             <TouchableOpacity
-              style={styles.captureButton}
+              style={[
+                styles.captureButton,
+                styles.captureGradient,
+                { backgroundColor: '#14b8a6' }
+              ]}
               onPress={handleManualCapture}>
-              <LinearGradient
-                colors={['#14b8a6', '#0d9488']}
-                style={styles.captureGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}>
-                <Ionicons
-                  name="camera"
-                  size={22}
-                  color="#fff"
-                  style={{ marginRight: 8 }}
-                />
-                <Text style={styles.captureText}>Capture</Text>
-              </LinearGradient>
+              <Ionicons
+                name="camera"
+                size={22}
+                color="#fff"
+                style={{ marginRight: 8 }}
+              />
+              <Text style={styles.captureText}>Capture</Text>
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-            <LinearGradient
-              colors={['#EF4444', '#B91C1C']}
-              style={styles.cancelGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}>
-              <Text style={styles.cancelText}>Cancel</Text>
-            </LinearGradient>
+          <TouchableOpacity 
+            style={[
+              styles.cancelButton,
+              styles.cancelGradient,
+              { backgroundColor: '#EF4444' }
+            ]} 
+            onPress={onClose}
+          >
+            <Text style={styles.cancelText}>Cancel</Text>
           </TouchableOpacity>
         </View>
       </View>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
   Alert,
   RefreshControl,
   Modal,
+  ScrollView,
+  Dimensions,
 } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigation } from '@react-navigation/native';
@@ -26,6 +28,9 @@ import {
   cancelBookRequest,
   Book,
 } from '../../services/libraryService';
+import { post } from '../../services/api';
+
+const { width } = Dimensions.get('window');
 
 const BookRequests = () => {
   const { user } = useAuth();
@@ -34,6 +39,8 @@ const BookRequests = () => {
   const queryClient = useQueryClient();
   const navigation = useNavigation<any>();
   const [viewFaceUrl, setViewFaceUrl] = React.useState<string | null>(null);
+  const [processingReturnId, setProcessingReturnId] = useState<string | null>(null);
+  const [viewConditionPhotos, setViewConditionPhotos] = useState<string[] | null>(null);
 
   const { data: allBooks = [], isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['allBooks'],
@@ -47,6 +54,10 @@ const BookRequests = () => {
         book.userId === user?._id &&
         (book.transfer === 'pending' || book.transfer === 'accept' || book.transfer === 'transfer_pending'),
     )
+    .reverse();
+
+  const returnRequestBooks = allBooks
+    .filter((book: Book) => book.userId === user?._id && book.transfer === 'returnRequested')
     .reverse();
 
   const emitNotification = (recipientId: string, type: string, notifyText: string) => {
@@ -108,6 +119,33 @@ const BookRequests = () => {
     }
   };
 
+  const handleReturnAccept = async (book: Book) => {
+    setProcessingReturnId(book._id);
+    try {
+      await post('/books/return/accept', { bookId: book._id });
+      Toast.show({ type: 'success', text1: 'Return accepted!' });
+      emitNotification(book.transferTo || book.requestBy || '', 'bookReturn', 'accepted your book return');
+      queryClient.invalidateQueries({ queryKey: ['allBooks'] });
+    } catch (error: any) {
+      Toast.show({ type: 'error', text1: 'Failed to accept return', text2: error?.message });
+    } finally {
+      setProcessingReturnId(null);
+    }
+  };
+
+  const handleReturnReject = async (book: Book) => {
+    setProcessingReturnId(book._id);
+    try {
+      await post('/books/return/reject', { bookId: book._id });
+      Toast.show({ type: 'info', text1: 'Return request rejected' });
+      queryClient.invalidateQueries({ queryKey: ['allBooks'] });
+    } catch (error: any) {
+      Toast.show({ type: 'error', text1: 'Failed to reject return', text2: error?.message });
+    } finally {
+      setProcessingReturnId(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
@@ -117,7 +155,7 @@ const BookRequests = () => {
     );
   }
 
-  if (requestBooks.length === 0) {
+  if (requestBooks.length === 0 && returnRequestBooks.length === 0) {
     return (
       <View style={styles.emptyContainer}>
         <View style={[styles.emptyIconBg, isDark && { backgroundColor: '#1e293b' }]}>
@@ -192,60 +230,37 @@ const BookRequests = () => {
         <View style={styles.actionRow}>
           {item.transfer === 'pending' ? (
             <TouchableOpacity
-              style={styles.actionBtnWrapper}
+              style={[styles.actionBtn, styles.actionBtnWrapper, { backgroundColor: '#10B981' }]}
               onPress={() => handleAccept(item)}
               activeOpacity={0.8}
             >
-              <LinearGradient
-                colors={['#10B981', '#059669']}
-                style={styles.actionBtn}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-              >
-                <Ionicons name="checkmark-circle" size={16} color="#fff" />
-                <Text style={styles.actionBtnText}>Accept</Text>
-              </LinearGradient>
+              <Ionicons name="checkmark-circle" size={16} color="#fff" />
+              <Text style={styles.actionBtnText}>Accept</Text>
             </TouchableOpacity>
           ) : item.transfer === 'transfer_pending' ? (
             // Transfer sent, waiting for receiver — show disabled state
-            <View style={[styles.actionBtnWrapper, { flex: 1 }]}>
-              <View style={[styles.actionBtn, { backgroundColor: '#7C3AED', opacity: 0.7 }]}>
-                <Ionicons name="hourglass" size={16} color="#fff" />
-                <Text style={styles.actionBtnText}>Awaiting Confirmation...</Text>
-              </View>
+            <View style={[styles.actionBtn, styles.actionBtnWrapper, { backgroundColor: '#7C3AED', opacity: 0.7 }]}>
+              <Ionicons name="hourglass" size={16} color="#fff" />
+              <Text style={styles.actionBtnText}>Awaiting Confirmation...</Text>
             </View>
           ) : (
             <TouchableOpacity
-              style={styles.actionBtnWrapper}
+              style={[styles.actionBtn, styles.actionBtnWrapper, { backgroundColor: '#3B82F6' }]}
               onPress={() => handleTransfer(item)}
               activeOpacity={0.8}
             >
-              <LinearGradient
-                colors={['#3B82F6', '#1D4ED8']}
-                style={styles.actionBtn}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-              >
-                <Ionicons name="swap-horizontal" size={16} color="#fff" />
-                <Text style={styles.actionBtnText}>Transfer</Text>
-              </LinearGradient>
+              <Ionicons name="swap-horizontal" size={16} color="#fff" />
+              <Text style={styles.actionBtnText}>Transfer</Text>
             </TouchableOpacity>
           )}
           {item.transfer !== 'transfer_pending' && (
             <TouchableOpacity
               onPress={() => handleCancel(item)}
               activeOpacity={0.8}
-              style={styles.actionBtnWrapper}
+              style={[styles.actionBtn, styles.actionBtnWrapper, { backgroundColor: '#EF4444' }]}
             >
-              <LinearGradient
-                colors={['#EF4444', '#B91C1C']}
-                style={styles.actionBtn}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-              >
-                <Ionicons name="close-circle" size={16} color="#fff" />
-                <Text style={styles.actionBtnText}>Decline</Text>
-              </LinearGradient>
+              <Ionicons name="close-circle" size={16} color="#fff" />
+              <Text style={styles.actionBtnText}>Decline</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -255,11 +270,7 @@ const BookRequests = () => {
 
   return (
     <View style={{ flex: 1 }}>
-      <FlatList
-        data={requestBooks}
-        renderItem={renderBook}
-        keyExtractor={item => item._id}
-        contentContainerStyle={styles.listContainer}
+      <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -269,12 +280,80 @@ const BookRequests = () => {
             tintColor={isDark ? "#14b8a6" : '#0D9488'}
           />
         }
-        ListHeaderComponent={
-          <View style={styles.listHeader}>
-            <Text style={[styles.sectionTitle, isDark && { color: '#cbd5e1' }]}>Incoming Requests ({requestBooks.length})</Text>
-          </View>
-        }
-      />
+      >
+        {/* Incoming Book Requests */}
+        {requestBooks.length > 0 && (
+          <>
+            <View style={styles.listHeader}>
+              <Text style={[styles.sectionTitle, isDark && { color: '#cbd5e1' }]}>Incoming Requests ({requestBooks.length})</Text>
+            </View>
+            {requestBooks.map(item => (
+              <View key={item._id}>{renderBook({ item })}</View>
+            ))}
+          </>
+        )}
+
+        {/* Return Requests Section */}
+        {returnRequestBooks.length > 0 && (
+          <>
+            <View style={[styles.listHeader, { marginTop: 16 }]}>
+              <Text style={[styles.sectionTitle, { color: isDark ? '#f97316' : '#ea580c' }]}>
+                Return Requests ({returnRequestBooks.length})
+              </Text>
+            </View>
+            {returnRequestBooks.map((book: Book) => (
+              <View key={book._id} style={[styles.card, isDark && { backgroundColor: '#1e293b', shadowColor: '#000' }, { borderLeftWidth: 4, borderLeftColor: '#f97316' }]}>
+                <Image source={{ uri: book.imageUrl }} style={[styles.bookImage, isDark && { backgroundColor: '#0f172a' }]} resizeMode="cover" />
+
+                <View style={styles.cardContent}>
+                  <Text style={[styles.bookName, isDark && { color: '#f8fafc' }]} numberOfLines={1}>{book.bookName}</Text>
+                  <Text style={[styles.writerName, isDark && { color: '#94a3b8' }]} numberOfLines={1}>by {book.writer}</Text>
+
+                  <View style={[styles.requesterRow, isDark && { backgroundColor: '#0f172a' }]}>
+                    <Ionicons name="return-down-back" size={14} color="#f97316" />
+                    <Text style={[styles.requesterText, { color: isDark ? '#94a3b8' : '#64748b', marginLeft: 6 }]}>
+                      {book.requestName} wants to return this book
+                    </Text>
+                  </View>
+
+                  {/* Condition Photos from original receive */}
+                  {book.conditionPhotos && book.conditionPhotos.length > 0 && (
+                    <TouchableOpacity
+                      onPress={() => setViewConditionPhotos(book.conditionPhotos || null)}
+                      style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, padding: 8, backgroundColor: isDark ? '#0f172a' : '#f8fafc', borderRadius: 8 }}
+                    >
+                      <Ionicons name="images" size={16} color="#7c3aed" />
+                      <Text style={{ color: '#7c3aed', fontWeight: '600', fontSize: 12, marginLeft: 6 }}>View Condition Photos ({book.conditionPhotos.length})</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {/* Accept / Reject buttons */}
+                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+                    <TouchableOpacity
+                      onPress={() => handleReturnAccept(book)}
+                      disabled={processingReturnId === book._id}
+                      style={{ flex: 1, backgroundColor: '#10b981', borderRadius: 8, paddingVertical: 9, alignItems: 'center' }}
+                    >
+                      {processingReturnId === book._id ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                      ) : (
+                        <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>Accept Return</Text>
+                      )}
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => handleReturnReject(book)}
+                      disabled={processingReturnId === book._id}
+                      style={{ flex: 1, backgroundColor: '#ef4444', borderRadius: 8, paddingVertical: 9, alignItems: 'center' }}
+                    >
+                      <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>Reject</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            ))}
+          </>
+        )}
+      </ScrollView>
 
       {/* Face Image Preview Modal */}
       <Modal visible={!!viewFaceUrl} transparent={true} animationType="fade">
@@ -318,6 +397,32 @@ const BookRequests = () => {
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
               >
+                <Text style={styles.closeModalBtnText}>Close</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Condition Photos Modal */}
+      <Modal visible={!!viewConditionPhotos} transparent={true} animationType="slide">
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} onPress={() => setViewConditionPhotos(null)} activeOpacity={1} />
+          <View style={[styles.modalContent, isDark && { backgroundColor: '#1e293b' }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, isDark && { color: '#f8fafc' }]}>Condition Photos</Text>
+              <TouchableOpacity onPress={() => setViewConditionPhotos(null)} style={[styles.modalCloseBtn, isDark && { backgroundColor: '#334155' }]}>
+                <Ionicons name="close" size={20} color={isDark ? "#f8fafc" : "#6B7280"} />
+              </TouchableOpacity>
+            </View>
+            <Text style={{ color: isDark ? '#94a3b8' : '#64748b', fontSize: 12, marginBottom: 10, textAlign: 'center' }}>Photos taken by the receiver when they accepted the book</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {viewConditionPhotos?.map((uri, idx) => (
+                <Image key={idx} source={{ uri }} style={{ width: 200, height: 240, borderRadius: 12, marginRight: 10 }} resizeMode="cover" />
+              ))}
+            </ScrollView>
+            <TouchableOpacity onPress={() => setViewConditionPhotos(null)} activeOpacity={0.8} style={{ marginTop: 16 }}>
+              <LinearGradient colors={['#7c3aed', '#6d28d9']} style={styles.closeModalBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
                 <Text style={styles.closeModalBtnText}>Close</Text>
               </LinearGradient>
             </TouchableOpacity>

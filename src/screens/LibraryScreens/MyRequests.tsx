@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,14 +10,15 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
 import Toast from 'react-native-toast-message';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSocket } from '../../contexts/SocketContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { fetchAllBooks, returnBook, Book } from '../../services/libraryService';
+import { fetchAllBooks, Book } from '../../services/libraryService';
+import { post } from '../../services/api';
 
 const MyRequests = () => {
   const { user } = useAuth();
@@ -37,16 +38,23 @@ const MyRequests = () => {
     .filter((book: Book) => book.requestBy === user?._id)
     .reverse();
 
+  // Refetch data every time this screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch])
+  );
+
   const handleReturn = async (book: Book) => {
     setReturningId(book._id);
     try {
-      await returnBook(
-        book._id,
-        book.requestBy || '',
-        book.requestName || '',
-        book.userId,
-      );
-      Toast.show({ type: 'success', text1: 'Book returned successfully!' });
+      await post('/books/return/request', {
+        bookId: book._id,
+        requestBy: user?._id,
+        requestName: user?.name,
+        ownerId: book.userId,
+      });
+      Toast.show({ type: 'success', text1: 'Return request sent!' });
 
       if (socket) {
         socket.emit('sendRequest', {
@@ -54,8 +62,8 @@ const MyRequests = () => {
           senderName: user?.name,
           senderProfile: user?.profileImage,
           receoientId: book.userId,
-          type: 'bookReturn',
-          notifyText: 'Return Your Book',
+          type: 'bookReturnReq',
+          notifyText: 'wants to return your book',
           roomId: [book.userId],
         });
       }
@@ -64,7 +72,7 @@ const MyRequests = () => {
     } catch (error: any) {
       Toast.show({
         type: 'error',
-        text1: 'Return failed',
+        text1: 'Return request failed',
         text2: error?.message || 'Please try again',
       });
     } finally {
@@ -181,22 +189,20 @@ const MyRequests = () => {
                 onPress={() => handleReturn(item)}
                 disabled={isReturning}
                 activeOpacity={0.8}
+                style={[
+                  styles.returnBtn,
+                  isReturning && styles.returnBtnDisabled,
+                  { backgroundColor: '#3B82F6' }
+                ]}
               >
-                <LinearGradient
-                  colors={['#3B82F6', '#1D4ED8']}
-                  style={[styles.returnBtn, isReturning && styles.returnBtnDisabled]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                >
-                  {isReturning ? (
-                    <ActivityIndicator color="#fff" size="small" />
-                  ) : (
-                    <>
-                      <Ionicons name="return-down-back" size={18} color="#fff" />
-                      <Text style={styles.returnBtnText}>Return Book</Text>
-                    </>
-                  )}
-                </LinearGradient>
+                {isReturning ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <>
+                    <Ionicons name="return-down-back" size={18} color="#fff" />
+                    <Text style={styles.returnBtnText}>Return Book</Text>
+                  </>
+                )}
               </TouchableOpacity>
             ) : item.transfer === 'pending' ? (
               <View style={[styles.pendingInfo, isDark && { backgroundColor: 'rgba(245, 158, 11, 0.05)', borderColor: 'rgba(245, 158, 11, 0.2)' }]}>
@@ -207,16 +213,10 @@ const MyRequests = () => {
               <TouchableOpacity
                 onPress={() => navigation.navigate('BookConditionCamera', { bookId: item._id, bookName: item.bookName })}
                 activeOpacity={0.8}
+                style={[styles.returnBtn, { backgroundColor: '#8B5CF6' }]}
               >
-                <LinearGradient
-                  colors={['#8B5CF6', '#7C3AED']}
-                  style={styles.returnBtn}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                >
-                  <Ionicons name="camera" size={18} color="#fff" />
-                  <Text style={styles.returnBtnText}>Accept & Take Photos</Text>
-                </LinearGradient>
+                <Ionicons name="camera" size={18} color="#fff" />
+                <Text style={styles.returnBtnText}>Accept & Take Photos</Text>
               </TouchableOpacity>
             ) : (
               <View style={[styles.transferSoonInfo, isDark && { backgroundColor: 'rgba(59, 130, 246, 0.05)', borderColor: 'rgba(59, 130, 246, 0.2)' }]}>

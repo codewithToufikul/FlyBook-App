@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useAuth } from '../../contexts/AuthContext';
@@ -34,9 +34,19 @@ const TABS: Tab[] = [
 
 const OnindoLibrary = () => {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   const { user } = useAuth();
   const { isDark } = useTheme();
-  const [activeTab, setActiveTab] = useState<TabKey>('allBooks');
+
+  const [activeTab, setActiveTab] = useState<TabKey>(
+    (route.params?.initialTab as TabKey) || 'allBooks',
+  );
+
+  useEffect(() => {
+    if (route.params?.initialTab) {
+      setActiveTab(route.params.initialTab as TabKey);
+    }
+  }, [route.params?.initialTab]);
 
   const bg = isDark ? '#0f172a' : '#F8FAFC';
   const headerBg = isDark ? '#0f172a' : '#FFFFFF';

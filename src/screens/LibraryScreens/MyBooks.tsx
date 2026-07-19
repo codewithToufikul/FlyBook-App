@@ -109,21 +109,19 @@ const MyBooks = () => {
         <Text style={[styles.dateText, isDark && { color: '#64748b' }]}>Added: {item.currentDate}</Text>
       </View>
 
-      <TouchableOpacity
-        onPress={() => handleRemoveBook(item._id)}
-        activeOpacity={0.8}
-        style={styles.removeBtnWrapper}
-      >
-        <LinearGradient
-          colors={['#EF4444', '#B91C1C']}
-          style={styles.removeBtn}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-        >
-          <Ionicons name="trash" size={16} color="#fff" />
-          <Text style={styles.removeBtnText}>Remove</Text>
-        </LinearGradient>
-      </TouchableOpacity>
+      {/* Only show delete/remove button if the book was uploaded by me (not transferred) */}
+      {!(item.uploaderId ? (item.uploaderId !== user?._id) : (item.transfer === 'success' || !!item.transferredAt)) && (
+        <View style={styles.removeBtnWrapper}>
+          <TouchableOpacity
+            onPress={() => handleRemoveBook(item._id)}
+            activeOpacity={0.8}
+            style={[styles.removeBtn, { backgroundColor: '#EF4444' }]}
+          >
+            <Ionicons name="trash" size={16} color="#fff" />
+            <Text style={styles.removeBtnText}>Remove</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 

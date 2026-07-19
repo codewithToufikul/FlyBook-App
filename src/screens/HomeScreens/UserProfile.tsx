@@ -22,6 +22,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { get, post } from '../../services/api';
+import { fetchUserOnindoBooks, OnindoBook } from '../../services/libraryService';
 import { useAuth } from '../../contexts/AuthContext';
 import VideoPlayer from '../../components/VideoPlayer';
 import Toast from 'react-native-toast-message';
@@ -347,6 +348,8 @@ const UserProfile = () => {
 
     const posts = postsData || [];
 
+
+
     // --- Friend Actions ---
     const sendRequestMutation = useMutation({
         mutationFn: () => post('/friend-request/send', { recipientId: userId }),
@@ -591,39 +594,35 @@ const UserProfile = () => {
                 {/* Only show Add Friend prominently if no existing relationship */}
                 {!hasFriendshipStatus && (
                     <TouchableOpacity
-                        style={{ flex: 1.2 }}
+                        style={[styles.actionButton, { flex: 1.2, backgroundColor: '#0D9488' }]}
                         onPress={() => handleAction(() => sendRequestMutation.mutate())}
                         disabled={processingAction}
                     >
-                        <LinearGradient
-                            colors={['#14B8A6', '#0D9488']}
-                            style={styles.actionButton}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 0 }}
-                        >
-                            <Ionicons name="person-add" size={18} color="#FFF" />
-                            <Text style={[styles.actionButtonText, { color: '#FFF' }]}>Add Friend</Text>
-                        </LinearGradient>
+                        <Ionicons name="person-add" size={18} color="#FFF" />
+                        <Text style={[styles.actionButtonText, { color: '#FFF' }]}>Add Friend</Text>
                     </TouchableOpacity>
                 )}
 
-                <TouchableOpacity style={{ flex: 1 }} onPress={handleMessage}>
-                    <View style={[styles.actionButton, isDark ? { backgroundColor: '#334155' } : styles.btnGray]}>
-                        <Ionicons name="chatbubble-ellipses" size={18} color={isDark ? "#94a3b8" : "#374151"} />
-                        <Text style={[styles.actionButtonText, isDark && { color: '#cbd5e1' }]}>Message</Text>
-                    </View>
+                <TouchableOpacity
+                    style={[
+                        styles.actionButton,
+                        { flex: 1, backgroundColor: isDark ? '#334155' : '#F1F5F9' }
+                    ]}
+                    onPress={handleMessage}
+                >
+                    <Ionicons name="chatbubble-ellipses" size={18} color={isDark ? "#94a3b8" : "#374151"} />
+                    <Text style={[styles.actionButtonText, { color: isDark ? '#cbd5e1' : '#374151' }]}>Message</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={{ flex: 1 }} onPress={handleLibrary}>
-                    <LinearGradient
-                        colors={isDark ? ['#5B21B6', '#4C1D95'] : ['#8B5CF6', '#7C3AED']}
-                        style={styles.actionButton}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                    >
-                        <Ionicons name="library" size={18} color="#FFF" />
-                        <Text style={[styles.actionButtonText, { color: '#FFF' }]}>Library</Text>
-                    </LinearGradient>
+                <TouchableOpacity
+                    style={[
+                        styles.actionButton,
+                        { flex: 1, backgroundColor: isDark ? '#4C1D95' : '#7C3AED' }
+                    ]}
+                    onPress={handleLibrary}
+                >
+                    <Ionicons name="library" size={18} color="#FFF" />
+                    <Text style={[styles.actionButtonText, { color: '#FFF' }]}>Library</Text>
                 </TouchableOpacity>
             </View>
         );
@@ -723,17 +722,8 @@ const UserProfile = () => {
                         style={styles.profileContentWrapper}
                     >
                         <View style={styles.profileContent}>
-                            <View style={[styles.avatarContainer, isDark && styles.darkAvatarContainer]}>
-                                <TouchableOpacity
-                                    onPress={() => navigation.navigate('FullImageViewer', { imageUrl: user.profileImage || defaultAvatar })}
-                                    activeOpacity={0.9}
-                                >
-                                    <Image
-                                        source={{ uri: user.profileImage || defaultAvatar }}
-                                        style={styles.avatar}
-                                    />
-                                </TouchableOpacity>
-                            </View>
+                            {/* Spacer to leave space for absolutely positioned avatar */}
+                            <View style={{ height: 60 }} />
 
                             <View style={styles.userInfo}>
                                 <Text style={[styles.userName, isDark && { color: '#f8fafc' }]}>{user.name}</Text>
@@ -749,11 +739,8 @@ const UserProfile = () => {
                                 )}
 
                                 {/* Stats Card */}
-                                <LinearGradient
-                                    colors={isDark ? ['#1e293b', '#0f172a'] : ['#1E293B', '#0F172A']}
-                                    style={styles.statsCard}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 1 }}
+                                <View
+                                    style={[styles.statsCard, { backgroundColor: isDark ? '#1e293b' : '#0f172a' }]}
                                 >
                                     <View style={styles.statItem}>
                                         <Text style={styles.statValueLight}>{posts.length}</Text>
@@ -772,7 +759,7 @@ const UserProfile = () => {
                                         <Text style={styles.statValueLight}>{user.bookCollectionsCount ?? 0}</Text>
                                         <Text style={styles.statLabelLight}>Books</Text>
                                     </View>
-                                </LinearGradient>
+                                </View>
 
                                 {/* Action Buttons */}
                                 <View style={styles.actionsContainer}>
@@ -781,6 +768,28 @@ const UserProfile = () => {
                             </View>
                         </View>
                     </LinearGradient>
+
+                    {/* Absolutely Positioned Avatar Container (Rendered outside to avoid parent boundary clipping on iOS) */}
+                    <View style={[
+                        styles.avatarContainer,
+                        isDark && styles.darkAvatarContainer,
+                        {
+                            position: 'absolute',
+                            top: (Platform.OS === 'ios' ? 200 : 170) - 60,
+                            alignSelf: 'center',
+                            zIndex: 10,
+                        }
+                    ]}>
+                        <TouchableOpacity
+                            onPress={() => navigation.navigate('FullImageViewer', { imageUrl: user.profileImage || defaultAvatar })}
+                            activeOpacity={0.9}
+                        >
+                            <Image
+                                source={{ uri: user.profileImage || defaultAvatar }}
+                                style={styles.avatar}
+                            />
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* Tabs */}
@@ -800,7 +809,7 @@ const UserProfile = () => {
                 </View>
 
                 {/* Tab Content */}
-                {activeTab === 'posts' ? (
+                {activeTab === 'posts' && (
                     <View style={styles.postsContainer}>
                         {loadingPosts ? (
                             <ActivityIndicator size="small" color={isDark ? "#14b8a6" : "#0D9488"} style={{ marginTop: 20 }} />
@@ -928,7 +937,8 @@ const UserProfile = () => {
                             </View>
                         )}
                     </View >
-                ) : (
+                )}
+                {activeTab === 'about' && (
                     <View style={styles.aboutContainer}>
                         <View style={[styles.aboutCard, isDark && { backgroundColor: '#1e293b', shadowOpacity: 0 }]}>
                             <Text style={[styles.aboutTitle, isDark && { color: '#f8fafc' }]}>Bio</Text>
@@ -1138,7 +1148,6 @@ const styles = StyleSheet.create({
         borderColor: '#FFF',
         overflow: 'hidden',
         backgroundColor: '#F3F4F6',
-        marginTop: Platform.OS === 'ios' ? -70 : -85,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.3,
@@ -1242,7 +1251,6 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     actionButton: {
-        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',

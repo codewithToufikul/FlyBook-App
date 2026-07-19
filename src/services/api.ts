@@ -28,9 +28,9 @@ const USE_LOCAL = false;
 
 // ─── Local Server URL ─────────────────────────────────────────────────
 // Emulator (AVD)   → USE: http://10.0.2.2:3000
-// Physical Device  → USE: http://192.168.100.52:3000  (Mac IP, same WiFi)
+// Physical Device  → USE: http://192.168.0.162:3000  (Mac IP, same WiFi)
 // ───────────────────────────────────────────────────────────────────────
-const LOCAL_URL = 'http://10.0.2.2:3000'; // ← Emulator এ কাজ করে
+const LOCAL_URL = 'http://192.168.0.162:3000'; // ← Physical Device (iPhone) এবং Emulator এ কাজ করে
 
 export const BASE_URL = USE_LOCAL ? LOCAL_URL : PRODUCTION_URL;
 

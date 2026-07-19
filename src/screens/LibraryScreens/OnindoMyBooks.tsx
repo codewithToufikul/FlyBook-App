@@ -89,12 +89,15 @@ const OnindoMyBooks = () => {
             <Text style={[styles.bookName, { color: textColor }]} numberOfLines={2}>
               {item.bookName}
             </Text>
-            <TouchableOpacity
-              onPress={() => handleDelete(item)}
-              style={styles.deleteBtn}
-            >
-              <Ionicons name="trash-outline" size={18} color="#ef4444" />
-            </TouchableOpacity>
+            {/* Only show delete button if the book was uploaded by me (not transferred) */}
+            {!(item.uploaderId ? (item.uploaderId !== user?._id) : (item.transfer === 'success' || !!item.transferredAt)) && (
+              <TouchableOpacity
+                onPress={() => handleDelete(item)}
+                style={styles.deleteBtn}
+              >
+                <Ionicons name="trash-outline" size={18} color="#ef4444" />
+              </TouchableOpacity>
+            )}
           </View>
 
           <Text style={[styles.writer, { color: subColor }]}>✍️ {item.writer}</Text>

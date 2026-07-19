@@ -268,11 +268,8 @@ const WalletScreen = () => {
 
                 {/* FlyWallet (Points) Visual Enhancement */}
                 <View style={styles.cardContainer}>
-                    <LinearGradient
-                        colors={['#6366F1', '#4F46E5']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={styles.mainWalletCard}
+                    <View
+                        style={[styles.mainWalletCard, { backgroundColor: '#4F46E5' }]}
                     >
                         <View style={styles.glassEffectMask} />
                         <View style={styles.cardInfo}>
@@ -309,16 +306,13 @@ const WalletScreen = () => {
                                 <Text style={styles.actionLabel}>Receive</Text>
                             </TouchableOpacity>
                         </View>
-                    </LinearGradient>
+                    </View>
                 </View>
 
                 {/* Cash Wallet Card Enhancement */}
                 <View style={[styles.cardContainer, { marginTop: 20 }]}>
-                    <LinearGradient
-                        colors={['#10B981', '#059669']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={styles.secondaryWalletCard}
+                    <View
+                        style={[styles.secondaryWalletCard, { backgroundColor: '#059669' }]}
                     >
                         <View style={styles.glassOverlay} />
                         <View style={styles.secondaryCardInfo}>
@@ -339,7 +333,7 @@ const WalletScreen = () => {
                             <Text style={styles.withdrawBtnText}>Withdraw</Text>
                             <Ionicons name="arrow-forward-circle" size={22} color="#FFF" />
                         </TouchableOpacity>
-                    </LinearGradient>
+                    </View>
                 </View>
 
                 {/* History Section Redesign */}

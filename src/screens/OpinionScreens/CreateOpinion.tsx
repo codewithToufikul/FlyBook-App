@@ -301,21 +301,26 @@ const CreateOpinion = () => {
 
                 <Text style={[styles.headerTitle, { color: tp }]}>Create Opinion</Text>
 
-                <TouchableOpacity onPress={handleCreatePost} disabled={!canPost} activeOpacity={0.85}>
-                    <LinearGradient
-                        colors={canPost ? ['#0D9488', '#0f766e'] : (isDark ? ['#1e293b', '#1e293b'] : ['#e2e8f0', '#e2e8f0'])}
-                        style={styles.postBtn}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                    >
-                        {isPosting
-                            ? <ActivityIndicator size="small" color="#fff" />
-                            : <>
-                                <Ionicons name="send" size={13} color={canPost ? '#fff' : (isDark ? '#334155' : '#94a3b8')} />
-                                <Text style={[styles.postBtnText, { color: canPost ? '#fff' : (isDark ? '#334155' : '#94a3b8') }]}>Post</Text>
-                            </>
+                <TouchableOpacity
+                    onPress={handleCreatePost}
+                    disabled={!canPost}
+                    activeOpacity={0.85}
+                    style={[
+                        styles.postBtn,
+                        {
+                            backgroundColor: canPost 
+                                ? '#0D9488' 
+                                : (isDark ? '#1e293b' : '#e2e8f0')
                         }
-                    </LinearGradient>
+                    ]}
+                >
+                    {isPosting
+                        ? <ActivityIndicator size="small" color="#fff" />
+                        : <>
+                            <Ionicons name="send" size={13} color={canPost ? '#fff' : (isDark ? '#334155' : '#94a3b8')} />
+                            <Text style={[styles.postBtnText, { color: canPost ? '#fff' : (isDark ? '#334155' : '#94a3b8') }]}>Post</Text>
+                        </>
+                    }
                 </TouchableOpacity>
             </SafeAreaView>
 

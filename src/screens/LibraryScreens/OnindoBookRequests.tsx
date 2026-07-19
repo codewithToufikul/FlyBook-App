@@ -117,15 +117,12 @@ const OnindoBookRequests = () => {
   const renderItem = ({ item }: { item: OnindoBook }) => (
     <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
       {/* Permanent transfer warning banner */}
-      <LinearGradient
-        colors={['#7c3aed', '#a78bfa']}
-        style={styles.warningBanner}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
+      <View
+        style={[styles.warningBanner, { backgroundColor: '#7c3aed' }]}
       >
         <Ionicons name="infinite" size={14} color="#fff" />
         <Text style={styles.warningText}>Permanent Transfer Request</Text>
-      </LinearGradient>
+      </View>
 
       <View style={styles.cardContent}>
         <Image
@@ -172,18 +169,11 @@ const OnindoBookRequests = () => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.transferBtn}
+              style={[styles.transferBtn, { backgroundColor: '#7c3aed' }]}
               onPress={() => handleTransfer(item)}
             >
-              <LinearGradient
-                colors={['#7c3aed', '#a78bfa']}
-                style={styles.transferGrad}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-              >
-                <Ionicons name="infinite" size={15} color="#fff" />
-                <Text style={styles.transferText}>Give Permanently</Text>
-              </LinearGradient>
+              <Ionicons name="infinite" size={15} color="#fff" />
+              <Text style={styles.transferText}>Give Permanently</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -243,15 +233,12 @@ const OnindoBookRequests = () => {
             <Ionicons name="checkmark-seal" size={20} color="#10b981" />
             <Text style={styles.verificationText}>On-Device Face Verified</Text>
           </View>
-          <TouchableOpacity onPress={() => setViewFaceUrl(null)} activeOpacity={0.8}>
-            <LinearGradient
-              colors={['#7c3aed', '#a78bfa']}
-              style={styles.closeModalBtn}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-            >
-              <Text style={styles.closeModalBtnText}>Close</Text>
-            </LinearGradient>
+          <TouchableOpacity
+            onPress={() => setViewFaceUrl(null)}
+            activeOpacity={0.8}
+            style={[styles.closeModalBtn, { backgroundColor: '#7c3aed' }]}
+          >
+            <Text style={styles.closeModalBtnText}>Close</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -279,7 +266,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingVertical: 10,
   },
   warningText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   cardContent: {
@@ -320,8 +307,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(239,68,68,0.1)',
   },
   rejectText: { color: '#ef4444', fontSize: 13, fontWeight: '700' },
-  transferBtn: { flex: 1, borderRadius: 10, overflow: 'hidden' },
-  transferGrad: {
+  transferBtn: {
+    flex: 1,
+    borderRadius: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

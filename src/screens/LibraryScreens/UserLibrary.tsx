@@ -27,6 +27,10 @@ import {
   requestBook,
   cancelBookRequest,
   Book,
+  fetchUserOnindoBooks,
+  requestOnindoBook,
+  cancelOnindoBookRequest,
+  OnindoBook,
 } from '../../services/libraryService';
 import { FaceCaptureScreen } from './FaceCaptureScreen';
 import { uploadToImgBB, compressImage } from '../../utils/imageUpload';
@@ -41,9 +45,11 @@ const UserLibrary = () => {
   const { user } = useAuth();
   const { socket } = useSocket();
   const queryClient = useQueryClient();
-  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  
+  const [activeTab, setActiveTab] = useState<'library' | 'onindo'>('library');
+  const [selectedBook, setSelectedBook] = useState<Book | OnindoBook | null>(null);
   const [showFaceCapture, setShowFaceCapture] = useState(false);
-  const [pendingBookForRequest, setPendingBookForRequest] = useState<Book | null>(null);
+  const [pendingBookForRequest, setPendingBookForRequest] = useState<Book | OnindoBook | null>(null);
   const [isUploadingFace, setIsUploadingFace] = useState(false);
 
   const { data: allBooks = [], isLoading, refetch, isRefetching } = useQuery({
@@ -52,9 +58,17 @@ const UserLibrary = () => {
     retry: 2,
   });
 
+  const { data: userOnindoResponse, isLoading: isLoadingOnindo, refetch: refetchOnindo, isRefetching: isRefetchingOnindo } = useQuery({
+    queryKey: ['userOnindoBooks', userId],
+    queryFn: () => fetchUserOnindoBooks(userId),
+    enabled: !!userId,
+  });
+
   const userBooks = allBooks
     .filter((book: Book) => book.userId === userId && book.transfer !== 'success')
     .reverse();
+
+  const userOnindoBooks = userOnindoResponse?.data || [];
 
   const emitNotification = (type: string, notifyText: string) => {
     if (socket && userId) {
@@ -70,8 +84,9 @@ const UserLibrary = () => {
     }
   };
 
-  const handleRequest = async (book: Book) => {
-    if (user?.verified === false) {
+  const handleRequest = async (book: Book | OnindoBook) => {
+    const isOnindo = !('returnTime' in book);
+    if (!isOnindo && user?.verified === false) {
       Toast.show({ type: 'error', text1: 'Please verify your profile first' });
       return;
     }
@@ -105,12 +120,20 @@ const UserLibrary = () => {
         throw new Error('Face image upload failed');
       }
 
-      // 3. Send book request with face image URL to server
-      await requestBook(pendingBookForRequest._id, uploadedFaceUrl);
-
-      Toast.show({ type: 'success', text1: 'Face verified & Book request sent!' });
-      emitNotification('bookReq', 'Send a Book Request');
-      queryClient.invalidateQueries({ queryKey: ['allBooks'] });
+      const isOnindo = !('returnTime' in pendingBookForRequest);
+      if (isOnindo) {
+        // 3. Send Onindo book request
+        await requestOnindoBook(pendingBookForRequest._id, uploadedFaceUrl);
+        Toast.show({ type: 'success', text1: 'Face verified & Onindo request sent!' });
+        emitNotification('onindoReq', 'requested your Onindo book');
+        queryClient.invalidateQueries({ queryKey: ['userOnindoBooks', userId] });
+      } else {
+        // 3. Send book request with face image URL to server
+        await requestBook(pendingBookForRequest._id, uploadedFaceUrl);
+        Toast.show({ type: 'success', text1: 'Face verified & Book request sent!' });
+        emitNotification('bookReq', 'Send a Book Request');
+        queryClient.invalidateQueries({ queryKey: ['allBooks'] });
+      }
     } catch (error: any) {
       Toast.show({
         type: 'error',
@@ -123,12 +146,19 @@ const UserLibrary = () => {
     }
   };
 
-  const handleCancelRequest = async (book: Book) => {
+  const handleCancelRequest = async (book: Book | OnindoBook) => {
+    const isOnindo = !('returnTime' in book);
     try {
-      await cancelBookRequest(book._id);
-      Toast.show({ type: 'success', text1: 'Request cancelled' });
-      emitNotification('bookReqCl', 'Cancel Book Request');
-      queryClient.invalidateQueries({ queryKey: ['allBooks'] });
+      if (isOnindo) {
+        await cancelOnindoBookRequest(book._id);
+        Toast.show({ type: 'success', text1: 'Request cancelled' });
+        queryClient.invalidateQueries({ queryKey: ['userOnindoBooks', userId] });
+      } else {
+        await cancelBookRequest(book._id);
+        Toast.show({ type: 'success', text1: 'Request cancelled' });
+        emitNotification('bookReqCl', 'Cancel Book Request');
+        queryClient.invalidateQueries({ queryKey: ['allBooks'] });
+      }
     } catch (error: any) {
       Toast.show({ type: 'error', text1: 'Failed to cancel', text2: error?.message });
     }
@@ -180,35 +210,72 @@ const UserLibrary = () => {
           <View style={styles.btnRow}>
             {hasMyRequest ? (
               <TouchableOpacity
-                style={{ flex: 1 }}
+                style={[styles.actionBtnInner, { flex: 1, backgroundColor: '#EF4444' }]}
                 onPress={() => handleCancelRequest(item)}
                 activeOpacity={0.7}
               >
-                <LinearGradient
-                  colors={['#EF4444', '#B91C1C']}
-                  style={styles.actionBtnInner}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                >
-                  <Ionicons name="close-circle" size={14} color="#fff" />
-                  <Text style={styles.btnText}>Cancel</Text>
-                </LinearGradient>
+                <Ionicons name="close-circle" size={14} color="#fff" />
+                <Text style={styles.btnText}>Cancel</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
-                style={{ flex: 1 }}
+                style={[styles.actionBtnInner, { flex: 1, backgroundColor: '#3B82F6' }]}
                 onPress={() => handleRequest(item)}
                 activeOpacity={0.7}
               >
-                <LinearGradient
-                  colors={['#3B82F6', '#1D4ED8']}
-                  style={styles.actionBtnInner}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                >
-                  <Ionicons name="hand-right" size={14} color="#fff" />
-                  <Text style={styles.btnText}>Request</Text>
-                </LinearGradient>
+                <Ionicons name="hand-right" size={14} color="#fff" />
+                <Text style={styles.btnText}>Request</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderOnindoBook = ({ item }: { item: OnindoBook }) => {
+    const hasMyRequest = item.requestBy === user?._id;
+
+    return (
+      <TouchableOpacity
+        style={[styles.bookCard, isDark && { backgroundColor: '#1e293b', shadowColor: '#000' }]}
+        onPress={() => setSelectedBook(item)}
+        activeOpacity={0.9}
+      >
+        <Image source={{ uri: item.imageUrl }} style={[styles.bookImage, isDark && { backgroundColor: '#0f172a' }]} resizeMode="cover" />
+
+        <LinearGradient
+          colors={['rgba(0,0,0,0.6)', 'transparent']}
+          style={styles.imageOverlay}
+        />
+
+        <View style={[styles.returnBadge, { backgroundColor: 'rgba(124, 58, 237, 0.9)' }]}>
+          <Ionicons name="infinite" size={12} color="#fff" />
+          <Text style={styles.returnText}>Onindo</Text>
+        </View>
+
+        <View style={styles.bookInfo}>
+          <Text style={[styles.bookName, isDark && { color: '#f8fafc' }]} numberOfLines={1}>{item.bookName}</Text>
+          <Text style={[styles.writerName, isDark && { color: '#94a3b8' }]} numberOfLines={1}>{item.writer}</Text>
+
+          <View style={styles.btnRow}>
+            {hasMyRequest ? (
+              <TouchableOpacity
+                style={[styles.actionBtnInner, { flex: 1, backgroundColor: '#EF4444' }]}
+                onPress={() => handleCancelRequest(item)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="close-circle" size={14} color="#fff" />
+                <Text style={styles.btnText}>Cancel</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[styles.actionBtnInner, { flex: 1, backgroundColor: '#7c3aed' }]}
+                onPress={() => handleRequest(item)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="hand-right" size={14} color="#fff" />
+                <Text style={styles.btnText}>Request</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -234,40 +301,106 @@ const UserLibrary = () => {
         <View style={{ width: 44 }} />
       </SafeAreaView>
 
-      {userBooks.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <View style={[styles.emptyIconCircle, isDark && { backgroundColor: '#1e293b' }]}>
-            <Ionicons name="book" size={60} color={isDark ? "#334155" : "#E5E7EB"} />
-          </View>
-          <Text style={[styles.emptyTitle, isDark && { color: '#94a3b8' }]}>No books available</Text>
-          <Text style={[styles.emptySub, isDark && { color: '#64748b' }]}>This user hasn't added any books to their collection yet.</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={userBooks}
-          renderItem={renderBook}
-          keyExtractor={item => item._id}
-          numColumns={2}
-          columnWrapperStyle={styles.row}
-          contentContainerStyle={styles.listContainer}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={isRefetching}
-              onRefresh={refetch}
-              colors={[isDark ? "#14b8a6" : '#0D9488']}
-              tintColor={isDark ? "#14b8a6" : '#0D9488'}
-            />
-          }
-          ListHeaderComponent={
-            <View style={styles.listHeader}>
-              <Text style={[styles.sectionTitle, isDark && { color: '#cbd5e1' }]}>Collection</Text>
-              <View style={[styles.countBadge, isDark && { backgroundColor: '#1e293b' }]}>
-                <Text style={[styles.countText, isDark && { color: '#14b8a6' }]}>{userBooks.length} Books</Text>
-              </View>
+      {/* Tabs */}
+      <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: isDark ? '#1e293b' : '#E2E8F0', paddingHorizontal: 16 }}>
+        <TouchableOpacity
+          onPress={() => setActiveTab('library')}
+          style={{
+            flex: 1,
+            paddingVertical: 14,
+            borderBottomWidth: activeTab === 'library' ? 3 : 0,
+            borderBottomColor: isDark ? '#14b8a6' : '#0D9488',
+            alignItems: 'center'
+          }}
+        >
+          <Text style={{ fontWeight: '700', fontSize: 13, color: activeTab === 'library' ? (isDark ? '#14b8a6' : '#0D9488') : '#64748B' }}>Library Books</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => setActiveTab('onindo')}
+          style={{
+            flex: 1,
+            paddingVertical: 14,
+            borderBottomWidth: activeTab === 'onindo' ? 3 : 0,
+            borderBottomColor: '#7c3aed',
+            alignItems: 'center'
+          }}
+        >
+          <Text style={{ fontWeight: '700', fontSize: 13, color: activeTab === 'onindo' ? '#7c3aed' : '#64748B' }}>Onindo Books</Text>
+        </TouchableOpacity>
+      </View>
+
+      {activeTab === 'library' ? (
+        userBooks.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <View style={[styles.emptyIconCircle, isDark && { backgroundColor: '#1e293b' }]}>
+              <Ionicons name="book" size={60} color={isDark ? "#334155" : "#E5E7EB"} />
             </View>
-          }
-        />
+            <Text style={[styles.emptyTitle, isDark && { color: '#94a3b8' }]}>No books available</Text>
+            <Text style={[styles.emptySub, isDark && { color: '#64748b' }]}>This user hasn't added any books to their collection yet.</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={userBooks}
+            renderItem={renderBook}
+            keyExtractor={item => item._id}
+            numColumns={2}
+            columnWrapperStyle={styles.row}
+            contentContainerStyle={styles.listContainer}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={isRefetching}
+                onRefresh={refetch}
+                colors={[isDark ? "#14b8a6" : '#0D9488']}
+                tintColor={isDark ? "#14b8a6" : '#0D9488'}
+              />
+            }
+            ListHeaderComponent={
+              <View style={styles.listHeader}>
+                <Text style={[styles.sectionTitle, isDark && { color: '#cbd5e1' }]}>Collection</Text>
+                <View style={[styles.countBadge, isDark && { backgroundColor: '#1e293b' }]}>
+                  <Text style={[styles.countText, isDark && { color: '#14b8a6' }]}>{userBooks.length} Books</Text>
+                </View>
+              </View>
+            }
+          />
+        )
+      ) : (
+        userOnindoBooks.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <View style={[styles.emptyIconCircle, isDark && { backgroundColor: '#1e293b' }]}>
+              <Ionicons name="library" size={60} color={isDark ? "#334155" : "#E5E7EB"} />
+            </View>
+            <Text style={[styles.emptyTitle, isDark && { color: '#94a3b8' }]}>No Onindo books available</Text>
+            <Text style={[styles.emptySub, isDark && { color: '#64748b' }]}>This user hasn't added any Onindo books yet.</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={userOnindoBooks}
+            renderItem={renderOnindoBook}
+            keyExtractor={item => item._id}
+            numColumns={2}
+            columnWrapperStyle={styles.row}
+            contentContainerStyle={styles.listContainer}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={isRefetchingOnindo}
+                onRefresh={refetchOnindo}
+                colors={['#7c3aed']}
+                tintColor="#7c3aed"
+              />
+            }
+            ListHeaderComponent={
+              <View style={styles.listHeader}>
+                <Text style={[styles.sectionTitle, isDark && { color: '#cbd5e1' }]}>Onindo Collection</Text>
+                <View style={[styles.countBadge, isDark && { backgroundColor: '#1e293b' }]}>
+                  <Text style={[styles.countText, { color: '#7c3aed' }]}>{userOnindoBooks.length} Books</Text>
+                </View>
+              </View>
+            }
+          />
+        )
       )}
 
       {/* Book Detail Modal */}
@@ -307,10 +440,16 @@ const UserLibrary = () => {
 
                 <View style={styles.modalStatsRow}>
                   <View style={[styles.modalStatItem, isDark && { backgroundColor: '#0f172a' }]}>
-                    <Ionicons name="time" size={18} color="#14b8a6" />
+                    <Ionicons
+                      name={!('returnTime' in selectedBook) ? "infinite" : "time"}
+                      size={18}
+                      color={!('returnTime' in selectedBook) ? "#7c3aed" : "#14b8a6"}
+                    />
                     <View>
-                      <Text style={styles.modalStatLabel}>Return Time</Text>
-                      <Text style={[styles.modalStatValue, isDark && { color: '#cbd5e1' }]}>{selectedBook.returnTime}</Text>
+                      <Text style={styles.modalStatLabel}>{!('returnTime' in selectedBook) ? "Type" : "Return Time"}</Text>
+                      <Text style={[styles.modalStatValue, isDark && { color: '#cbd5e1' }]}>
+                        {!('returnTime' in selectedBook) ? "Permanent Sharing" : (selectedBook as Book).returnTime}
+                      </Text>
                     </View>
                   </View>
                 </View>
@@ -342,16 +481,10 @@ const UserLibrary = () => {
                         setSelectedBook(null);
                       }}
                       activeOpacity={0.8}
+                      style={[styles.modalMainBtn, { backgroundColor: '#EF4444' }]}
                     >
-                      <LinearGradient
-                        colors={['#EF4444', '#991B1B']}
-                        style={styles.modalMainBtn}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                      >
-                        <Ionicons name="close-circle" size={20} color="#fff" />
-                        <Text style={styles.modalBtnText}>Cancel Request</Text>
-                      </LinearGradient>
+                      <Ionicons name="close-circle" size={20} color="#fff" />
+                      <Text style={styles.modalBtnText}>Cancel Request</Text>
                     </TouchableOpacity>
                   ) : (
                     <TouchableOpacity
@@ -360,16 +493,13 @@ const UserLibrary = () => {
                         setSelectedBook(null);
                       }}
                       activeOpacity={0.8}
+                      style={[
+                        styles.modalMainBtn,
+                        { backgroundColor: !('returnTime' in selectedBook) ? '#7c3aed' : '#10B981' }
+                      ]}
                     >
-                      <LinearGradient
-                        colors={['#10B981', '#059669']}
-                        style={styles.modalMainBtn}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                      >
-                        <Ionicons name="hand-right" size={20} color="#fff" />
-                        <Text style={styles.modalBtnText}>Request This Book</Text>
-                      </LinearGradient>
+                      <Ionicons name="hand-right" size={20} color="#fff" />
+                      <Text style={styles.modalBtnText}>Request This Book</Text>
                     </TouchableOpacity>
                   )}
                 </View>

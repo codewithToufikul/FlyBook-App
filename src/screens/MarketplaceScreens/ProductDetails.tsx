@@ -184,9 +184,11 @@ const ProductDetails = ({ route, navigation }: any) => {
                     </View>
 
                     {/* Point Usage Info */}
-                    <LinearGradient
-                        colors={isDark ? ['#1e293b', '#0f172a'] : ['#F0FDFA', '#CCFBF1']}
-                        style={styles.promoBox}
+                    <View
+                        style={[
+                            styles.promoBox,
+                            { backgroundColor: isDark ? '#1e293b' : '#F0FDFA' }
+                        ]}
                     >
                         <View style={styles.pointIcon}>
                             <Ionicons name="star" size={10} color="#FFF" />
@@ -194,7 +196,7 @@ const ProductDetails = ({ route, navigation }: any) => {
                         <Text style={[styles.promoText, isDark && { color: '#2DD4BF' }]}>
                             Pay up to <Text style={{ fontWeight: '800' }}>{product.coinUsagePercentage || 30}%</Text> with FlyWallet Points
                         </Text>
-                    </LinearGradient>
+                    </View>
 
                     {/* Meta Status */}
                     <View style={[styles.statusRow, isDark && { borderBottomColor: '#334155' }]}>

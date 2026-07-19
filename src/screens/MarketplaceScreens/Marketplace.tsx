@@ -239,12 +239,11 @@ const Marketplace = ({ navigation }: any) => {
             <View style={styles.imageContainer}>
                 <Image source={{ uri: item.images[0] }} style={styles.productImage} />
                 {item.discount && (
-                    <LinearGradient
-                        colors={['#EF4444', '#B91C1C']}
-                        style={styles.discountBadge}
+                    <View
+                        style={[styles.discountBadge, { backgroundColor: '#EF4444' }]}
                     >
                         <Text style={styles.discountText}>-{item.discount}%</Text>
-                    </LinearGradient>
+                    </View>
                 )}
                 <View style={[styles.wishlistBtn, isDark && { backgroundColor: 'rgba(30, 41, 59, 0.8)' }]}>
                     <Ionicons name="heart-outline" size={18} color={isDark ? "#94A3B8" : "#64748B"} />
@@ -291,12 +290,11 @@ const Marketplace = ({ navigation }: any) => {
             style={[styles.categoryCard, isDark && styles.categoryCardDark]}
             onPress={() => navigation.navigate('CategoryProducts', { categoryId: item._id, categoryName: item.name })}
         >
-            <LinearGradient
-                colors={isDark ? ['#1e293b', '#0f172a'] : ['#F0FDFA', '#CCFBF1']}
-                style={styles.categoryIconCircle}
+            <View
+                style={[styles.categoryIconCircle, { backgroundColor: isDark ? '#1e293b' : '#F0FDFA' }]}
             >
                 <Ionicons name="grid-outline" size={20} color="#0D9488" />
-            </LinearGradient>
+            </View>
             <Text style={[styles.categoryName, isDark && styles.textLight]} numberOfLines={1}>{item.name}</Text>
         </TouchableOpacity>
     );
@@ -379,17 +377,18 @@ const Marketplace = ({ navigation }: any) => {
                 {/* 4. Flash Deals ⚡ */}
                 {flashDeals.length > 0 && (
                     <View style={styles.section}>
-                        <LinearGradient
-                            colors={isDark ? ['#1e293b', '#0f172a'] : ['#FFEDD5', '#FFF7ED']}
-                            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                            style={styles.flashHeaderGradient}
+                        <View
+                            style={[
+                                styles.flashHeaderGradient,
+                                { backgroundColor: isDark ? '#1e293b' : '#FFEDD5' }
+                            ]}
                         >
                             <View style={styles.titleRow}>
                                 <Text style={[styles.flashTitle, isDark && styles.textLight]}>Flash Deals</Text>
                                 <Ionicons name="flash" size={20} color="#F59E0B" style={{ marginLeft: 6 }} />
                             </View>
                             <TouchableOpacity><Text style={styles.seeAllText}>See All</Text></TouchableOpacity>
-                        </LinearGradient>
+                        </View>
                         <FlatList
                             horizontal
                             showsHorizontalScrollIndicator={false}
@@ -527,13 +526,13 @@ const styles = StyleSheet.create({
     sliderWrapper: { marginTop: 16, paddingHorizontal: 16, position: 'relative' },
     slide: { width: width - 32, height: 220, borderRadius: 24, overflow: 'hidden', marginRight: 16 },
     bannerImg: { width: '100%', height: '100%' },
-    bannerOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, height: '100%', justifyContent: 'flex-end', padding: 24 },
-    bannerInfo: { gap: 8 },
+    bannerOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, height: '100%', justifyContent: 'flex-end', padding: 16 },
+    bannerInfo: { gap: 6 },
     bannerBadgeContainer: { alignSelf: 'flex-start' },
-    bannerBadge: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, color: '#fff', fontSize: 11, fontWeight: '700', alignSelf: 'flex-start', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: 0.5 },
-    bannerTitle: { color: '#FFF', fontSize: 28, fontWeight: '900', lineHeight: 34, textShadowColor: 'rgba(0,0,0,0.3)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 4 },
-    bannerDesc: { color: 'rgba(255,255,255,0.9)', fontSize: 14, fontWeight: '500', lineHeight: 20 },
-    bannerCta: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', alignSelf: 'flex-start', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 14, marginTop: 4, gap: 6 },
+    bannerBadge: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, color: '#fff', fontSize: 10, fontWeight: '700', alignSelf: 'flex-start', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: 0.5 },
+    bannerTitle: { color: '#FFF', fontSize: 20, fontWeight: '900', lineHeight: 24, textShadowColor: 'rgba(0,0,0,0.3)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
+    bannerDesc: { color: 'rgba(255,255,255,0.9)', fontSize: 12, fontWeight: '500', lineHeight: 16 },
+    bannerCta: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, marginTop: 2, gap: 4 },
     bannerCtaText: { color: '#0D9488', fontSize: 13, fontWeight: '800' },
     pagination: { position: 'absolute', top: 30, right: 30, flexDirection: 'row', gap: 6 },
     dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.4)' },

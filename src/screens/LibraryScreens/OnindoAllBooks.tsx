@@ -201,21 +201,15 @@ const OnindoAllBooks = () => {
                 style={[
                   styles.requestBtn,
                   isPending && styles.requestBtnDisabled,
+                  { backgroundColor: isPending ? '#94a3b8' : '#7c3aed' }
                 ]}
                 onPress={() => handleRequest(item)}
                 disabled={isPending}
               >
-                <LinearGradient
-                  colors={isPending ? ['#94a3b8', '#94a3b8'] : ['#7c3aed', '#a78bfa']}
-                  style={styles.requestBtnGrad}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                >
-                  <Ionicons name="send" size={14} color="#fff" />
-                  <Text style={styles.requestBtnText}>
-                    {isPending ? 'Unavailable' : 'Request Book'}
-                  </Text>
-                </LinearGradient>
+                <Ionicons name="send" size={14} color="#fff" />
+                <Text style={styles.requestBtnText}>
+                  {isPending ? 'Unavailable' : 'Request Book'}
+                </Text>
               </TouchableOpacity>
             )
           )}
@@ -324,9 +318,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   badgeText: { fontSize: 11, fontWeight: '700' },
-  requestBtn: { marginTop: 6, borderRadius: 10, overflow: 'hidden' },
-  requestBtnDisabled: { opacity: 0.6 },
-  requestBtnGrad: {
+  requestBtn: {
+    marginTop: 6,
+    borderRadius: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -334,6 +328,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 14,
   },
+  requestBtnDisabled: { opacity: 0.6 },
   requestBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
   cancelBtn: {
     flexDirection: 'row',

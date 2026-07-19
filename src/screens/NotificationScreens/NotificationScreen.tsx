@@ -69,6 +69,13 @@ export default function NotificationScreen() {
         fetchNotifications();
     }, [fetchNotifications]);
 
+    // Mark all as read when screen opens
+    useEffect(() => {
+        if (!user?._id) return;
+        put('/api/notifications/mark-read', { userId: user._id, markAll: true }).catch(() => {});
+        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    }, [user?._id]);
+
     useEffect(() => {
         if (socket) {
             const normalizeNotification = (raw: any): Notification => ({
@@ -133,6 +140,9 @@ export default function NotificationScreen() {
             case 'bookReqCl': return 'Book Request Cancelled';
             case 'bookReqAc': return 'Book Request Update';
             case 'bookReturn': return 'Book Returned';
+            case 'onindoReq': return 'New Onindo Request';
+            case 'onindoTransfer': return 'Onindo Book Transferred';
+            case 'onindoReject': return 'Onindo Request Update';
             default: return item.senderName || 'Notification';
         }
     };
@@ -186,10 +196,12 @@ export default function NotificationScreen() {
                 navigation.navigate('MyLibrary', { initialTab: 'bookRequests' });
                 break;
             case 'bookReqAc':
+            case 'bookTransferReq':
                 navigation.navigate('MyLibrary', { initialTab: 'myRequests' });
                 break;
             case 'bookReturn':
-                navigation.navigate('MyLibrary', { initialTab: 'myBooks' });
+            case 'bookReturnReq':
+                navigation.navigate('MyLibrary', { initialTab: 'bookRequests' });
                 break;
             case 'SOCIAL_APPOINTMENT':
                 navigation.navigate('Home', { 
@@ -207,6 +219,24 @@ export default function NotificationScreen() {
                         screen: 'SocialResponse', 
                         params: { initialTab: 'appointments' } 
                     } 
+                });
+                break;
+            case 'onindoReq':
+                navigation.navigate('Onindo', {
+                    screen: 'OnindoLibraryHome',
+                    params: { initialTab: 'requests' }
+                });
+                break;
+            case 'onindoTransfer':
+                navigation.navigate('Onindo', {
+                    screen: 'OnindoLibraryHome',
+                    params: { initialTab: 'myBooks' }
+                });
+                break;
+            case 'onindoReject':
+                navigation.navigate('Onindo', {
+                    screen: 'OnindoLibraryHome',
+                    params: { initialTab: 'allBooks' }
                 });
                 break;
             default:
@@ -252,7 +282,14 @@ export default function NotificationScreen() {
             case 'bookReqAc':
                 return <View className={`p-2 rounded-full ${isDark ? 'bg-green-900/40' : 'bg-green-100'}`}><Ionicons name="checkmark-circle" size={12} color="#22c55e" /></View>;
             case 'bookReturn':
+            case 'bookReturnReq':
                 return <View className={`p-2 rounded-full ${isDark ? 'bg-blue-900/40' : 'bg-blue-100'}`}><Ionicons name="return-down-back" size={12} color="#3b82f6" /></View>;
+            case 'bookTransferReq':
+                return <View className={`p-2 rounded-full ${isDark ? 'bg-violet-900/40' : 'bg-violet-100'}`}><Ionicons name="swap-horizontal" size={12} color="#7c3aed" /></View>;
+            case 'onindoReq':
+            case 'onindoTransfer':
+            case 'onindoReject':
+                return <View className={`p-2 rounded-full ${isDark ? 'bg-violet-900/40' : 'bg-violet-100'}`}><Ionicons name="infinite" size={14} color="#7c3aed" /></View>;
             case 'SOCIAL_APPOINTMENT':
                 return <View className={`p-2 rounded-full ${isDark ? 'bg-purple-900/40' : 'bg-purple-100'}`}><Ionicons name="calendar" size={12} color="#a855f7" /></View>;
             case 'SOCIAL_APPOINTMENT_UPDATE':
