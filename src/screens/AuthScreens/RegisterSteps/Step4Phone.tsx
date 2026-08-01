@@ -9,8 +9,8 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { countries, Country } from '../../../utils/countries';
-import auth from '@react-native-firebase/auth';
 import { ButtonLoader } from '../../../components/common';
+import { sendSmsOtp } from '../../../services/authServices';
 
 const Step4Phone = () => {
   const navigation = useNavigation();
@@ -40,19 +40,22 @@ const Step4Phone = () => {
     setLoading(true);
 
     try {
-      // Send verification code using Firebase
-      const confirmation = await auth().signInWithPhoneNumber(fullPhoneNumber);
+      // Send verification code using Twilio Verify API via backend
+      const response = await sendSmsOtp(fullPhoneNumber);
 
-      // Navigate to Step3Verify to enter the code
-      (navigation as any).navigate('Step3Verify', {
-        firstName,
-        lastName,
-        email,
-        phone: fullPhoneNumber,
-        confirmation, // Pass confirmation object
-      });
+      if (response.success) {
+        // Navigate to Step3Verify to enter the code
+        (navigation as any).navigate('Step3Verify', {
+          firstName,
+          lastName,
+          email,
+          phone: fullPhoneNumber,
+        });
+      } else {
+        Alert.alert('Error', response.message || 'Failed to send verification code.');
+      }
     } catch (error: any) {
-      console.error('Firebase Phone Auth Error:', error);
+      console.error('Twilio Phone Auth Error:', error);
       Alert.alert(
         'Verification Failed',
         error.message || 'Could not send verification code. Please check the phone number and try again.'

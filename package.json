@@ -37,6 +37,7 @@
     "nativewind": "^4.2.1",
     "react": "19.2.0",
     "react-native": "0.83.1",
+    "react-native-compressor": "^1.19.4",
     "react-native-device-info": "^15.0.2",
     "react-native-dotenv": "^3.4.11",
     "react-native-fs": "^2.20.0",

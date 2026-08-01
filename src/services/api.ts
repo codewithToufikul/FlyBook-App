@@ -24,13 +24,13 @@ import { Platform } from 'react-native';
 const PRODUCTION_URL = 'https://api.flybook.com.bd';
 
 // Set this to false when building APK for production
-const USE_LOCAL = false;
+const USE_LOCAL = true;
 
 // ─── Local Server URL ─────────────────────────────────────────────────
 // Emulator (AVD)   → USE: http://10.0.2.2:3000
 // Physical Device  → USE: http://192.168.0.162:3000  (Mac IP, same WiFi)
 // ───────────────────────────────────────────────────────────────────────
-const LOCAL_URL = 'http://192.168.0.162:3000'; // ← Physical Device (iPhone) এবং Emulator এ কাজ করে
+const LOCAL_URL = 'http://10.0.2.2:3000'; // ← Physical Device (iPhone) এবং Emulator এ কাজ করে
 
 export const BASE_URL = USE_LOCAL ? LOCAL_URL : PRODUCTION_URL;
 

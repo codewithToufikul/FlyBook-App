@@ -1,6 +1,7 @@
 import ImageResizer from 'react-native-image-resizer';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import { Alert, Platform } from 'react-native';
+import { uploadToS3 } from './s3Upload';
 
 const IMG_BB_API_KEY = '8b86a561b76cd59e16d93c1098c5018a'; // Replace with your ImgBB API key
 
@@ -148,39 +149,10 @@ export const showImageSourceSelector = (): Promise<'gallery' | 'camera'> => {
  */
 export const uploadToImgBB = async (imageUri: string): Promise<string> => {
   try {
-    // Create form data
-    const formData = new FormData();
-
-    // Get filename from uri
-    const filename = imageUri.split('/').pop() || 'image.jpg';
-
-    // Prepare file object
-    const file: any = {
-      uri: Platform.OS === 'ios' ? imageUri.replace('file://', '') : imageUri,
-      type: 'image/jpeg',
-      name: filename,
-    };
-
-    formData.append('image', file);
-
-    // Upload to ImgBB
-    const response = await fetch(
-      `https://api.imgbb.com/1/upload?key=${IMG_BB_API_KEY}`,
-      {
-        method: 'POST',
-        body: formData,
-      },
-    );
-
-    const data = await response.json();
-
-    if (data.success && data.data?.url) {
-      return data.data.url;
-    } else {
-      throw new Error('Failed to upload image to ImgBB');
-    }
+    const result = await uploadToS3(imageUri, 'image/jpeg', 'images');
+    return result.url;
   } catch (error) {
-    console.error('Error uploading to ImgBB:', error);
+    console.error('Error uploading image to S3:', error);
     throw error;
   }
 };

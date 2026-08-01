@@ -55,11 +55,22 @@ const ShopDetailsScreen = () => {
     const { isDark } = useTheme();
     const { shop } = route.params as { shop: Shop };
 
+    interface ShopPost {
+        _id: string;
+        content: string;
+        images: string[];
+        createdAt: string;
+    }
+
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState<'products' | 'posts'>('products');
+    const [posts, setPosts] = useState<ShopPost[]>([]);
+    const [postsLoading, setPostsLoading] = useState(false);
 
     useEffect(() => {
         fetchProducts();
+        fetchPosts();
     }, []);
 
     const fetchProducts = async () => {
@@ -72,6 +83,20 @@ const ShopDetailsScreen = () => {
             console.error('Error fetching shop products:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchPosts = async () => {
+        setPostsLoading(true);
+        try {
+            const res = await get<{ success: boolean; data: ShopPost[] }>(`/api/shops/${shop._id}/posts`);
+            if (res.success) {
+                setPosts(res.data);
+            }
+        } catch (error) {
+            console.error('Error fetching shop posts:', error);
+        } finally {
+            setPostsLoading(false);
         }
     };
 
@@ -120,8 +145,8 @@ const ShopDetailsScreen = () => {
                 {/* Stats & Actions */}
                 <View style={[styles.statsRow, isDark && { backgroundColor: '#1E293B', borderBottomColor: '#334155' }]}>
                     <View style={styles.statItem}>
-                        <Text style={styles.statVal}>{shop.paymentPercentage}%</Text>
-                        <Text style={styles.statLabel}>Cashback</Text>
+                        <Text style={styles.statVal}>Up to {shop.paymentPercentage}%</Text>
+                        <Text style={styles.statLabel}>OFF</Text>
                     </View>
                     <View style={styles.statDivider} />
                     <TouchableOpacity style={styles.statItem} onPress={handleCall}>
@@ -135,41 +160,104 @@ const ShopDetailsScreen = () => {
                     </TouchableOpacity>
                 </View>
 
-                {/* Products Section */}
-                <View style={styles.productSection}>
-                    <View style={styles.sectionHeader}>
-                        <Text style={[styles.sectionTitle, isDark && { color: '#FFF' }]}>Available Items</Text>
-                        <Text style={styles.itemsCount}>{products.length} products</Text>
-                    </View>
+                {/* Tab Selector */}
+                <View style={[styles.tabContainer, isDark && { borderBottomColor: '#334155' }]}>
+                    <TouchableOpacity
+                        style={[styles.tabButton, activeTab === 'products' && styles.activeTabButton]}
+                        onPress={() => setActiveTab('products')}
+                    >
+                        <Text style={[styles.tabText, activeTab === 'products' && styles.activeTabText, isDark && { color: activeTab === 'products' ? '#FFF' : '#64748B' }]}>
+                            Available Items ({products.length})
+                        </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.tabButton, activeTab === 'posts' && styles.activeTabButton]}
+                        onPress={() => setActiveTab('posts')}
+                    >
+                        <Text style={[styles.tabText, activeTab === 'posts' && styles.activeTabText, isDark && { color: activeTab === 'posts' ? '#FFF' : '#64748B' }]}>
+                            Shop Updates ({posts.length})
+                        </Text>
+                    </TouchableOpacity>
+                </View>
 
-                    {loading ? (
-                        <ActivityIndicator size="small" color="#4F46E5" style={{ marginTop: 30 }} />
-                    ) : products.length === 0 ? (
-                        <View style={styles.noProducts}>
-                            <Ionicons name="basket-outline" size={40} color="#CBD5E1" />
-                            <Text style={styles.noProductsText}>No products listed by this shop yet.</Text>
+                {activeTab === 'products' ? (
+                    <View style={styles.productSection}>
+                        <View style={styles.sectionHeader}>
+                            <Text style={[styles.sectionTitle, isDark && { color: '#FFF' }]}>Available Items</Text>
+                            <Text style={styles.itemsCount}>{products.length} products</Text>
                         </View>
-                    ) : (
-                        <View style={styles.productGrid}>
-                            {products.map(product => (
-                                <View key={product._id} style={[styles.productCard, isDark && { backgroundColor: '#1E293B', borderColor: '#334155' }]}>
-                                    <Image source={{ uri: product.productImage }} style={styles.productImage} />
-                                    <View style={styles.productInfo}>
-                                        <Text style={[styles.productName, isDark && { color: '#FFF' }]} numberOfLines={1}>
-                                            {product.productName}
-                                        </Text>
-                                        <Text style={styles.productPrice}>৳ {product.productPrice}</Text>
-                                        {product.productDescription ? (
-                                            <Text style={styles.productDesc} numberOfLines={2}>
-                                                {product.productDescription}
+
+                        {loading ? (
+                            <ActivityIndicator size="small" color="#4F46E5" style={{ marginTop: 30 }} />
+                        ) : products.length === 0 ? (
+                            <View style={styles.noProducts}>
+                                <Ionicons name="basket-outline" size={40} color="#CBD5E1" />
+                                <Text style={styles.noProductsText}>No products listed by this shop yet.</Text>
+                            </View>
+                        ) : (
+                            <View style={styles.productGrid}>
+                                {products.map(product => (
+                                    <View key={product._id} style={[styles.productCard, isDark && { backgroundColor: '#1E293B', borderColor: '#334155' }]}>
+                                        <Image source={{ uri: product.productImage }} style={styles.productImage} />
+                                        <View style={styles.productInfo}>
+                                            <Text style={[styles.productName, isDark && { color: '#FFF' }]} numberOfLines={1}>
+                                                {product.productName}
                                             </Text>
+                                            <Text style={styles.productPrice}>৳ {product.productPrice}</Text>
+                                            {product.productDescription ? (
+                                                <Text style={styles.productDesc} numberOfLines={2}>
+                                                    {product.productDescription}
+                                                </Text>
+                                            ) : null}
+                                        </View>
+                                    </View>
+                                ))}
+                            </View>
+                        )}
+                    </View>
+                ) : (
+                    <View style={styles.productSection}>
+                        <View style={styles.sectionHeader}>
+                            <Text style={[styles.sectionTitle, isDark && { color: '#FFF' }]}>Shop Updates</Text>
+                            <Text style={styles.itemsCount}>{posts.length} posts</Text>
+                        </View>
+
+                        {postsLoading ? (
+                            <ActivityIndicator size="small" color="#4F46E5" style={{ marginTop: 30 }} />
+                        ) : posts.length === 0 ? (
+                            <View style={styles.noProducts}>
+                                <Ionicons name="newspaper-outline" size={40} color="#CBD5E1" />
+                                <Text style={styles.noProductsText}>No updates or posts from this shop yet.</Text>
+                            </View>
+                        ) : (
+                            <View style={styles.postsList}>
+                                {posts.map(post => (
+                                    <View key={post._id} style={[styles.detailPostCard, isDark && { backgroundColor: '#1E293B', borderColor: '#334155' }]}>
+                                        <View style={styles.postCardHeader}>
+                                            <View style={styles.avatarCircle}>
+                                                <Ionicons name="storefront" size={18} color="#FFF" />
+                                            </View>
+                                            <View style={styles.postMeta}>
+                                                <Text style={[styles.postAuthor, isDark && { color: '#FFF' }]}>{shop.shopName}</Text>
+                                                <Text style={styles.postDate}>{new Date(post.createdAt).toLocaleDateString()}</Text>
+                                            </View>
+                                        </View>
+                                        {post.content ? (
+                                            <Text style={[styles.postDescText, isDark && { color: '#CBD5E1' }]}>{post.content}</Text>
+                                        ) : null}
+                                        {post.images && post.images.length > 0 ? (
+                                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.postImgScroll}>
+                                                {post.images.map((img, i) => (
+                                                    <Image key={i} source={{ uri: img }} style={styles.postImgItem} />
+                                                ))}
+                                            </ScrollView>
                                         ) : null}
                                     </View>
-                                </View>
-                            ))}
-                        </View>
-                    )}
-                </View>
+                                ))}
+                            </View>
+                        )}
+                    </View>
+                )}
                 <View style={{ height: 100 }} />
             </ScrollView>
         </View>
@@ -206,7 +294,22 @@ const styles = StyleSheet.create({
     productInfo: { padding: 12 },
     productName: { fontSize: 15, fontWeight: 'bold', color: '#1E293B' },
     productPrice: { fontSize: 14, color: '#4F46E5', fontWeight: 'bold', marginVertical: 4 },
-    productDesc: { fontSize: 11, color: '#94A3B8', lineHeight: 15 }
+    productDesc: { fontSize: 11, color: '#94A3B8', lineHeight: 15 },
+    tabContainer: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#F1F5F9', marginTop: 10 },
+    tabButton: { flex: 1, paddingVertical: 15, alignItems: 'center', justifyContent: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
+    activeTabButton: { borderBottomColor: '#4F46E5' },
+    tabText: { fontSize: 14, fontWeight: 'bold', color: '#64748B' },
+    activeTabText: { color: '#4F46E5' },
+    postsList: { width: '100%' },
+    detailPostCard: { backgroundColor: '#FFF', borderRadius: 20, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#F1F5F9' },
+    postCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
+    avatarCircle: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#4F46E5', alignItems: 'center', justifyContent: 'center' },
+    postMeta: { flex: 1 },
+    postAuthor: { fontSize: 14, fontWeight: 'bold', color: '#1E293B' },
+    postDate: { fontSize: 11, color: '#64748B', marginTop: 2 },
+    postDescText: { fontSize: 13, color: '#475569', lineHeight: 18, marginBottom: 12 },
+    postImgScroll: { flexDirection: 'row', marginTop: 4 },
+    postImgItem: { width: width * 0.65, height: 180, borderRadius: 12, marginRight: 10, resizeMode: 'cover' }
 });
 
 export default ShopDetailsScreen;

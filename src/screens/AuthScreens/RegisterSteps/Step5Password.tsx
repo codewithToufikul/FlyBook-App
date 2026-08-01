@@ -18,7 +18,7 @@ const Step5Password = () => {
   const route = useRoute();
   const { loginUser } = useAuth();
   const { isDark } = useTheme();
-  const { firstName, lastName, email, phone, referrerUsername, firebaseToken } = route.params as any;
+  const { firstName, lastName, email, phone, referrerUsername, firebaseToken, smsVerificationToken } = route.params as any;
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -45,7 +45,16 @@ const Step5Password = () => {
     setLoading(true);
     try {
       const { register } = await import('../../../services/authServices');
-      const response = await register({ name: `${firstName} ${lastName}`, email, number: phone || '', password, userLocation, referrerUsername: referrerUsername || '', firebaseToken });
+      const response = await register({
+        name: `${firstName} ${lastName}`,
+        email,
+        number: phone || '',
+        password,
+        userLocation,
+        referrerUsername: referrerUsername || '',
+        firebaseToken,
+        smsVerificationToken
+      });
       if (response.success && response.token) {
         if (response.user) await loginUser(response.user);
         Alert.alert('Success!', 'Your account has been created successfully!', [{ text: 'OK', onPress: () => { } }]);

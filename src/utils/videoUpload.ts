@@ -1,8 +1,11 @@
 import { Platform } from 'react-native';
 import { launchImageLibrary, Asset } from 'react-native-image-picker';
+import { uploadToS3 } from './s3Upload';
 
 const CLOUDINARY_CLOUD_NAME = 'duyrnfagi';
 const CLOUDINARY_UPLOAD_PRESET = 'flybook_video';
+
+import { Video } from 'react-native-compressor';
 
 /**
  * Pick video from gallery
@@ -30,47 +33,28 @@ export const pickVideoFromGallery = async (): Promise<Asset> => {
 };
 
 /**
- * Upload video to Cloudinary
+ * Upload video to S3 after compression
  */
 export const uploadVideoToCloudinary = async (
   videoUri: string,
 ): Promise<string> => {
   try {
-    const formData = new FormData();
-
-    // Prepare the file object
-    const file: any = {
-      uri: Platform.OS === 'ios' ? videoUri.replace('file://', '') : videoUri,
-      type: 'video/mp4',
-      name: 'upload_video.mp4',
-    };
-
-    formData.append('file', file);
-    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-
-    const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/video/upload`,
+    console.log('Starting native video compression...');
+    const compressedUri = await Video.compress(
+      videoUri,
       {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        compressionMethod: 'auto',
+      },
+      progress => {
+        console.log(`Video compression progress: ${Math.round(progress * 100)}%`);
       },
     );
+    console.log('Video compression complete. Uploading to S3...');
 
-    const data = await response.json();
-
-    if (data.secure_url) {
-      return data.secure_url;
-    } else {
-      console.error('Cloudinary error:', data);
-      throw new Error(
-        data.error?.message || 'Failed to upload video to Cloudinary',
-      );
-    }
+    const result = await uploadToS3(compressedUri, 'video/mp4', 'videos');
+    return result.url;
   } catch (error) {
-    console.error('Error uploading to Cloudinary:', error);
+    console.error('Error compressing or uploading video to S3:', error);
     throw error;
   }
 };

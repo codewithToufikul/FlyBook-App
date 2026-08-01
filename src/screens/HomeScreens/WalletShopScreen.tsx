@@ -210,7 +210,7 @@ const WalletShopScreen = () => {
                             <Text style={styles.calloutTitle}>{shop.shopName}</Text>
                             <View style={styles.calloutBenefitRow}>
                                 <Ionicons name="sparkles" size={14} color="#166534" />
-                                <Text style={styles.calloutBenefit}>{shop.paymentPercentage}% Cash Benefit</Text>
+                                <Text style={styles.calloutBenefit}>Up to {shop.paymentPercentage}% OFF</Text>
                             </View>
                             <Text style={styles.calloutCategory}>{shop.shopCategory}</Text>
                         </View>
@@ -593,7 +593,7 @@ const WalletShopScreen = () => {
                                 </Text>
                                 <View style={styles.detailBenefitBadge}>
                                     <Text style={styles.detailBenefitText}>
-                                        {selectedShop.paymentPercentage}% Benefit
+                                        Up to {selectedShop.paymentPercentage}% OFF
                                     </Text>
                                 </View>
                             </View>
@@ -945,9 +945,12 @@ const WalletShopScreen = () => {
                             {selectedThana ? `${selectedThana}${selectedCategory !== 'All' ? ` • ${selectedCategory}` : ''}` : 'Showing all shops nearby'}
                         </Text>
                     </View>
-                    <View style={styles.resultsBadge}>
-                        <Ionicons name="flash" size={14} color="#4F46E5" />
-                        <Text style={styles.badgeText}>Best Deals</Text>
+                    <View style={[styles.resultsToggleIcon, isDark && { backgroundColor: '#334155' }]}>
+                        <Ionicons 
+                            name={isMinimizedList ? "chevron-up" : "chevron-down"} 
+                            size={20} 
+                            color={isDark ? '#FFF' : '#4F46E5'} 
+                        />
                     </View>
                 </TouchableOpacity>
 
@@ -978,7 +981,7 @@ const WalletShopScreen = () => {
                                     style={styles.shopImageGradient}
                                 >
                                     <View style={styles.shopCardBenefit}>
-                                        <Text style={styles.shopCardBenefitText}>{shop.paymentPercentage}% OFF</Text>
+                                        <Text style={styles.shopCardBenefitText}>Up to {shop.paymentPercentage}% OFF</Text>
                                     </View>
                                 </LinearGradient>
                             </View>
@@ -1139,21 +1142,15 @@ const styles = StyleSheet.create({
         color: '#64748B',
         marginTop: 2,
     },
-    resultsBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
+    resultsToggleIcon: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
         backgroundColor: '#EEF2FF',
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
         borderWidth: 1,
         borderColor: '#E0E7FF',
-    },
-    badgeText: {
-        fontSize: 12,
-        fontWeight: 'bold',
-        color: '#4F46E5',
-        marginLeft: 4,
     },
     shopScroll: {
         paddingLeft: 25,

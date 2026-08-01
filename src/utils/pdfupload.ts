@@ -1,5 +1,6 @@
 import { pick } from '@react-native-documents/picker';
 import { Alert, Platform } from 'react-native';
+import { uploadToS3 } from './s3Upload';
 
 // Cloudinary Configuration
 const CLOUDINARY_CLOUD_NAME = 'dljmobi4k';
@@ -87,79 +88,23 @@ export const uploadPdfToCloudinary = async (
       throw new Error('PDF file size exceeds 10MB limit');
     }
 
-    // Create form data
-    const formData = new FormData();
+    const result = await uploadToS3(
+      pdfFile.uri,
+      'application/pdf',
+      'pdfs',
+      onProgress
+    );
 
-    // Prepare file object for upload
-    const file: any = {
-      uri:
-        Platform.OS === 'ios'
-          ? pdfFile.uri.replace('file://', '')
-          : pdfFile.uri,
-      type: pdfFile.type || 'application/pdf',
-      name: pdfFile.name || 'document.pdf',
+    return {
+      url: result.url,
+      publicId: result.publicId,
+      secureUrl: result.url,
+      format: 'pdf',
+      bytes: pdfFile.size,
+      originalFilename: pdfFile.name,
     };
-
-    formData.append('file', file);
-    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-    formData.append('resource_type', 'raw'); // Important for non-image files
-
-    // Optional: Add folder organization
-    formData.append('folder', 'flybook_pdfs');
-
-    // Upload to Cloudinary with progress tracking
-    const xhr = new XMLHttpRequest();
-
-    return new Promise((resolve, reject) => {
-      // Track upload progress
-      xhr.upload.addEventListener('progress', event => {
-        if (event.lengthComputable && onProgress) {
-          const progress = Math.round((event.loaded / event.total) * 100);
-          onProgress(progress);
-        }
-      });
-
-      // Handle upload completion
-      xhr.addEventListener('load', () => {
-        if (xhr.status === 200) {
-          try {
-            const response = JSON.parse(xhr.responseText);
-
-            if (response.secure_url) {
-              resolve({
-                url: response.url,
-                publicId: response.public_id,
-                secureUrl: response.secure_url,
-                format: response.format,
-                bytes: response.bytes,
-                originalFilename: pdfFile.name || 'document.pdf',
-              });
-            } else {
-              reject(new Error('Failed to upload PDF to Cloudinary'));
-            }
-          } catch (parseError) {
-            reject(new Error('Failed to parse Cloudinary response'));
-          }
-        } else {
-          reject(new Error(`Upload failed with status: ${xhr.status}`));
-        }
-      });
-
-      // Handle upload errors
-      xhr.addEventListener('error', () => {
-        reject(new Error('Network error during PDF upload'));
-      });
-
-      xhr.addEventListener('abort', () => {
-        reject(new Error('PDF upload was aborted'));
-      });
-
-      // Send request
-      xhr.open('POST', CLOUDINARY_API_URL);
-      xhr.send(formData);
-    });
   } catch (error) {
-    console.error('Error uploading PDF to Cloudinary:', error);
+    console.error('Error uploading PDF to S3:', error);
     throw error;
   }
 };

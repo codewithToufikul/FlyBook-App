@@ -39,7 +39,12 @@ const MENU_SECTIONS = [
         route: 'MainTabs',
         params: { screen: 'Home', params: { screen: 'Peoples' } }
       },
-      { label: 'Library', icon: LibraryIcon, route: 'Library' },
+      {
+        label: 'Library',
+        icon: LibraryIcon,
+        route: 'MainTabs',
+        params: { screen: 'Home', params: { screen: 'Library' } }
+      },
       {
         label: 'Breach of Contract',
         icon: BreachIconWrapper,

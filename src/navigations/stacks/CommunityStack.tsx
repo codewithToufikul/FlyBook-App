@@ -12,6 +12,7 @@ import CommunityExamRunner from '../../screens/CommunityScreens/CommunityExamRun
 import CommunityExamGrading from '../../screens/CommunityScreens/CommunityExamGrading';
 import SocialResponseScreen from '../../screens/CommunityScreens/SocialResponseScreen';
 import ExamInfoScreen from '../../screens/CommunityScreens/ExamInfoScreen';
+import PrescriptionVaultScreen from '../../screens/CommunityScreens/PrescriptionVaultScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -20,6 +21,7 @@ const CommunityStack = () => {
         <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name="CommunitiesList" component={CommunitiesScreen} />
             <Stack.Screen name="SocialResponse" component={SocialResponseScreen} />
+            <Stack.Screen name="PrescriptionVault" component={PrescriptionVaultScreen} />
             <Stack.Screen name="CommunityDetails" component={CommunityDetailsScreen} />
             <Stack.Screen name="CreateCommunity" component={CreateCommunityScreen} />
             <Stack.Screen

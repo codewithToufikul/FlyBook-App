@@ -21,7 +21,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { openLink } from '../../utils/openLink';
 import { StatusBar } from 'react-native';
 
-type TabType = 'doctor' | 'lawyer' | 'teacher' | 'complaint' | 'appointments' | 'apply' | 'dashboard';
+type TabType = 'doctor' | 'lawyer' | 'teacher' | 'complaint' | 'appointments' | 'apply' | 'dashboard' | 'prescriptions';
 
 const SocialResponseScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
@@ -63,12 +63,23 @@ const SocialResponseScreen = ({ navigation, route }: any) => {
         name: '', phone: '', location: '', message: '', priority: 'medium'
     });
 
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedSpecialty, setSelectedSpecialty] = useState('All');
+    const [selectedLocation, setSelectedLocation] = useState('All');
+
     // ─── Effects ─────────────────────────────────────────────────────────────
 
     // Check professional status on mount
     React.useEffect(() => {
         checkProfessionalStatus();
     }, []);
+
+    // Reset search and filters when active tab changes
+    React.useEffect(() => {
+        setSearchQuery('');
+        setSelectedSpecialty('All');
+        setSelectedLocation('All');
+    }, [activeTab]);
 
     // Handle navigation params for initial tab
     React.useEffect(() => {
@@ -80,8 +91,6 @@ const SocialResponseScreen = ({ navigation, route }: any) => {
     React.useEffect(() => {
         if (activeTab === 'doctor' || activeTab === 'lawyer' || activeTab === 'teacher') {
             fetchProfessionals(activeTab);
-            fetchMyAppointments();
-        } else if (activeTab === 'appointments') {
             fetchMyAppointments();
         }
     }, [activeTab]);
@@ -95,6 +104,7 @@ const SocialResponseScreen = ({ navigation, route }: any) => {
         { id: 'lawyer', label: 'Lawyer', icon: 'briefcase', color: '#3B82F6', bg: '#EFF6FF', darkBg: 'rgba(59,130,246,0.12)' },
         { id: 'teacher', label: 'Teacher', icon: 'school', color: '#F59E0B', bg: '#FFFBEB', darkBg: 'rgba(245,158,11,0.12)' },
         { id: 'complaint', label: 'Complaint', icon: 'warning', color: '#EF4444', bg: '#FFF1F1', darkBg: 'rgba(239,68,68,0.12)' },
+        { id: 'prescriptions', label: 'Prescription Vault', icon: 'folder-open', color: '#0EA5E9', bg: '#F0F9FF', darkBg: 'rgba(14,165,233,0.12)' },
         { id: 'appointments', label: 'My Bookings', icon: 'calendar', color: '#8B5CF6', bg: '#F5F3FF', darkBg: 'rgba(139,92,246,0.12)' },
         { id: 'apply', label: 'Join Us', icon: 'person-add', color: '#EC4899', bg: '#FDF2F8', darkBg: 'rgba(236,72,153,0.12)' },
     ];
@@ -107,6 +117,7 @@ const SocialResponseScreen = ({ navigation, route }: any) => {
     const TABS = ALL_TABS.filter(tab => {
         if (tab.id === 'dashboard') return isProfessional;
         if (tab.id === 'apply') return !isProfessional;
+        if (tab.id === 'prescriptions') return !isProfessional;
         if (isActuallyDoctor && tab.id === 'doctor') return false;
         if (isActuallyLawyer && tab.id === 'lawyer') return false;
         if (isActuallyTeacher && tab.id === 'teacher') return false;
@@ -486,7 +497,13 @@ const SocialResponseScreen = ({ navigation, route }: any) => {
                     return (
                         <TouchableOpacity
                             key={tab.id}
-                            onPress={() => setActiveTab(tab.id as TabType)}
+                            onPress={() => {
+                                if (tab.id === 'prescriptions') {
+                                    navigation.navigate('PrescriptionVault', { mode: 'patient' });
+                                } else {
+                                    setActiveTab(tab.id as TabType);
+                                }
+                            }}
                             style={[
                                 styles.tab,
                                 isActive && { backgroundColor: isDark ? tab.darkBg : tab.bg, borderBottomWidth: 2.5, borderBottomColor: tab.color },
@@ -529,16 +546,104 @@ const SocialResponseScreen = ({ navigation, route }: any) => {
             );
         }
 
+        // Dynamic filters extraction
+        const specialties = ['All', ...Array.from(new Set(professionals.map(p => p.specialty).filter(Boolean)))];
+        const locations = ['All', ...Array.from(new Set(professionals.map(p => p.location).filter(Boolean)))];
+
+        // Search and Filter logic
+        const filteredProfessionals = professionals.filter(item => {
+            const matchesSearch = !searchQuery ||
+                (item.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (item.specialty || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (item.location || '').toLowerCase().includes(searchQuery.toLowerCase());
+
+            const matchesSpecialty = selectedSpecialty === 'All' || item.specialty === selectedSpecialty;
+            const matchesLocation = selectedLocation === 'All' || item.location === selectedLocation;
+
+            return matchesSearch && matchesSpecialty && matchesLocation;
+        });
+
         return (
             <View style={styles.listContainer}>
-                {professionals.length === 0 ? (
+                {/* Search and Filters Header */}
+                <View style={[styles.searchFilterContainer, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
+                    <View style={[styles.searchBarWrapper, isDark && { backgroundColor: '#0f172a', borderColor: '#334155' }]}>
+                        <Ionicons name="search-outline" size={20} color={isDark ? '#64748b' : '#94A3B8'} style={{ marginRight: 8 }} />
+                        <TextInput
+                            style={[styles.searchInput, isDark && { color: '#f1f5f9' }]}
+                            placeholder={`Search ${type} by name, specialty, location...`}
+                            placeholderTextColor={isDark ? '#475569' : '#94A3B8'}
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                        />
+                        {searchQuery ? (
+                            <TouchableOpacity onPress={() => setSearchQuery('')}>
+                                <Ionicons name="close-circle" size={18} color={isDark ? '#64748b' : '#94A3B8'} />
+                            </TouchableOpacity>
+                        ) : null}
+                    </View>
+
+                    {/* Specialty Filter Scroll */}
+                    {specialties.length > 1 && (
+                        <View style={{ marginTop: 12 }}>
+                            <Text style={[styles.filterTitle, isDark && { color: '#94a3b8' }]}>Specialty:</Text>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tagFilterScroll}>
+                                {specialties.map(spec => (
+                                    <TouchableOpacity
+                                        key={spec}
+                                        style={[
+                                            styles.filterTag,
+                                            selectedSpecialty === spec && { backgroundColor: color },
+                                            isDark && selectedSpecialty !== spec && { backgroundColor: '#0f172a', borderColor: '#334155' }
+                                        ]}
+                                        onPress={() => setSelectedSpecialty(spec)}
+                                    >
+                                        <Text style={[
+                                            styles.filterTagText,
+                                            selectedSpecialty === spec && { color: '#FFF' },
+                                            isDark && selectedSpecialty !== spec && { color: '#94a3b8' }
+                                        ]}>{spec}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                        </View>
+                    )}
+
+                    {/* Location Filter Scroll */}
+                    {locations.length > 1 && (
+                        <View style={{ marginTop: 12 }}>
+                            <Text style={[styles.filterTitle, isDark && { color: '#94a3b8' }]}>Location:</Text>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tagFilterScroll}>
+                                {locations.map(loc => (
+                                    <TouchableOpacity
+                                        key={loc}
+                                        style={[
+                                            styles.filterTag,
+                                            selectedLocation === loc && { backgroundColor: color },
+                                            isDark && selectedLocation !== loc && { backgroundColor: '#0f172a', borderColor: '#334155' }
+                                        ]}
+                                        onPress={() => setSelectedLocation(loc)}
+                                    >
+                                        <Text style={[
+                                            styles.filterTagText,
+                                            selectedLocation === loc && { color: '#FFF' },
+                                            isDark && selectedLocation !== loc && { color: '#94a3b8' }
+                                        ]}>{loc}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                        </View>
+                    )}
+                </View>
+
+                {filteredProfessionals.length === 0 ? (
                     <View style={styles.emptyBox}>
                         <Ionicons name="person-outline" size={56} color={isDark ? '#1e293b' : '#E5E7EB'} />
-                        <Text style={[styles.emptyTitle, isDark && { color: '#334155' }]}>No {type}s available</Text>
-                        <Text style={[styles.emptyDesc, isDark && { color: '#475569' }]}>Check back soon</Text>
+                        <Text style={[styles.emptyTitle, isDark && { color: '#334155' }]}>No matching {type}s found</Text>
+                        <Text style={[styles.emptyDesc, isDark && { color: '#475569' }]}>Try adjusting your search or filters</Text>
                     </View>
                 ) : (
-                    professionals.map(item => (
+                    filteredProfessionals.map(item => (
                         <View key={item._id} style={[styles.profCard, isDark && { backgroundColor: '#1e293b', borderColor: '#334155' }]}>
                             {/* Top strip */}
                             <View style={[styles.profCardStrip, { backgroundColor: color }]} />
@@ -1169,6 +1274,18 @@ const SocialResponseScreen = ({ navigation, route }: any) => {
                                             </TouchableOpacity>
                                         </View>
                                     )}
+
+                                    {/* Prescription Vault button for Doctors when appointment is accepted or completed */}
+                                    {myProfessionalData?.type === 'doctor' && (item.status === 'approved' || item.status === 'finished') && (
+                                        <TouchableOpacity
+                                            style={[styles.vaultLinkBtn, isDark && { backgroundColor: 'rgba(14,165,233,0.1)', borderColor: '#0EA5E9' }, { marginTop: 8 }]}
+                                            onPress={() => navigation.navigate('PrescriptionVault', { mode: 'doctor', patientId: item.userId, patientName: item.patientName })}
+                                            activeOpacity={0.8}
+                                        >
+                                            <Ionicons name="folder-open" size={15} color="#0EA5E9" />
+                                            <Text style={styles.vaultLinkBtnText}>View Prescription Vault</Text>
+                                        </TouchableOpacity>
+                                    )}
                                 </View>
                             );
                         })
@@ -1395,6 +1512,59 @@ const InputField = ({ label, placeholder, value, onChangeText, isDark, multiline
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F8FAFC' },
+    searchFilterContainer: {
+        marginHorizontal: 16,
+        marginTop: 12,
+        marginBottom: 12,
+        padding: 14,
+        borderRadius: 14,
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#EDE9FE',
+        shadowColor: '#64748B',
+        shadowOpacity: 0.04,
+        shadowRadius: 6,
+        elevation: 2,
+    },
+    searchBarWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F8FAFC',
+        borderWidth: 1,
+        borderColor: '#EDE9FE',
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        height: 44,
+    },
+    searchInput: {
+        flex: 1,
+        fontSize: 14,
+        color: '#1E293B',
+        paddingVertical: 0,
+    },
+    filterTitle: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#64748B',
+        marginBottom: 6,
+    },
+    tagFilterScroll: {
+        paddingVertical: 2,
+    },
+    filterTag: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
+        backgroundColor: '#F8FAFC',
+        borderWidth: 1,
+        borderColor: '#EDE9FE',
+        marginRight: 8,
+    },
+    filterTagText: {
+        fontSize: 12,
+        fontWeight: '500',
+        color: '#64748B',
+    },
 
     // Professional Banner
     profBanner: {
@@ -1724,6 +1894,25 @@ const styles = StyleSheet.create({
     },
     limitValue: { fontSize: 36, fontWeight: '800', color: '#0f172a', minWidth: 60, textAlign: 'center' },
     limitHint: { fontSize: 12, color: '#9CA3AF' },
+
+    // ── Vault Link Button for Doctor ──
+    vaultLinkBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        paddingVertical: 10,
+        backgroundColor: '#F0F9FF',
+        borderWidth: 1.5,
+        borderColor: '#0EA5E9',
+        borderRadius: 12,
+        width: '100%',
+    },
+    vaultLinkBtnText: {
+        fontSize: 13,
+        fontWeight: 'bold',
+        color: '#0EA5E9',
+    },
 });
 
 export default SocialResponseScreen;

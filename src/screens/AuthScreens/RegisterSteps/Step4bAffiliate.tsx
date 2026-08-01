@@ -12,7 +12,7 @@ import { get } from '../../../services/api';
 const Step4bAffiliate = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { firstName, lastName, email, phone, firebaseToken } = route.params as any;
+  const { firstName, lastName, email, phone, firebaseToken, smsVerificationToken } = route.params as any;
   const { isDark } = useTheme();
 
   const [affiliateId, setAffiliateId] = useState('');
@@ -65,6 +65,7 @@ const Step4bAffiliate = () => {
       email,
       phone,
       firebaseToken,
+      smsVerificationToken,
       referrerUsername: validationState === 'valid' ? affiliateId : '',
     });
   };
@@ -76,6 +77,7 @@ const Step4bAffiliate = () => {
       email,
       phone,
       firebaseToken,
+      smsVerificationToken,
       referrerUsername: '',
     });
   };

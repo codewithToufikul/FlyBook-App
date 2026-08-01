@@ -18,10 +18,9 @@ import { useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { ButtonLoader } from '../../components/common';
 import { useTheme } from '../../contexts/ThemeContext';
-import { findUserByPhone, resetPasswordWithFirebaseToken } from '../../services/authServices';
+import { findUserByPhone, sendSmsOtp, verifySmsOtp, resetPasswordWithTwilioToken } from '../../services/authServices';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { countries, Country } from '../../utils/countries';
-import auth from '@react-native-firebase/auth';
 
 type Step = 'SEARCH' | 'VERIFY' | 'OTP' | 'PASSWORD';
 
@@ -35,8 +34,7 @@ const ForgotPassword = () => {
     const [showCountryPicker, setShowCountryPicker] = useState(false);
     const [foundUser, setFoundUser] = useState<any>(null);
     const [otp, setOtp] = useState('');
-    const [confirmObj, setConfirmObj] = useState<any>(null);
-    const [firebaseToken, setFirebaseToken] = useState('');
+    const [smsVerificationToken, setSmsVerificationToken] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -55,6 +53,7 @@ const ForgotPassword = () => {
             console.log('User Found:', response);
             if (response.success && response.user) {
                 setFoundUser(response.user);
+                setPhone(fullPhoneNumber);
                 setStep('VERIFY');
             } else {
                 Alert.alert('Not Found', response.message || 'No account found with this phone number');
@@ -67,20 +66,21 @@ const ForgotPassword = () => {
     };
 
     const handleSendOTP = async () => {
+        setLoading(true);
         try {
-            console.log("Sending OTP...");
-
-            const confirmation = await auth().signInWithPhoneNumber(
-                "+8801474835285"
-            );
-
-            console.log("SUCCESS");
-            console.log(confirmation);
-
+            console.log("Sending Twilio OTP to:", phone);
+            const response = await sendSmsOtp(phone);
+            if (response.success) {
+                Alert.alert('Success', 'Verification code sent successfully!');
+                setStep('OTP');
+            } else {
+                Alert.alert('Error', response.message || 'Failed to send verification code.');
+            }
         } catch (error: any) {
-            console.log("ERROR CODE:", error.code);
-            console.log("ERROR MESSAGE:", error.message);
-            console.log("FULL ERROR:", error);
+            console.error("Twilio Send OTP error:", error);
+            Alert.alert('Error', error.message || 'Failed to send verification code. Please try again.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -91,25 +91,15 @@ const ForgotPassword = () => {
         }
         setLoading(true);
         try {
-            if (!confirmObj) {
-                Alert.alert('Error', 'Session expired. Please try again.');
-                setStep('SEARCH');
-                return;
-            }
-            const userCredential = await confirmObj.confirm(otp);
-            if (userCredential) {
-                const token = await auth().currentUser?.getIdToken();
-                if (token) {
-                    setFirebaseToken(token);
-                    setStep('PASSWORD');
-                } else {
-                    Alert.alert('Error', 'Failed to retrieve verification token');
-                }
+            const response = await verifySmsOtp(phone, otp);
+            if (response.success && response.smsVerificationToken) {
+                setSmsVerificationToken(response.smsVerificationToken);
+                setStep('PASSWORD');
             } else {
-                Alert.alert('Error', 'Verification failed. Please check the code.');
+                Alert.alert('Error', response.message || 'Verification failed. Please check the code.');
             }
         } catch (error: any) {
-            console.error('Firebase Forgot Password OTP verify failed:', error);
+            console.error('Twilio Forgot Password OTP verify failed:', error);
             Alert.alert('Error', error.message || 'Invalid or expired code. Please try again.');
         } finally {
             setLoading(false);
@@ -127,7 +117,7 @@ const ForgotPassword = () => {
         }
         setLoading(true);
         try {
-            const response = await resetPasswordWithFirebaseToken(firebaseToken, newPassword);
+            const response = await resetPasswordWithTwilioToken(smsVerificationToken, newPassword);
             if (response.success) {
                 Alert.alert('Success', 'Your password has been reset successfully. You can now login with your new password.', [
                     { text: 'Login Now', onPress: () => navigation.navigate('Login' as never) }

@@ -18,7 +18,6 @@ export interface Book {
     type: string;
     coordinates: [number, number];
   } | null;
-  transfer?: string;
   transferTo?: string;
   requestBy?: string;
   requestName?: string;

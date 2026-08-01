@@ -14,6 +14,7 @@ import WalletShopScreen from '../../screens/HomeScreens/WalletShopScreen';
 import AddYourLocalShopScreen from '../../screens/HomeScreens/AddYourLocalShopScreen';
 import ManageUserShopsScreen from '../../screens/HomeScreens/ManageUserShopsScreen';
 import ShopProductsScreen from '../../screens/HomeScreens/ShopProductsScreen';
+import ShopPostsScreen from '../../screens/HomeScreens/ShopPostsScreen'; // For managing shop updates
 import ShopDetailsScreen from '../../screens/HomeScreens/ShopDetailsScreen';
 import WalletSupportScreen from '../../screens/HomeScreens/WalletSupportScreen';
 import AiAssistantScreen from '../../screens/HomeScreens/AiAssistantScreen';
@@ -52,6 +53,7 @@ export default function HomeStack() {
             <Stack.Screen name="AddYourLocalShop" component={AddYourLocalShopScreen} />
             <Stack.Screen name="ManageUserShops" component={ManageUserShopsScreen} />
             <Stack.Screen name="ShopProducts" component={ShopProductsScreen} />
+            <Stack.Screen name="ShopPosts" component={ShopPostsScreen} />
             <Stack.Screen name="ShopDetails" component={ShopDetailsScreen} />
             <Stack.Screen name="WalletSupport" component={WalletSupportScreen} />
             <Stack.Screen name="AiAssistant" component={AiAssistantScreen} />

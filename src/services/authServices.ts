@@ -21,6 +21,7 @@ export interface RegisterData {
   };
   referrerUsername?: string;
   firebaseToken?: string;
+  smsVerificationToken?: string;
 }
 
 export interface AuthResponse {
@@ -513,6 +514,70 @@ export const resetPasswordWithFirebaseToken = async (
     return response;
   } catch (error: any) {
     console.error('Reset password with firebase token error:', error);
+    throw {
+      success: false,
+      message: error.message || 'Failed to reset password.',
+    };
+  }
+};
+
+/**
+ * Send SMS OTP
+ */
+export const sendSmsOtp = async (
+  phone: string,
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response = await post<any>('/api/otp/send-sms', {
+      phone,
+    });
+    return response;
+  } catch (error: any) {
+    console.error('Send SMS OTP error:', error);
+    throw {
+      success: false,
+      message: error.message || 'Failed to send verification code.',
+    };
+  }
+};
+
+/**
+ * Verify SMS OTP
+ */
+export const verifySmsOtp = async (
+  phone: string,
+  code: string,
+): Promise<{ success: boolean; message: string; smsVerificationToken: string }> => {
+  try {
+    const response = await post<any>('/api/otp/verify-sms', {
+      phone,
+      code,
+    });
+    return response;
+  } catch (error: any) {
+    console.error('Verify SMS OTP error:', error);
+    throw {
+      success: false,
+      message: error.message || 'Failed to verify code.',
+    };
+  }
+};
+
+/**
+ * Reset password with SMS token
+ */
+export const resetPasswordWithTwilioToken = async (
+  smsVerificationToken: string,
+  newPassword: string,
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response = await post<any>('/api/user/reset-password-sms', {
+      smsVerificationToken,
+      newPassword,
+    });
+    return response;
+  } catch (error: any) {
+    console.error('Reset password with twilio token error:', error);
     throw {
       success: false,
       message: error.message || 'Failed to reset password.',

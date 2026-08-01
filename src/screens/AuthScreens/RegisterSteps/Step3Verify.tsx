@@ -8,18 +8,17 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { ButtonLoader } from '../../../components/common';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../../contexts/ThemeContext';
-import auth from '@react-native-firebase/auth';
+import { verifySmsOtp, sendSmsOtp } from '../../../services/authServices';
 
 const Step3Verify = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { firstName, lastName, email, phone, confirmation } = route.params as any;
+  const { firstName, lastName, email, phone } = route.params as any;
   const { isDark } = useTheme();
 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
-  const [confirmObj, setConfirmObj] = useState(confirmation);
   const inputRefs = useRef<Array<TextInput | null>>([]);
 
   const handleOtpChange = (value: string, index: number) => {
@@ -47,30 +46,22 @@ const Step3Verify = () => {
     if (otpCode.length !== 6) { Alert.alert('Error', 'Please enter the complete 6-digit code'); return; }
     setLoading(true);
     try {
-      if (!confirmObj) {
-        Alert.alert('Error', 'Verification session expired. Please go back and try again.');
-        return;
-      }
-
-      const userCredential = await confirmObj.confirm(otpCode);
-      if (userCredential) {
-        // Retrieve Firebase ID Token
-        const firebaseToken = await auth().currentUser?.getIdToken();
-
+      const response = await verifySmsOtp(phone, otpCode);
+      if (response.success && response.smsVerificationToken) {
         (navigation as any).navigate('Step4bAffiliate', {
           firstName,
           lastName,
           email,
           phone,
-          firebaseToken
+          smsVerificationToken: response.smsVerificationToken
         });
       } else {
-        Alert.alert('Error', 'Verification failed. Please check the code.');
+        Alert.alert('Error', response.message || 'Verification failed. Please check the code.');
         setOtp(['', '', '', '', '', '']);
         inputRefs.current[0]?.focus();
       }
     } catch (error: any) {
-      console.error('Firebase confirm error:', error);
+      console.error('Twilio verify confirm error:', error);
       Alert.alert('Error', error.message || 'Verification failed. Please try again.');
       setOtp(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
@@ -82,13 +73,16 @@ const Step3Verify = () => {
   const handleResend = async () => {
     setResending(true);
     try {
-      const newConfirmation = await auth().signInWithPhoneNumber(phone);
-      setConfirmObj(newConfirmation);
-      Alert.alert('Success', 'Verification code sent again!');
+      const response = await sendSmsOtp(phone);
+      if (response.success) {
+        Alert.alert('Success', 'Verification code sent again!');
+      } else {
+        Alert.alert('Error', response.message || 'Failed to resend code');
+      }
       setOtp(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
     } catch (error: any) {
-      console.error('Firebase resend error:', error);
+      console.error('Twilio resend error:', error);
       Alert.alert('Error', error.message || 'Failed to resend code');
     } finally {
       setResending(false);

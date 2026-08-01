@@ -311,7 +311,7 @@ const ManageUserShopsScreen = () => {
                     </View>
                     <View style={[styles.infoTag, { backgroundColor: '#EEF2FF' }]}>
                         <Ionicons name="sparkles" size={12} color="#4F46E5" />
-                        <Text style={[styles.infoTagText, { color: '#4F46E5' }]}>{shop.paymentPercentage}% Benefit</Text>
+                        <Text style={[styles.infoTagText, { color: '#4F46E5' }]}>Up to {shop.paymentPercentage}% OFF</Text>
                     </View>
                 </View>
 
@@ -339,6 +339,13 @@ const ManageUserShopsScreen = () => {
                 >
                     <Ionicons name="cube-outline" size={16} color="#FFF" />
                     <Text style={styles.actionBtnText}>Products</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.actionBtn, { backgroundColor: '#8B5CF6' }]}
+                    onPress={() => (navigation.navigate as any)('ShopPosts', { shopId: shop._id, shopName: shop.shopName })}
+                >
+                    <Ionicons name="newspaper-outline" size={16} color="#FFF" />
+                    <Text style={styles.actionBtnText}>Posts</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={[styles.actionBtn, { backgroundColor: '#EF4444' }]}
